@@ -54,50 +54,72 @@ const FIELD_LABELS = {
   comunicacion: 'Comunicación',
   liderazgo: 'Liderazgo',
 };
+const FIELD_KEYS = {
+  control: 'control',
+  pase: 'pass',
+  conduccion: 'dribbling',
+  regate: 'finishing',
+  tiro: 'shooting',
+  juegoAereo: 'aerialPlay',
+  velocidad: 'speed',
+  resistencia: 'endurance',
+  fuerza: 'strength',
+  agilidad: 'agility',
+  posicionamiento: 'positioning',
+  tomaDecisiones: 'decisionMaking',
+  visionJuego: 'gameVision',
+  trabajoDefensivo: 'defensiveWork',
+  actitud: 'attitude',
+  esfuerzo: 'effort',
+  concentracion: 'concentration',
+  comunicacion: 'communication',
+  liderazgo: 'leadership',
+};
+const VALUE_KEYS = { Técnico: 'scouting.tags.technical', Tecnico: 'scouting.tags.technical', Inteligente: 'scouting.tags.intelligent', 'Lateral Derecho': 'scouting.positions.rightBack', 'Lateral Izquierdo': 'scouting.positions.leftBack' };
 
-function getRecommendationLabel(val) {
+function getRecommendationLabel(val, t) {
   switch (val) {
     case 'muy_recomendable':
-      return 'Muy recomendable';
+      return t('scouting.pdf.veryRecommended', 'Muy recomendable');
     case 'seguir_observando':
-      return 'Seguir observando';
+      return t('scouting.pdf.keepWatching', 'Seguir observando');
     case 'no_recomendado':
-      return 'No recomendado';
+      return t('scouting.pdf.notRecommended', 'No recomendado');
     default:
       return val || '—';
   }
 }
 
-function getPotentialLabel(val) {
+function getPotentialLabel(val, t) {
   switch (val) {
     case 'bajo':
-      return 'Bajo';
+      return t('scouting.pdf.low', 'Bajo');
     case 'medio':
-      return 'Medio';
+      return t('scouting.pdf.medium', 'Medio');
     case 'alto':
-      return 'Alto';
+      return t('scouting.pdf.high', 'Alto');
     default:
       return val || '—';
   }
 }
 
-function getFootLabel(foot) {
+function getFootLabel(foot, t) {
   switch (foot?.toLowerCase()) {
     case 'derecho':
-      return 'Derecho';
+      return t('scouting.pdf.right', 'Derecho');
     case 'izquierdo':
-      return 'Izquierdo';
+      return t('scouting.pdf.left', 'Izquierdo');
     case 'ambos':
-      return 'Ambos';
+      return t('scouting.pdf.both', 'Ambos');
     default:
       return foot || '—';
   }
 }
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr, t) => {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+  return d.toLocaleDateString(t?.i18n?.language?.startsWith('en') ? 'en-US' : 'es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
 const s = StyleSheet.create({
@@ -286,7 +308,7 @@ const ScoreBar = ({ score }) => {
 };
 
 const ScoutingDocument = ({ report, t }) => {
-  const dateStr = formatDate(report.observationDate);
+  const dateStr = formatDate(report.observationDate, t);
   const playerTeam = report.playerTeam || '';
   const position = report.position || '';
 
@@ -294,7 +316,7 @@ const ScoutingDocument = ({ report, t }) => {
     <Document>
       <Page size="A4" orientation="portrait" style={baseStyles.page}>
         <PdfHeader
-          title="INFORME DE SCOUTING"
+          title={t('scouting.pdfTitle', 'INFORME DE SCOUTING')}
           subtitle={
             report.rival
               ? `${report.rival} ${report.competition ? `· ${report.competition}` : ''}`
@@ -309,12 +331,12 @@ const ScoutingDocument = ({ report, t }) => {
           <View style={s.playerInfo}>
             <Text style={s.playerName}>{report.playerName}</Text>
             <Text style={s.playerSub}>
-              {[position, playerTeam].filter(Boolean).join(' - ') || 'Sin posición/equipo'}
+              {[t(VALUE_KEYS[position], position), playerTeam].filter(Boolean).join(' - ') || t('scouting.positionTeamEmpty', 'Sin posición/equipo')}
             </Text>
             <Text style={s.playerMeta}>
               {[
-                report.age ? `${report.age} años` : null,
-                `Pie: ${getFootLabel(report.dominantFoot)}`,
+                report.age ? `${report.age} ${t('scouting.pdf.age', 'años')}` : null,
+                `${t('scouting.pdf.foot', 'Pie')}: ${getFootLabel(report.dominantFoot, t)}`,
               ]
                 .filter(Boolean)
                 .join(' | ')}
@@ -330,16 +352,16 @@ const ScoutingDocument = ({ report, t }) => {
         {/* Info Cards */}
         <View style={s.infoGrid}>
           <View style={s.infoCard}>
-            <Text style={s.infoCardLabel}>Recomendación</Text>
-            <Text style={s.infoCardValue}>{getRecommendationLabel(report.recommendation)}</Text>
+              <Text style={s.infoCardLabel}>{t('scouting.recommendation', 'Recomendación')}</Text>
+            <Text style={s.infoCardValue}>{getRecommendationLabel(report.recommendation, t)}</Text>
           </View>
           <View style={s.infoCard}>
-            <Text style={s.infoCardLabel}>Potencial</Text>
-            <Text style={s.infoCardValue}>{getPotentialLabel(report.potential)}</Text>
+            <Text style={s.infoCardLabel}>{t('scouting.potential', 'Potencial')}</Text>
+            <Text style={s.infoCardValue}>{getPotentialLabel(report.potential, t)}</Text>
           </View>
           {report.rival ? (
             <View style={s.infoCard}>
-              <Text style={s.infoCardLabel}>Rival</Text>
+              <Text style={s.infoCardLabel}>{t('scouting.rival', 'Rival')}</Text>
               <Text style={s.infoCardValue}>{report.rival}</Text>
             </View>
           ) : null}
@@ -350,7 +372,7 @@ const ScoutingDocument = ({ report, t }) => {
           <View style={s.tagList}>
             {report.tags.map((tag) => (
               <Text key={tag} style={s.tag}>
-                {tag}
+                {t(VALUE_KEYS[tag], tag)}
               </Text>
             ))}
           </View>
@@ -366,10 +388,10 @@ const ScoutingDocument = ({ report, t }) => {
 
             return (
               <View key={group.key} style={s.scoreCard}>
-                <Text style={s.scoreCardTitle}>{group.label}</Text>
+                <Text style={s.scoreCardTitle}>{t(`scouting.groups.${group.key}`, group.label)}</Text>
                 {entries.map(([field, score]) => (
                   <View key={field} style={s.scoreRow}>
-                    <Text style={s.scoreLabel}>{FIELD_LABELS[field] || field}</Text>
+                    <Text style={s.scoreLabel}>{t(`scouting.fields.${FIELD_KEYS[field] || field}`, FIELD_LABELS[field] || field)}</Text>
                     <ScoreBar score={Number(score)} />
                     <Text style={s.scoreNum}>{score}</Text>
                   </View>
@@ -382,7 +404,7 @@ const ScoutingDocument = ({ report, t }) => {
         {/* Strengths */}
         {report.strengths ? (
           <View style={[s.textCard, { borderLeftWidth: 3, borderLeftColor: COLORS.success }]}>
-            <Text style={[s.textCardTitle, { color: COLORS.success }]}>Fortalezas</Text>
+            <Text style={[s.textCardTitle, { color: COLORS.success }]}>{t('scouting.pdf.strengths', 'Fortalezas')}</Text>
             <Text style={s.textCardContent}>{report.strengths}</Text>
           </View>
         ) : null}
@@ -390,7 +412,7 @@ const ScoutingDocument = ({ report, t }) => {
         {/* Improvements */}
         {report.improvements ? (
           <View style={[s.textCard, { borderLeftWidth: 3, borderLeftColor: COLORS.danger }]}>
-            <Text style={[s.textCardTitle, { color: COLORS.danger }]}>Aspectos a mejorar</Text>
+            <Text style={[s.textCardTitle, { color: COLORS.danger }]}>{t('scouting.pdf.improvements', 'Aspectos a mejorar')}</Text>
             <Text style={s.textCardContent}>{report.improvements}</Text>
           </View>
         ) : null}
@@ -398,7 +420,7 @@ const ScoutingDocument = ({ report, t }) => {
         {/* Observations */}
         {report.observations ? (
           <View style={s.obsCard}>
-            <Text style={s.textCardTitle}>Observaciones</Text>
+            <Text style={s.textCardTitle}>{t('scouting.pdf.observations', 'Observaciones')}</Text>
             <Text style={s.textCardContent}>{report.observations}</Text>
           </View>
         ) : null}

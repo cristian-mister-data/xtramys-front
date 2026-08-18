@@ -5233,6 +5233,11 @@
   "subscription": {
     "requiredToView": "You must be subscribed to view this",
     "availableWithSubscription": "Available with subscription",
+    "demoContentTitle": "Available with subscription",
+    "demoCreateTitle": "Create · Available with subscription",
+    "demoExercisesTitle": "Create · Available with subscription",
+    "demoExercisesMessage": "There are many more exercises in the subscription version.",
+    "demoContentMessage": "Subscribe to create and access all content.",
     "demoNotice": "This section is not included in the demo. Subscribe to unlock all content.",
     "viewSubscription": "View subscription",
     "demoUnavailableTitle": "Content not available in the demo",
@@ -5704,7 +5709,7 @@
       "opponents": "Scouting matches"
     },
     "introTitle": "Match scouting and tracking",
-    "intro": "Schedule matches you want to track, then document how both teams compete, their lineups, tactical behaviours and set pieces. Mark the target opponent and prepare the plan for facing them.",
+  "intro": "Schedule matches you want to track, then document how both teams compete, their campograms, tactical behaviours and set pieces. Mark the target opponent and prepare the plan for facing them.",
     "teamA": "Team A",
     "teamB": "Team B",
     "bothTeams": "Both teams",
@@ -5716,7 +5721,7 @@
     "pageTitle": "Scouting matches",
     "confirmDeleteTitle": "Delete scouting report",
     "removePlayerTitle": "Remove player",
-    "confirmRemovePlayer": "Remove {{name}} from this lineup?",
+  "confirmRemovePlayer": "Remove {{name}} from this campogram?",
     "removeEventTitle": "Remove event",
     "confirmRemoveEvent": "Remove this event: {{event}}?",
     "manualCompetition": "Other competition or manual match",
@@ -5728,7 +5733,7 @@
     "emptyDescription": "Schedule the first match you want to track. It will appear in the calendar and you can complete the report before, during, or after it.",
     "emptyTimeline": "No key events. Add only the moments that help explain the match.",
     "noResults": "No reports match these filters",
-    "noResultsHint": "Try another team, competition, or status.",
+  "noResultsHint": "Try another team, competition, or venue.",
     "searchPlaceholder": "Search team, competition, or venue…",
     "searchLabel": "Search scouting matches",
     "statusFilter": "Filter by status",
@@ -5737,7 +5742,8 @@
     "confirmDelete": "Permanently delete the report for {{match}}?",
     "steps": {
       "match": "Match",
-      "lineups": "Lineups and data",
+    "data": "Data",
+    "campogram": "Campogram",
       "tactics": "Tactical analysis",
       "setPieces": "Set pieces and conclusions"
     },
@@ -5751,8 +5757,24 @@
       "addPlayer": "Add player",
       "removePlayer": "Remove player",
       "back": "Back",
-      "next": "Next"
-    },
+    "next": "Next"
+  },
+  "campogram": {
+    "help": "Place players freely on the pitch. Save a new situation to record substitutions and formation changes during the match.",
+    "dragHint": "Drag shirt numbers to adjust their position. The name appears when the coach knows it.",
+    "directEditHint": "Drag to move. Tap a player to edit shirt number, name, and position directly on the pitch.",
+    "emptyPlayer": "Tap to complete",
+    "position": "Position",
+    "closeEditor": "Close player editor",
+    "players": "{{count}} players",
+    "initial": "Start",
+    "addPhase": "New situation",
+    "removePhase": "Remove situation",
+    "phase": "Situation {{n}}",
+    "minute": "Minute",
+    "label": "Description",
+    "start": "Start / after a change"
+  },
     "fields": {
       "teamName": "Team name",
       "coach": "Coach",
@@ -5768,7 +5790,7 @@
       "teamScore": "{{team}} goals",
       "halfTimeScore": "Half-time score (optional)",
       "teamHalfTimeScore": "{{team}} half-time goals",
-      "formation": "Starting formation",
+      "formation": "System",
       "lineup": "Lineup",
       "shirtNumber": "Shirt no.",
       "playerName": "Name",
@@ -5893,13 +5915,39 @@
       "delete": "The report could not be deleted",
       "pdf": "The PDF could not be generated"
     },
-    "pdf": {
+  "pdf": {
       "title": "SCOUTING MATCH REPORT",
       "lineups": "Lineups and starting shape",
       "comparison": "Comparison",
       "fileName": "scouting_match_report",
-      "generatedWith": "Technical report generated with Xtramys"
+    "generatedWith": "Technical report generated with Xtramys",
+    "campograms": "CAMPOGRAM AND TACTICAL EVOLUTION",
+    "campogramPhase": "Situation {{number}}"
     }
+  },
+  "scouting": {
+    "searchPlaceholder": "Search player, team, position...",
+    "loading": "Loading...",
+    "empty": "No scouting reports",
+    "noResults": "No results for that search",
+    "createFirst": "Create your first report to get started",
+    "tryAnotherSearch": "Try another search.",
+    "newReport": "New report",
+    "createReport": "Create report",
+    "saveReport": "Scouting report saved",
+    "deleteReport": "Report deleted",
+    "selectTeam": "Select a team to record player reports.",
+    "pdfTitle": "SCOUTING REPORT",
+    "detailTitle": "Scouting details",
+    "recommendation": "Recommendation",
+    "potential": "Potential",
+    "rival": "Opponent",
+    "positionTeamEmpty": "No position/team",
+    "tags": { "technical": "Technical", "intelligent": "Intelligent" },
+    "groups": { "technical": "Technical", "physical": "Physical", "tactical": "Tactical", "mental": "Mental" },
+    "fields": { "control": "Control", "pass": "Passing", "dribbling": "Dribbling", "finishing": "Finishing", "shooting": "Shooting", "aerialPlay": "Aerial play", "speed": "Speed", "endurance": "Endurance", "strength": "Strength", "agility": "Agility", "positioning": "Positioning", "decisionMaking": "Decision making", "gameVision": "Game vision", "defensiveWork": "Defensive work", "attitude": "Attitude", "effort": "Effort", "concentration": "Concentration", "communication": "Communication", "leadership": "Leadership" },
+    "positions": { "rightBack": "Right Back", "leftBack": "Left Back" },
+    "pdf": { "foot": "Foot", "age": "years", "date": "Date", "competition": "Competition", "strengths": "Strengths", "improvements": "Areas for improvement", "observations": "Observations", "veryRecommended": "Highly recommended", "keepWatching": "Keep watching", "notRecommended": "Not recommended", "low": "Low", "medium": "Medium", "high": "High", "right": "Right", "left": "Left", "both": "Both" }
   },
   "kits": {
     "title": "Kits",

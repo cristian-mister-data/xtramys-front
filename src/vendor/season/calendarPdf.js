@@ -151,19 +151,13 @@ const ScoutingEvent = ({ event, locale, t }) => {
   const competition = report?.tournamentId?.nombre
     || report?.competitionName
     || t(`opponentMatch.competitionTypes.${report?.competitionType || 'other'}`);
-  const status = report?.status === 'completed'
-    ? t('opponentMatch.calendar.completed')
-    : event.date > new Date()
-      ? t('opponentMatch.calendar.scheduled')
-      : t('opponentMatch.calendar.pending');
-
   return (
     <View style={[s.event, s.scoutingEvent]} wrap={false}>
       <Text style={s.eventTitle} maxLines={1}>
         {formatTime(event.date, locale)} · {home} - {away}
       </Text>
       <Text style={s.eventMeta} maxLines={1}>
-        {status} · {competition}{report?.venue ? ` · ${report.venue}` : ''}
+        {competition}{report?.venue ? ` · ${report.venue}` : ''}
       </Text>
     </View>
   );

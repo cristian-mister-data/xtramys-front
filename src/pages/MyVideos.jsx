@@ -3,6 +3,7 @@ import { MdVideoLibrary } from 'react-icons/md';
 import RNWebPage from './_RNWebPage';
 import MyVideosView from '@/vendor/myVideos/myVideos';
 import useSupervision from '@/hooks/useSupervision';
+import DemoSubscriptionNotice from '@/components/shared/DemoSubscriptionNotice';
 
 export default function MyVideos() {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export default function MyVideos() {
       subtitle={t('sectionHeaders.myVideos', 'Clasifica clips, carpetas y material audiovisual del cuerpo técnico.')}
       icon={MdVideoLibrary}
     >
+      <DemoSubscriptionNotice />
       <MyVideosView canMutate={canMutate} />
     </RNWebPage>
   );

@@ -72,7 +72,7 @@ export function FieldBackground() {
       <rect x="22.5" y="0" width="55" height="15.5" fill="none" stroke="#fff" strokeWidth="0.4" />
       <rect x="38" y="0" width="24" height="5.5" fill="none" stroke="#fff" strokeWidth="0.4" />
       <circle cx="50" cy="10" r="0.5" fill="#fff" />
-      <path d="M 40.85 10 A 9.15 9.15 0 0 0 59.15 10" fill="none" stroke="#fff" strokeWidth="0.4" />
+      <path d="M 42.69 15.5 A 9.15 9.15 0 0 0 57.31 15.5" fill="none" stroke="#fff" strokeWidth="0.4" />
       {/* Bottom penalty box */}
       <rect
         x="22.5"
@@ -86,7 +86,7 @@ export function FieldBackground() {
       <rect x="38" y="136.5" width="24" height="5.5" fill="none" stroke="#fff" strokeWidth="0.4" />
       <circle cx="50" cy="132" r="0.5" fill="#fff" />
       <path
-        d="M 40.85 132 A 9.15 9.15 0 0 1 59.15 132"
+        d="M 42.69 126.5 A 9.15 9.15 0 0 1 57.31 126.5"
         fill="none"
         stroke="#fff"
         strokeWidth="0.4"

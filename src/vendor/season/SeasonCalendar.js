@@ -619,12 +619,6 @@ export default function SeasonCalendar({
     || report.competitionName
     || t(`opponentMatch.competitionTypes.${report.competitionType || 'other'}`);
 
-  const getScoutingStatus = (report) => report.status === 'completed'
-    ? t('opponentMatch.calendar.completed')
-    : report.dateTime && new Date(report.dateTime) > new Date()
-      ? t('opponentMatch.calendar.scheduled')
-      : t('opponentMatch.calendar.pending');
-
   const renderScoutingPreview = (report) => (
     <TouchableOpacity
       key={`scouting-preview-${report._id}`}
@@ -655,10 +649,6 @@ export default function SeasonCalendar({
             </Text>
           </View>
         )}
-        <View style={styles.sessionDetailItem}>
-          <Ionicons name={report.status === 'completed' ? 'checkmark-circle' : 'calendar'} size={12} color={THEME.purple} />
-          <Text style={styles.sessionDetailText}>{getScoutingStatus(report)}</Text>
-        </View>
       </View>
     </TouchableOpacity>
   );
@@ -1242,10 +1232,6 @@ export default function SeasonCalendar({
                             </Text>
                           </View>
                         )}
-                        <View style={mobileStyles.infoChip}>
-                          <Ionicons name={report.status === 'completed' ? 'checkmark-circle' : 'calendar'} size={12} color={THEME.purple} />
-                          <Text style={mobileStyles.infoText}>{getScoutingStatus(report)}</Text>
-                        </View>
                         {report.venue && (
                           <View style={mobileStyles.infoChip}>
                             <Ionicons name="location" size={12} color={THEME.textSecondary} />

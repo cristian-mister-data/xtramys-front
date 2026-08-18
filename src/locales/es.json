@@ -5239,6 +5239,11 @@
   "subscription": {
     "requiredToView": "Tienes que estar suscrito para verlo",
     "availableWithSubscription": "Disponible con suscripción",
+    "demoContentTitle": "Disponibles con suscripción",
+    "demoCreateTitle": "Crear · Disponible con suscripción",
+    "demoExercisesTitle": "Crear · Disponible con suscripción",
+    "demoExercisesMessage": "Hay muchos más ejercicios en la versión con suscripción.",
+    "demoContentMessage": "Activa una suscripción para crear y acceder a todo el contenido.",
     "demoNotice": "Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.",
     "viewSubscription": "Ver suscripción",
     "demoUnavailableTitle": "Contenido no disponible en la demo",
@@ -5711,7 +5716,7 @@
       "opponents": "Seguimiento de partidos"
     },
     "introTitle": "Scouting y seguimiento de partidos",
-    "intro": "Programa partidos que quieras seguir y documenta después cómo compiten ambos equipos, sus alineaciones, comportamientos tácticos y ABP. Marca el rival objetivo y prepara el plan para enfrentarte a él.",
+  "intro": "Programa partidos que quieras seguir y documenta después cómo compiten ambos equipos, sus campogramas, comportamientos tácticos y ABP. Marca el rival objetivo y prepara el plan para enfrentarte a él.",
     "teamA": "Equipo A",
     "teamB": "Equipo B",
     "bothTeams": "Ambos equipos",
@@ -5723,7 +5728,7 @@
     "pageTitle": "Seguimiento de partidos",
     "confirmDeleteTitle": "Eliminar seguimiento",
     "removePlayerTitle": "Eliminar jugador",
-    "confirmRemovePlayer": "¿Quieres eliminar a {{name}} de esta alineación?",
+  "confirmRemovePlayer": "¿Quieres eliminar a {{name}} de este campograma?",
     "removeEventTitle": "Eliminar acción",
     "confirmRemoveEvent": "¿Quieres eliminar esta acción: {{event}}?",
     "manualCompetition": "Otra competición o partido manual",
@@ -5735,7 +5740,7 @@
     "emptyDescription": "Programa el primer partido que quieras seguir. Aparecerá en el calendario y podrás completar el informe antes, durante o después.",
     "emptyTimeline": "No hay acciones clave. Añade solo los momentos que ayuden a entender el partido.",
     "noResults": "No hay informes con estos filtros",
-    "noResultsHint": "Prueba con otro equipo, competición o estado.",
+  "noResultsHint": "Prueba con otro equipo, competición o campo.",
     "searchPlaceholder": "Buscar equipo, competición o campo…",
     "searchLabel": "Buscar partidos de seguimiento",
     "statusFilter": "Filtrar por estado",
@@ -5744,7 +5749,8 @@
     "confirmDelete": "¿Eliminar definitivamente el informe de {{match}}?",
     "steps": {
       "match": "Partido",
-      "lineups": "Alineaciones y datos",
+    "data": "Datos",
+    "campogram": "Campograma",
       "tactics": "Análisis táctico",
       "setPieces": "ABP y conclusiones"
     },
@@ -5758,8 +5764,24 @@
       "addPlayer": "Añadir jugador",
       "removePlayer": "Eliminar jugador",
       "back": "Atrás",
-      "next": "Siguiente"
-    },
+    "next": "Siguiente"
+  },
+  "campogram": {
+    "help": "Coloca los jugadores libremente sobre el campo. Guarda una nueva situación para registrar cambios y ajustes de formación durante el partido.",
+    "dragHint": "Arrastra los dorsales para ajustar su posición. El nombre se muestra si lo conoce el entrenador.",
+    "directEditHint": "Arrastra para mover. Toca un jugador para editar dorsal, nombre y posición directamente sobre el campo.",
+    "emptyPlayer": "Toca para completar",
+    "position": "Posición",
+    "closeEditor": "Cerrar edición del jugador",
+    "players": "{{count}} jugadores",
+    "initial": "Inicio",
+    "addPhase": "Nueva situación",
+    "removePhase": "Eliminar situación",
+    "phase": "Situación {{n}}",
+    "minute": "Minuto",
+    "label": "Descripción",
+    "start": "Inicio / tras un cambio"
+  },
     "fields": {
       "teamName": "Nombre del equipo",
       "coach": "Entrenador",
@@ -5775,7 +5797,7 @@
       "teamScore": "Goles de {{team}}",
       "halfTimeScore": "Resultado al descanso (opcional)",
       "teamHalfTimeScore": "Goles al descanso de {{team}}",
-      "formation": "Sistema inicial",
+      "formation": "Sistema",
       "lineup": "Alineación",
       "shirtNumber": "Dorsal",
       "playerName": "Nombre",
@@ -5900,13 +5922,39 @@
       "delete": "No se pudo eliminar el informe",
       "pdf": "No se pudo generar el PDF"
     },
-    "pdf": {
+  "pdf": {
       "title": "INFORME DE SEGUIMIENTO DE PARTIDO",
       "lineups": "Alineaciones y estructura inicial",
       "comparison": "Comparativa",
       "fileName": "seguimiento_partido_rivales",
-      "generatedWith": "Informe técnico generado con Xtramys"
+    "generatedWith": "Informe técnico generado con Xtramys",
+    "campograms": "CAMPOGRAMA Y EVOLUCIÓN TÁCTICA",
+    "campogramPhase": "Situación {{number}}"
     }
+  },
+  "scouting": {
+    "searchPlaceholder": "Buscar jugador, equipo, posición...",
+    "loading": "Cargando...",
+    "empty": "No hay informes de scouting",
+    "noResults": "Sin resultados con esa búsqueda",
+    "createFirst": "Crea tu primer informe para comenzar",
+    "tryAnotherSearch": "Prueba con otra búsqueda.",
+    "newReport": "Nuevo informe",
+    "createReport": "Crear informe",
+    "saveReport": "Informe de scouting guardado",
+    "deleteReport": "Informe eliminado",
+    "selectTeam": "Selecciona un equipo para registrar informes de jugadores.",
+    "pdfTitle": "INFORME DE SCOUTING",
+    "detailTitle": "Detalle de Scouting",
+    "recommendation": "Recomendación",
+    "potential": "Potencial",
+    "rival": "Rival",
+    "positionTeamEmpty": "Sin posición/equipo",
+    "tags": { "technical": "Técnico", "intelligent": "Inteligente" },
+    "groups": { "technical": "Técnica", "physical": "Física", "tactical": "Táctica", "mental": "Mental" },
+    "fields": { "control": "Control", "pass": "Pase", "dribbling": "Conducción", "finishing": "Regate", "shooting": "Tiro", "aerialPlay": "Juego aéreo", "speed": "Velocidad", "endurance": "Resistencia", "strength": "Fuerza", "agility": "Agilidad", "positioning": "Posicionamiento", "decisionMaking": "Toma de decisiones", "gameVision": "Visión de juego", "defensiveWork": "Trabajo defensivo", "attitude": "Actitud", "effort": "Esfuerzo", "concentration": "Concentración", "communication": "Comunicación", "leadership": "Liderazgo" },
+    "positions": { "rightBack": "Lateral Derecho", "leftBack": "Lateral Izquierdo" },
+    "pdf": { "foot": "Pie", "age": "años", "date": "Fecha", "competition": "Competición", "strengths": "Fortalezas", "improvements": "Aspectos a mejorar", "observations": "Observaciones", "veryRecommended": "Muy recomendable", "keepWatching": "Seguir observando", "notRecommended": "No recomendado", "low": "Bajo", "medium": "Medio", "high": "Alto", "right": "Derecho", "left": "Izquierdo", "both": "Ambos" }
   },
   "kits": {
     "title": "Equipaciones",

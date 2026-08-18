@@ -749,9 +749,9 @@ export default function Profile() {
     try {
       // 1) Guardamos primero el resto de datos sin tocar el correo. El correo
       //    requiere verificación independiente y no debe cambiarse aquí.
-      const result = await dispatch(
-        updateUsuario({ id: user._id, updatedUser: { nombre, apellido, idioma: language } }),
-      ).unwrap();
+      const isDemoUser = user?.plan === 'demo' || user?.accessMode === 'demo';
+      const updatedUser = isDemoUser ? { idioma: language } : { nombre, apellido, idioma: language };
+      const result = await dispatch(updateUsuario({ id: user._id, updatedUser })).unwrap();
       if (result?.idioma) i18n.changeLanguage(result.idioma);
 
       // 2) Si además el usuario cambió el correo, iniciamos el flujo de

@@ -54,6 +54,11 @@ const FIELD_LABELS = {
   trabajoDefensivo: 'Trabajo defensivo',
 };
 
+const TAG_KEYS = { Técnico: 'scouting.tags.technical', Tecnico: 'scouting.tags.technical', Inteligente: 'scouting.tags.intelligent' };
+const POSITION_KEYS = { 'Lateral Derecho': 'scouting.positions.rightBack', 'Lateral Izquierdo': 'scouting.positions.leftBack' };
+const GROUP_KEYS = { Tecnica: 'scouting.groups.technical', Fisica: 'scouting.groups.physical', Tactica: 'scouting.groups.tactical', Mental: 'scouting.groups.mental' };
+const FIELD_KEYS = { posicionamiento: 'scouting.fields.positioning', tomaDecisiones: 'scouting.fields.decisionMaking', visionJuego: 'scouting.fields.gameVision', trabajoDefensivo: 'scouting.fields.defensiveWork' };
+
 const Container = styled.div`
   display: flex;
   flex-direction: column;
@@ -197,7 +202,8 @@ const SectionTitle = styled.div`
 `;
 
 const today = () => new Date().toISOString().slice(0, 10);
-const scoreLabel = (field) => FIELD_LABELS[field] || field.charAt(0).toUpperCase() + field.slice(1);
+const scoreLabel = (field, t) => t(FIELD_KEYS[field], FIELD_LABELS[field] || field.charAt(0).toUpperCase() + field.slice(1));
+const scoutingLabel = (value, t) => t(TAG_KEYS[value] || POSITION_KEYS[value], value);
 const cleanNumber = (value) => (value === '' || value == null ? null : Number(value));
 const normalizeScore = (value) => value !== '' && value != null && SCORE_VALUES.includes(Number(value)) ? String(value) : '';
 
@@ -378,7 +384,7 @@ export default function Scouting() {
     event.preventDefault();
     if (!canMutate) return;
     if (!form.playerName.trim()) {
-      toast.error('El nombre del jugador es obligatorio');
+      toast.error(t('scouting.playerRequired', 'El nombre del jugador es obligatorio'));
       return;
     }
     setSaving(true);
@@ -388,12 +394,12 @@ export default function Scouting() {
       else await createScoutingReport(payload);
       setEditing(null);
       await loadReports();
-      toast.success('Informe de scouting guardado');
+      toast.success(t('scouting.saveReport', 'Informe de scouting guardado'));
       if (originMatchSheet || (form.matchSheet && !editing?._id)) {
         navigate(`/match-sheets?open=${originMatchSheet || form.matchSheet}`);
       }
     } catch (err) {
-      toast.error(err.message || 'No se pudo guardar el informe');
+      toast.error(err.message || t('scouting.saveError', 'No se pudo guardar el informe'));
     } finally {
       setSaving(false);
     }
@@ -407,12 +413,12 @@ export default function Scouting() {
     try {
       await deleteScoutingReport(report._id);
       await loadReports();
-      toast.success('Informe eliminado');
+      toast.success(t('scouting.deleteReport', 'Informe eliminado'));
       if (originMatchSheet) {
         navigate(`/match-sheets?open=${originMatchSheet}`);
       }
     } catch (err) {
-      toast.error(err.message || 'No se pudo eliminar');
+      toast.error(err.message || t('scouting.deleteError', 'No se pudo eliminar'));
     }
   };
 
@@ -421,7 +427,7 @@ export default function Scouting() {
       <Container>
         <SectionHeader
           title={t('menu.scouting', 'Scouting')}
-          subtitle="Selecciona un equipo para registrar informes de jugadores."
+          subtitle={t('scouting.selectTeam', 'Selecciona un equipo para registrar informes de jugadores.')}
           icon={MdPersonSearch}
         />
         <TeamRequiredCard />
@@ -439,7 +445,7 @@ export default function Scouting() {
           <CanMutate>
             <Button $variant="primary" onClick={openCreate}>
               <MdAdd size={18} />
-              Nuevo informe
+              {t('scouting.newReport', 'Nuevo informe')}
             </Button>
           </CanMutate>
         }
@@ -451,7 +457,7 @@ export default function Scouting() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar jugador, equipo, posicion..."
+            placeholder={t('scouting.searchPlaceholder', 'Buscar jugador, equipo, posición...')}
           />
         </SearchBox>
         <Muted>{loading ? 'Cargando...' : `${filtered.length} / ${reports.length}`}</Muted>
@@ -473,12 +479,12 @@ export default function Scouting() {
               ) : null}
             </Row>
             <CardMeta>
-              {[report.position, report.playerTeam].filter(Boolean).join(' - ') ||
-                'Sin equipo/posición'}
+              {[scoutingLabel(report.position, t), report.playerTeam].filter(Boolean).join(' - ') ||
+                t('scouting.positionTeamEmpty', 'Sin posición/equipo')}
             </CardMeta>
             <TagList style={{ marginTop: 8 }}>
               {(report.tags || []).slice(0, 5).map((tag) => (
-                <Badge key={tag}>{tag}</Badge>
+                <Badge key={tag}>{scoutingLabel(tag, t)}</Badge>
               ))}
             </TagList>
           </ReportCard>
@@ -490,20 +496,20 @@ export default function Scouting() {
           <MdPersonSearch size={56} />
           <div style={{ fontWeight: 600, fontSize: 16 }}>
             {reports.length === 0
-              ? 'No hay informes de scouting'
-              : 'Sin resultados con esa búsqueda'}
+              ? t('scouting.empty', 'No hay informes de scouting')
+              : t('scouting.noResults', 'Sin resultados con esa búsqueda')}
           </div>
           <Muted>
             {reports.length === 0
-              ? 'Crea tu primer informe para comenzar'
-              : 'Prueba con otra búsqueda.'}
+              ? t('scouting.createFirst', 'Crea tu primer informe para comenzar')
+              : t('scouting.tryAnotherSearch', 'Prueba con otra búsqueda.')}
           </Muted>
           {reports.length === 0 && (
             <CanMutate>
               <Button $variant="primary" onClick={openCreate}>
                 <Row $gap={6} style={{ alignItems: 'center' }}>
                   <MdAdd size={18} />
-                  Crear informe
+                  {t('scouting.createReport', 'Crear informe')}
                 </Row>
               </Button>
             </CanMutate>
@@ -514,7 +520,7 @@ export default function Scouting() {
       <Modal
         open={!!editing}
         onClose={() => setEditing(null)}
-        title={editing?._id ? 'Editar informe de scouting' : 'Nuevo informe de scouting'}
+        title={editing?._id ? t('scouting.editReport', 'Editar informe de scouting') : t('scouting.newReport', 'Nuevo informe de scouting')}
         width={FORM_MODAL_WIDTH}
         footer={
           <>
@@ -524,10 +530,10 @@ export default function Scouting() {
               onClick={() => setEditing(null)}
               disabled={saving}
             >
-              Cancelar
+              {t('edition.cancel', 'Cancelar')}
             </Button>
             <Button type="submit" form="scouting-form" disabled={saving || !canMutate}>
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? t('common.saving', 'Guardando...') : t('common.save', 'Guardar')}
             </Button>
           </>
         }
@@ -613,15 +619,15 @@ export default function Scouting() {
 
             {SCORE_GROUPS.map(([group, title, fields]) => (
               <Stack key={group} $gap={8}>
-                <SectionTitle>{title}</SectionTitle>
+                <SectionTitle>{t(GROUP_KEYS[title], title)}</SectionTitle>
                 <FormGrid>
                   {fields.map((field) => (
                     <Field key={field}>
-                      <Label>{scoreLabel(field)}</Label>
+                      <Label>{scoreLabel(field, t)}</Label>
                       <ScoreSelect
                         value={form[group]?.[field] ?? ''}
                         onChange={(e) => updateScore(group, field, e.target.value)}
-                        label={scoreLabel(field)}
+                        label={scoreLabel(field, t)}
                       />
                     </Field>
                   ))}
@@ -639,7 +645,7 @@ export default function Scouting() {
                     $active={form.tags.includes(tag)}
                     onClick={() => toggleTag(tag)}
                   >
-                    {tag}
+                    {scoutingLabel(tag, t)}
                   </TagButton>
                 ))}
               </TagList>
@@ -706,7 +712,7 @@ export default function Scouting() {
       <Modal
         open={showPositionModal}
         onClose={() => setShowPositionModal(false)}
-        title="Seleccionar Posición"
+        title={t('scouting.selectPosition', 'Seleccionar posición')}
         width={500}
       >
         <Stack $gap={16}>
@@ -747,7 +753,7 @@ export default function Scouting() {
                       transition: 'all 0.2s ease-in-out',
                     }}
                   >
-                    {pos}
+                    {scoutingLabel(pos, t)}
                   </button>
                 ))}
               </div>

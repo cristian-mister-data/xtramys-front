@@ -5,9 +5,9 @@ import { MdAdd, MdArrowBack, MdArrowForward, MdDeleteOutline, MdSave } from 'rea
 import Modal, { FORM_MODAL_WIDTH } from '@/ui/Modal';
 import { Button, Input, Label, TextArea } from '@/ui/primitives';
 import { confirmAction } from '@/ui/confirm';
-import { ALINEACIONES } from '@/features/rivalAnalysis/rivalAnalysisData';
+import { CampogramEditor, normalizeCampograms } from './Campogram';
 
-const STEPS = ['match', 'lineups', 'tactics', 'setPieces'];
+const STEPS = ['match', 'data', 'campogram', 'tactics', 'setPieces'];
 const STAT_FIELDS = ['possession', 'shots', 'shotsOnTarget', 'corners', 'fouls', 'offsides'];
 const TACTICAL_FIELDS = ['inPossession', 'outOfPossession', 'transitions', 'pressing', 'keyPlayers', 'strengths', 'weaknesses'];
 const SET_PIECE_FIELDS = ['corners', 'freeKicks', 'throwIns', 'penalties'];
@@ -15,8 +15,13 @@ const SET_PIECE_FIELDS = ['corners', 'freeKicks', 'throwIns', 'penalties'];
 const emptyStats = () => Object.fromEntries(STAT_FIELDS.map((key) => [key, '']));
 const emptyTactics = () => Object.fromEntries(TACTICAL_FIELDS.map((key) => [key, '']));
 const emptySetPieces = () => Object.fromEntries(SET_PIECE_FIELDS.map((key) => [key, '']));
-const emptyLineupRows = (count = 11) => Array.from({ length: count }, () => ({ number: '', name: '' }));
-const emptyTeam = () => ({ name: '', rivalId: null, shield: '', formation: '', coach: '', lineupRows: emptyLineupRows(), score: '', halfTimeScore: '' });
+const emptyTeam = () => ({ name: '', rivalId: null, shield: '', formation: '', coach: '', score: '', halfTimeScore: '' });
+const emptyCampogram = () => normalizeCampograms([{
+  minute: '0',
+  label: '',
+  teamA: { formation: '1-4-4-2', players: Array.from({ length: 11 }, () => ({})) },
+  teamB: { formation: '1-4-4-2', players: Array.from({ length: 11 }, () => ({})) },
+}]);
 
 const emptyForm = () => ({
   teamA: emptyTeam(),
@@ -39,7 +44,7 @@ const emptyForm = () => ({
   summary: '',
   gamePlan: '',
   videoUrl: '',
-  status: 'draft',
+  campograms: emptyCampogram(),
 });
 
 const toLocalDateTime = (value) => {
@@ -51,28 +56,6 @@ const toLocalDateTime = (value) => {
 };
 
 const toNumberOrNull = (value) => value === '' || value == null ? null : Number(value);
-const toLines = (value) => String(value || '').split('\n').map((line) => line.trim()).filter(Boolean);
-const normalizeLineup = (value) => (Array.isArray(value) ? value : toLines(value))
-  .map((player) => {
-    if (typeof player === 'string') return player;
-    const name = player?.name || player?.nombre || player?.player || '';
-    const number = player?.number || player?.shirtNumber || player?.dorsal || '';
-    return name ? `${number ? `${number}. ` : ''}${name}` : number;
-  })
-  .map((player) => String(player).trim())
-  .filter(Boolean);
-const parseLineupRows = (value) => {
-  const rows = normalizeLineup(value).map((line) => {
-    const match = line.match(/^\s*(\d{1,2})\s*[.)\-:]?\s*(.+)$/);
-    return { number: match?.[1] || '', name: (match?.[2] || line).trim() };
-  });
-  return rows.length ? rows : emptyLineupRows();
-};
-const serializeLineup = (rows = []) => rows
-  .map(({ number = '', name = '' }) => ({ number: String(number).trim(), name: String(name).trim() }))
-  .filter(({ name }) => name)
-  .map(({ number, name }) => number ? `${number}. ${name}` : name);
-
 function fromReport(report) {
   if (!report) return emptyForm();
   const normalizeTeam = (team = {}) => ({
@@ -81,11 +64,6 @@ function fromReport(report) {
     shield: team.shield || '',
     formation: team.formation || '',
     coach: team.coach || '',
-    lineupRows: parseLineupRows(
-      Array.isArray(team.lineup) && team.lineup.length
-        ? team.lineup
-        : team.lineupText || team.alineacion || team.lineup,
-    ),
     score: team.score ?? '',
     halfTimeScore: team.halfTimeScore ?? '',
   });
@@ -104,6 +82,7 @@ function fromReport(report) {
     setPiecesA: normalizeGroup(report.setPiecesA, SET_PIECE_FIELDS),
     setPiecesB: normalizeGroup(report.setPiecesB, SET_PIECE_FIELDS),
     events: (report.events || []).map(({ minute = '', team = '', type = 'other', player = '', note = '' }) => ({ minute, team, type, player, note })),
+    campograms: normalizeCampograms(report.campograms, report.teamA, report.teamB),
   };
 }
 
@@ -194,44 +173,6 @@ const TeamTitle = styled.h3`
   margin: 0;
   color: ${({ theme }) => theme.colors.text};
   font-size: 15px;
-`;
-
-const LineupEditor = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-`;
-
-const LineupHeader = styled.div`
-  display: grid;
-  grid-template-columns: 28px 64px minmax(0, 1fr) 38px;
-  gap: 7px;
-  padding: 0 4px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-`;
-
-const LineupRow = styled.div`
-  display: grid;
-  grid-template-columns: 28px 64px minmax(0, 1fr) 38px;
-  gap: 7px;
-  align-items: center;
-
-  input { min-width: 0; }
-`;
-
-const LineupIndex = styled.span`
-  display: grid;
-  place-items: center;
-  min-height: 38px;
-  border-radius: ${({ theme }) => theme.radius.md};
-  background: ${({ theme }) => theme.colors.primarySoft};
-  color: ${({ theme }) => theme.colors.primarySoftText};
-  font-size: 12px;
-  font-weight: 800;
 `;
 
 const FocusGroup = styled.div`
@@ -417,18 +358,6 @@ export default function OpponentMatchReportFormModal({ open, onClose, report, se
     );
     if (confirmed) setForm((current) => ({ ...current, events: current.events.filter((_, eventIndex) => eventIndex !== index) }));
   };
-  const addLineupPlayer = (side) => update(`${side}.lineupRows`, [...form[side].lineupRows, { number: '', name: '' }]);
-  const updateLineupPlayer = (side, index, key, value) => update(`${side}.lineupRows`, form[side].lineupRows.map((player, playerIndex) => playerIndex === index ? { ...player, [key]: value } : player));
-  const removeLineupPlayer = async (side, index) => {
-    const player = form[side].lineupRows[index];
-    const name = player?.name?.trim() || t('opponentMatch.fields.playerName');
-    const confirmed = await confirmAction(
-      t('opponentMatch.confirmRemovePlayer', { name }),
-      { title: t('opponentMatch.removePlayerTitle'), destructive: true },
-    );
-    if (confirmed) update(`${side}.lineupRows`, form[side].lineupRows.filter((_, playerIndex) => playerIndex !== index));
-  };
-
   const validateMatch = () => {
     if (!form.teamA.name.trim() || !form.teamB.name.trim()) {
       setError(t('opponentMatch.validation.teamsRequired'));
@@ -451,26 +380,29 @@ export default function OpponentMatchReportFormModal({ open, onClose, report, se
     event.preventDefault();
     if (!validateMatch()) { setStep(0); return; }
     const normalizeStats = (stats) => Object.fromEntries(STAT_FIELDS.map((key) => [key, toNumberOrNull(stats[key])]));
-    const normalizeTeam = (team) => ({
+    const normalizeTeam = (team, letter) => ({
+      ...team,
       name: team.name.trim(),
       rivalId: team.rivalId || null,
       shield: team.shield || '',
-      formation: team.formation,
+      formation: form.campograms[0]?.[`team${letter}`]?.formation || team.formation,
       coach: team.coach.trim(),
-      lineup: serializeLineup(team.lineupRows),
+      lineup: (form.campograms[0]?.[`team${letter}`]?.players || []).map((player) => ({ number: player.number, name: player.name })).filter((player) => player.number || player.name).map(({ number, name }) => number ? `${number}. ${name}` : name),
       score: toNumberOrNull(team.score),
       halfTimeScore: toNumberOrNull(team.halfTimeScore),
     });
+    const { status: _status, ...formData } = form;
     const payload = {
-      ...form,
+      ...formData,
       team: selectedTeam._id,
-      teamA: normalizeTeam(form.teamA),
-      teamB: normalizeTeam(form.teamB),
+      teamA: normalizeTeam(form.teamA, 'A'),
+      teamB: normalizeTeam(form.teamB, 'B'),
       dateTime: form.dateTime ? new Date(form.dateTime).toISOString() : null,
       tournamentId: form.tournamentId || null,
       statsA: normalizeStats(form.statsA),
       statsB: normalizeStats(form.statsB),
       events: form.events.filter((item) => item.minute || item.player || item.note),
+      campograms: form.campograms,
     };
     try {
       setSaving(true);
@@ -628,70 +560,17 @@ export default function OpponentMatchReportFormModal({ open, onClose, report, se
 
         {step === 1 && (
           <Section>
-            <Grid>
-              {['teamA', 'teamB'].map((side) => (
-                <TeamPanel key={side}>
-                  <TeamTitle>{teamName(side)}</TeamTitle>
-                  <Field>
-                    <Label htmlFor={`${side}-formation`}>{t('opponentMatch.fields.formation')}</Label>
-                    <Select id={`${side}-formation`} value={form[side].formation} onChange={(event) => update(`${side}.formation`, event.target.value)}>
-                      <option value="">{t('common.select')}</option>
-                      {ALINEACIONES.map((formation) => <option key={formation} value={formation}>{formation}</option>)}
-                    </Select>
-                  </Field>
-                  <Field>
-                    <Label>{t('opponentMatch.fields.lineup')}</Label>
-                    <LineupEditor aria-label={t('opponentMatch.fields.lineup')}>
-                      <LineupHeader>
-                        <span>#</span>
-                        <span>{t('opponentMatch.fields.shirtNumber')}</span>
-                        <span>{t('opponentMatch.fields.playerName')}</span>
-                        <span />
-                      </LineupHeader>
-                      {form[side].lineupRows.map((player, index) => (
-                        <LineupRow key={`${side}-lineup-${index}`}>
-                          <LineupIndex aria-hidden="true">{index + 1}</LineupIndex>
-                          <Input
-                            aria-label={`${t('opponentMatch.fields.shirtNumber')} ${index + 1}`}
-                            type="number"
-                            min="1"
-                            max="99"
-                            inputMode="numeric"
-                            value={player.number}
-                            onChange={(event) => updateLineupPlayer(side, index, 'number', event.target.value)}
-                            placeholder={t('opponentMatch.placeholders.shirtNumber')}
-                          />
-                          <Input
-                            aria-label={`${t('opponentMatch.fields.playerName')} ${index + 1}`}
-                            value={player.name}
-                            onChange={(event) => updateLineupPlayer(side, index, 'name', event.target.value)}
-                            placeholder={t('opponentMatch.placeholders.playerName')}
-                            maxLength={160}
-                          />
-                          <RemoveButton type="button" onClick={() => removeLineupPlayer(side, index)} aria-label={`${t('opponentMatch.actions.removePlayer')} ${index + 1}`}><MdDeleteOutline aria-hidden="true" /></RemoveButton>
-                        </LineupRow>
-                      ))}
-                      <Button type="button" $variant="secondary" onClick={() => addLineupPlayer(side)}><MdAdd aria-hidden="true" /> {t('opponentMatch.actions.addPlayer')}</Button>
-                    </LineupEditor>
-                    <Help>{t('opponentMatch.fields.lineupHelp')}</Help>
-                  </Field>
-                </TeamPanel>
-              ))}
-            </Grid>
-
-            <Section>
-              <SectionTitle>{t('opponentMatch.sections.stats')}</SectionTitle>
-              <StatsTable>
-                <span />
-                <strong>{teamName('teamA')}</strong>
-                <strong>{teamName('teamB')}</strong>
-                {STAT_FIELDS.map((field) => [
-                  <span key={`${field}-label`}>{t(`opponentMatch.stats.${field}`)}</span>,
-                  <Input key={`${field}-a`} aria-label={`${t(`opponentMatch.stats.${field}`)} ${teamName('teamA')}`} type="number" min="0" max={field === 'possession' ? 100 : 999} value={form.statsA[field]} onChange={(event) => update(`statsA.${field}`, event.target.value)} />,
-                  <Input key={`${field}-b`} aria-label={`${t(`opponentMatch.stats.${field}`)} ${teamName('teamB')}`} type="number" min="0" max={field === 'possession' ? 100 : 999} value={form.statsB[field]} onChange={(event) => update(`statsB.${field}`, event.target.value)} />,
-                ])}
-              </StatsTable>
-            </Section>
+            <SectionTitle>{t('opponentMatch.sections.stats')}</SectionTitle>
+            <StatsTable>
+              <span />
+              <strong>{teamName('teamA')}</strong>
+              <strong>{teamName('teamB')}</strong>
+              {STAT_FIELDS.map((field) => [
+                <span key={`${field}-label`}>{t(`opponentMatch.stats.${field}`)}</span>,
+                <Input key={`${field}-a`} aria-label={`${t(`opponentMatch.stats.${field}`)} ${teamName('teamA')}`} type="number" min="0" max={field === 'possession' ? 100 : 999} value={form.statsA[field]} onChange={(event) => update(`statsA.${field}`, event.target.value)} />,
+                <Input key={`${field}-b`} aria-label={`${t(`opponentMatch.stats.${field}`)} ${teamName('teamB')}`} type="number" min="0" max={field === 'possession' ? 100 : 999} value={form.statsB[field]} onChange={(event) => update(`statsB.${field}`, event.target.value)} />,
+              ])}
+            </StatsTable>
 
             <Section>
               <TeamTitle>
@@ -719,6 +598,14 @@ export default function OpponentMatchReportFormModal({ open, onClose, report, se
         )}
 
         {step === 2 && (
+          <Section>
+            <SectionTitle>{t('opponentMatch.steps.campogram')}</SectionTitle>
+            <Help>{t('opponentMatch.campogram.help')}</Help>
+            <CampogramEditor value={form.campograms} onChange={(campograms) => update('campograms', campograms)} teamNames={{ teamA: teamName('teamA'), teamB: teamName('teamB') }} t={t} />
+          </Section>
+        )}
+
+        {step === 3 && (
           <Grid>
             {['A', 'B'].map((letter) => {
               const side = `team${letter}`;
@@ -738,7 +625,7 @@ export default function OpponentMatchReportFormModal({ open, onClose, report, se
           </Grid>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <Section>
             <Grid>
               {['A', 'B'].map((letter) => {
@@ -765,20 +652,10 @@ export default function OpponentMatchReportFormModal({ open, onClose, report, se
               <Label htmlFor="report-game-plan">{t('opponentMatch.fields.gamePlan')}</Label>
               <TextArea id="report-game-plan" rows={5} value={form.gamePlan} onChange={(event) => update('gamePlan', event.target.value)} placeholder={t('opponentMatch.placeholders.gamePlan')} />
             </Field>
-            <Grid>
-              <Field>
-                <Label htmlFor="report-video">{t('opponentMatch.fields.videoUrl')}</Label>
-                <Input id="report-video" type="url" value={form.videoUrl} onChange={(event) => update('videoUrl', event.target.value)} placeholder="https://" maxLength={2000} />
-              </Field>
-              <Field>
-                <Label htmlFor="report-status">{t('opponentMatch.fields.status')}</Label>
-                <Select id="report-status" value={form.status} onChange={(event) => update('status', event.target.value)}>
-                  <option value="draft">{t('opponentMatch.status.draft')}</option>
-                  <option value="completed">{t('opponentMatch.status.completed')}</option>
-                </Select>
-                <Help>{t('opponentMatch.fields.statusHelp')}</Help>
-              </Field>
-            </Grid>
+            <Field>
+              <Label htmlFor="report-video">{t('opponentMatch.fields.videoUrl')}</Label>
+              <Input id="report-video" type="url" value={form.videoUrl} onChange={(event) => update('videoUrl', event.target.value)} placeholder="https://" maxLength={2000} />
+            </Field>
           </Section>
         )}
       </Form>

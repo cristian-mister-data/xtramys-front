@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { MdLock } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 import useSupervision from '@/hooks/useSupervision';
 
 const LockedButton = styled.button`
@@ -17,7 +18,7 @@ const LockedButton = styled.button`
   font: inherit;
   font-size: 13px;
   font-weight: 700;
-  cursor: not-allowed;
+  cursor: pointer;
   box-shadow: ${({ theme }) => theme.shadows.sm};
   opacity: 1;
 
@@ -33,10 +34,11 @@ const LockedButton = styled.button`
 
 export function LockedSubscriptionButton({ label }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const text = label || t('subscription.availableWithSubscription', 'Disponible con suscripción');
 
   return (
-    <LockedButton type="button" disabled aria-label={text} title={text}>
+    <LockedButton type="button" onClick={() => navigate('/subscribe')} aria-label={text} title={text}>
       <MdLock size={18} />
       <span>{text}</span>
     </LockedButton>

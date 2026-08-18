@@ -3,6 +3,7 @@ import { MdOutlineAssignment } from 'react-icons/md';
 import RNWebPage from './_RNWebPage';
 import StrategyList from '@/vendor/strategy/strategyList';
 import useSupervision from '@/hooks/useSupervision';
+import DemoSubscriptionNotice from '@/components/shared/DemoSubscriptionNotice';
 
 export default function Strategies() {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export default function Strategies() {
       subtitle={t('sectionHeaders.strategies', 'Centraliza jugadas, carpetas tácticas y materiales del modelo de juego.')}
       icon={MdOutlineAssignment}
     >
+      <DemoSubscriptionNotice />
       <StrategyList canMutate={canMutate} />
     </RNWebPage>
   );

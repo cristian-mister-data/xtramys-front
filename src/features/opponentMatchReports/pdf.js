@@ -1,4 +1,5 @@
 import React from 'react';
+import { Svg, Rect, Line, Circle, Path, G } from '@react-pdf/renderer';
 import {
   Document,
   Page,
@@ -43,31 +44,90 @@ const styles = StyleSheet.create({
   text: { fontSize: 8.5, color: COLORS.text, lineHeight: 1.45 },
   conclusion: { backgroundColor: COLORS.bgCard, borderWidth: 1, borderColor: COLORS.border, borderLeftWidth: 4, borderLeftColor: COLORS.accent, borderRadius: 7, padding: 10, marginBottom: 8 },
   link: { color: COLORS.accent, fontSize: 8, marginTop: 5 },
+  campColumns: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginTop: 4 },
+  campColumn: { width: 232, alignItems: 'center' },
+  campTeam: { fontFamily: 'Helvetica-Bold', fontSize: 11, color: COLORS.primary, marginBottom: 3, textAlign: 'center' },
+  campFormation: { fontSize: 8, color: COLORS.textSecondary, marginBottom: 7, textAlign: 'center' },
+  campPitch: { borderRadius: 10, overflow: 'hidden', backgroundColor: '#2f7a2f' },
 });
 
 const hasValues = (object = {}) => Object.values(object).some((value) => value !== '' && value != null);
 const safeName = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '');
-const normalizeLineup = (team = {}) => (Array.isArray(team.lineup) && team.lineup.length
-  ? team.lineup
-  : String(team.lineupText || team.alineacion || team.lineup || '').split('\n'))
-  .map((player) => {
-    if (typeof player === 'string') return player;
-    const name = player?.name || player?.nombre || player?.player || '';
-    const number = player?.number || player?.shirtNumber || player?.dorsal || '';
-    return name ? `${number ? `${number}. ` : ''}${name}` : number;
-  })
-  .map((player) => String(player).trim())
-  .filter(Boolean);
-const splitLineupPlayer = (value) => {
-  const text = String(value || '').trim();
-  const match = text.match(/^\s*(\d{1,2})\s*[.)\-:]?\s*(.+)$/);
-  return { number: match?.[1] || '', name: (match?.[2] || text).trim() };
-};
 const sectionValues = (data = {}, fields = []) => fields.map((field) => data[field]).filter(Boolean);
 // ponytail: react-pdf cannot measure before layout; keep normal sections whole and let oversized ones wrap.
 const keepSectionTogether = (values, rows = values.length) => (
   values.reduce((total, value) => total + String(value || '').length, 0) + rows * 120 <= 2600
 );
+
+const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value) || 0));
+
+function PdfCampPitch({ team = {}, color }) {
+  const players = Array.isArray(team.players) ? team.players : [];
+  return (
+    <View style={styles.campPitch} wrap={false}>
+      <Svg width={232} height={329.44} viewBox="0 0 100 142">
+        {Array.from({ length: 14 }, (_, index) => (
+          <Rect key={index} x="0" y={(index * 142) / 14} width="100" height={142 / 14} fill={index % 2 ? '#2f7a2f' : '#3a8a3a'} />
+        ))}
+        <Rect x="0.5" y="0.5" width="99" height="141" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Line x1="0" y1="71" x2="100" y2="71" stroke="#fff" strokeWidth="0.45" />
+        <Circle cx="50" cy="71" r="13.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Circle cx="50" cy="71" r="0.7" fill="#fff" />
+        <Rect x="22.5" y="0" width="55" height="15.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Rect x="38" y="0" width="24" height="5.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Circle cx="50" cy="10" r="0.55" fill="#fff" />
+        <Path d="M42.69 15.5 A9.15 9.15 0 0 0 57.31 15.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Rect x="22.5" y="126.5" width="55" height="15.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Rect x="38" y="136.5" width="24" height="5.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        <Circle cx="50" cy="132" r="0.55" fill="#fff" />
+        <Path d="M42.69 126.5 A9.15 9.15 0 0 1 57.31 126.5" fill="none" stroke="#fff" strokeWidth="0.45" />
+        {players.map((player, index) => {
+          const x = clamp(player.x, 5, 95);
+          const y = clamp(player.y, 5, 95) * 1.42;
+          const labelX = clamp(x, 14, 86);
+          return (
+            <G key={index}>
+              <Circle cx={x} cy={y} r="5.1" fill={color} stroke="#fff" strokeWidth="0.9" />
+              <Text x={x} y={y + 1.7} textAnchor="middle" fill="#fff" fontFamily="Helvetica-Bold" fontSize="4.5">{player.number || player.position || '–'}</Text>
+              {player.name ? <>
+                <Rect x={labelX - 13} y={y + 5.5} width="26" height="5" rx="1.5" fill="#0f172a" fillOpacity="0.86" />
+                <Text x={labelX} y={y + 9} textAnchor="middle" fill="#fff" fontFamily="Helvetica-Bold" fontSize="2.8">{String(player.name).slice(0, 18)}</Text>
+              </> : null}
+            </G>
+          );
+        })}
+      </Svg>
+    </View>
+  );
+}
+
+function CampogramPage({ phase, index, report, t }) {
+  const title = phase.label || (index === 0
+    ? t('opponentMatch.campogram.initial')
+    : t('opponentMatch.pdf.campogramPhase', { number: index + 1 }));
+  return (
+    <Page size="A4" orientation="portrait" style={baseStyles.page} wrap={false}>
+      <PdfHeader
+        title={t('opponentMatch.pdf.campograms')}
+        subtitle={`${phase.minute ? `${phase.minute}' · ` : ''}${title}`}
+        right={`${report.teamA.score ?? '–'} : ${report.teamB.score ?? '–'}`}
+      />
+      <View style={styles.campColumns} wrap={false}>
+        {['A', 'B'].map((letter) => {
+          const team = phase[`team${letter}`] || {};
+          return (
+            <View style={styles.campColumn} key={letter} wrap={false}>
+              <Text style={styles.campTeam}>{report[`team${letter}`].name}</Text>
+              <Text style={styles.campFormation}>{t('opponentMatch.fields.formation')}: {team.formation || '—'}</Text>
+              <PdfCampPitch team={team} color={letter === 'A' ? '#2563eb' : '#dc2626'} />
+            </View>
+          );
+        })}
+      </View>
+      <PdfFooter text={t('opponentMatch.pdf.generatedWith')} />
+    </Page>
+  );
+}
 
 function TextRows({ data, fields, prefix, t }) {
   return fields.filter((field) => data?.[field]).map((field) => (
@@ -84,8 +144,6 @@ function OpponentMatchReportDocument({ report, t, language }) {
     : t('opponentMatch.noDate');
   const competition = report.tournamentId?.nombre || report.competitionName || t(`opponentMatch.competitionTypes.${report.competitionType || 'other'}`);
   const focus = report.focusTeam === 'A' ? report.teamA.name : report.focusTeam === 'B' ? report.teamB.name : t('opponentMatch.bothTeams');
-  const lineupA = normalizeLineup(report.teamA);
-  const lineupB = normalizeLineup(report.teamB);
   const statFields = ['possession', 'shots', 'shotsOnTarget', 'corners', 'fouls', 'offsides'];
   const tacticalFields = ['inPossession', 'outOfPossession', 'transitions', 'pressing', 'keyPlayers', 'strengths', 'weaknesses'];
   const setPieceFields = ['corners', 'freeKicks', 'throwIns', 'penalties'];
@@ -113,34 +171,7 @@ function OpponentMatchReportDocument({ report, t, language }) {
           <Text style={styles.meta}>{t('opponentMatch.focus')}: {focus}</Text>
           <Text style={styles.meta}>{t('opponentMatch.fields.watchedVia')}: {t(`opponentMatch.watchedVia.${report.watchedVia || 'other'}`)}</Text>
           {report.venue ? <Text style={styles.meta}>{t('opponentMatch.fields.venue')}: {report.venue}</Text> : null}
-          <Text style={styles.meta}>{t(`opponentMatch.status.${report.status || 'draft'}`)}</Text>
         </View>
-
-        <PdfSection
-          title={t('opponentMatch.pdf.lineups')}
-          keepTogether={keepSectionTogether(
-            [report.teamA.name, report.teamA.coach, ...lineupA, report.teamB.name, report.teamB.coach, ...lineupB],
-            Math.max(lineupA.length, lineupB.length),
-          )}
-        >
-          <View style={styles.columns}>
-            {['A', 'B'].map((letter) => {
-              const team = report[`team${letter}`];
-              return (
-                <View style={[baseStyles.card, styles.column]} key={letter}>
-                  <Text style={styles.miniTitle}>{team.name}{team.formation ? ` · ${team.formation}` : ''}</Text>
-                  {team.coach ? <Text style={[styles.lineupText, { marginBottom: 5 }]}>{t('opponentMatch.fields.coach')}: {team.coach}</Text> : null}
-                  {normalizeLineup(team).length ? (
-                    <View style={styles.lineup}>{normalizeLineup(team).map((player, index) => {
-                      const parsed = splitLineupPlayer(player);
-                      return <View key={`${player}-${index}`} style={styles.lineupRow}><Text style={styles.lineupNumber}>{parsed.number || '–'}</Text><Text style={styles.lineupText}>{parsed.name}</Text></View>;
-                    })}</View>
-                  ) : <Text style={styles.noInfo}>{t('opponentMatch.noLineup')}</Text>}
-                </View>
-              );
-            })}
-          </View>
-        </PdfSection>
 
         {(hasValues(report.statsA) || hasValues(report.statsB)) ? (
           <PdfSection title={t('opponentMatch.sections.stats')} keepTogether>
@@ -211,6 +242,9 @@ function OpponentMatchReportDocument({ report, t, language }) {
 
         <PdfFooter text={t('opponentMatch.pdf.generatedWith')} />
       </Page>
+      {(Array.isArray(report.campograms) ? report.campograms : []).map((phase, index) => (
+        <CampogramPage key={index} phase={phase} index={index} report={report} t={t} />
+      ))}
     </Document>
   );
 }

@@ -12,8 +12,9 @@ import {
   MdVisibility,
 } from 'react-icons/md';
 import Modal from '@/ui/Modal';
-import { Badge, Button } from '@/ui/primitives';
+import { Button } from '@/ui/primitives';
 import { generateOpponentMatchReportPdf } from './pdf';
+import { CampogramView, normalizeCampograms } from './Campogram';
 import { toast } from '@/ui/toast';
 
 const Hero = styled.section`
@@ -113,37 +114,6 @@ const TextBlock = styled.div`
   p { margin: 0; white-space: pre-wrap; color: ${({ theme }) => theme.colors.text}; font-size: 13px; line-height: 1.55; }
 `;
 
-const Lineup = styled.ul`
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  columns: 2;
-  column-gap: 24px;
-  @media (max-width: 460px) { columns: 1; }
-`;
-
-const LineupItem = styled.li`
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-  break-inside: avoid;
-  min-height: 34px;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 13px;
-`;
-
-const ShirtNumber = styled.span`
-  display: grid;
-  place-items: center;
-  min-height: 26px;
-  border-radius: ${({ theme }) => theme.radius.sm};
-  background: ${({ theme }) => theme.colors.primarySoft};
-  color: ${({ theme }) => theme.colors.primarySoftText};
-  font-size: 11px;
-  font-weight: 800;
-`;
-
 const Stats = styled.div`
   display: grid;
   grid-template-columns: 70px minmax(100px, 1fr) 70px;
@@ -190,30 +160,8 @@ const Link = styled.a`
   overflow-wrap: anywhere;
 `;
 
-const Empty = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 13px;
-`;
-
 const hasValues = (object = {}) => Object.values(object).some((value) => value !== '' && value != null);
 const score = (value) => value ?? '–';
-const normalizeLineup = (team = {}) => (Array.isArray(team.lineup) && team.lineup.length
-  ? team.lineup
-  : String(team.lineupText || team.alineacion || team.lineup || '').split('\n'))
-  .map((player) => {
-    if (typeof player === 'string') return player;
-    const name = player?.name || player?.nombre || player?.player || '';
-    const number = player?.number || player?.shirtNumber || player?.dorsal || '';
-    return name ? `${number ? `${number}. ` : ''}${name}` : number;
-  })
-  .map((player) => String(player).trim())
-  .filter(Boolean);
-const splitLineupPlayer = (value) => {
-  const text = String(value || '').trim();
-  const match = text.match(/^\s*(\d{1,2})\s*[.)\-:]?\s*(.+)$/);
-  return { number: match?.[1] || '', name: (match?.[2] || text).trim() };
-};
 
 export default function OpponentMatchReportDetailModal({ open, onClose, report, canMutate = false, canEdit = canMutate, canDelete = canMutate, onEdit, onDelete }) {
   const { t, i18n } = useTranslation();
@@ -226,11 +174,12 @@ export default function OpponentMatchReportDetailModal({ open, onClose, report, 
   const statsRows = ['possession', 'shots', 'shotsOnTarget', 'corners', 'fouls', 'offsides'];
   const tacticalRows = ['inPossession', 'outOfPossession', 'transitions', 'pressing', 'keyPlayers', 'strengths', 'weaknesses'];
   const setPieceRows = ['corners', 'freeKicks', 'throwIns', 'penalties'];
+  const campograms = normalizeCampograms(report.campograms, report.teamA, report.teamB);
 
   const exportPdf = async () => {
     try {
       setExporting(true);
-      await generateOpponentMatchReportPdf(report, t, i18n.language);
+      await generateOpponentMatchReportPdf({ ...report, campograms }, t, i18n.language);
     } catch (error) {
       toast.error(error.message || t('opponentMatch.errors.pdf'));
     } finally {
@@ -269,7 +218,6 @@ export default function OpponentMatchReportDetailModal({ open, onClose, report, 
             </Team>
           </Scoreboard>
           <Meta>
-            <Badge $tone={report.status === 'completed' ? 'success' : 'warning'}>{t(`opponentMatch.status.${report.status}`)}</Badge>
             <span><MdVisibility aria-hidden="true" /> {t('opponentMatch.focus')}: {focusLabel}</span>
             {date && <span><MdEvent aria-hidden="true" /> {date}</span>}
             {competition && <span><MdFlag aria-hidden="true" /> {competition}{report.stage ? ` · ${report.stage}` : ''}</span>}
@@ -277,24 +225,10 @@ export default function OpponentMatchReportDetailModal({ open, onClose, report, 
           </Meta>
         </Hero>
 
-        <Grid>
-          {['A', 'B'].map((letter) => {
-            const team = report[`team${letter}`];
-            const lineup = normalizeLineup(team);
-            return (
-              <Section key={letter}>
-                <SectionTitle>{t('opponentMatch.sections.lineupTeam', { team: team.name })}</SectionTitle>
-                <Panel>
-                  {team.coach && <TextBlock><strong>{t('opponentMatch.fields.coach')}</strong><p>{team.coach}</p></TextBlock>}
-                  {lineup.length ? <Lineup>{lineup.map((player, index) => {
-                    const parsed = splitLineupPlayer(player);
-                    return <LineupItem key={`${player}-${index}`}><ShirtNumber>{parsed.number || '–'}</ShirtNumber><span>{parsed.name}</span></LineupItem>;
-                  })}</Lineup> : <Empty>{t('opponentMatch.noLineup')}</Empty>}
-                </Panel>
-              </Section>
-            );
-          })}
-        </Grid>
+        <Section>
+          <SectionTitle>{t('opponentMatch.steps.campogram')}</SectionTitle>
+          <CampogramView campograms={campograms} teamNames={{ teamA: report.teamA.name, teamB: report.teamB.name }} t={t} />
+        </Section>
 
         {(hasValues(report.statsA) || hasValues(report.statsB)) && (
           <Section>

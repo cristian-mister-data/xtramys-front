@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   MdAdd,
   MdEvent,
-  MdFilterList,
   MdFlag,
   MdLocationOn,
   MdSearch,
@@ -18,7 +17,7 @@ import {
 } from '@/api/opponentMatchReport';
 import { getTournamentsByTeam } from '@/api/tournament';
 import { getRivalsByTeam } from '@/api/rival';
-import { Badge, Button, Input } from '@/ui/primitives';
+import { Button, Input } from '@/ui/primitives';
 import { confirmAction } from '@/ui/confirm';
 import { toast } from '@/ui/toast';
 import OpponentMatchReportFormModal from './OpponentMatchReportFormModal';
@@ -68,19 +67,6 @@ const Search = styled.label`
   input { padding-left: 38px; }
 
   @media (max-width: 540px) { min-width: 100%; }
-`;
-
-const Select = styled.select`
-  min-height: 42px;
-  padding: 9px 34px 9px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.inputBorder};
-  border-radius: ${({ theme }) => theme.radius.md};
-  background: ${({ theme }) => theme.colors.inputBg};
-  color: ${({ theme }) => theme.colors.text};
-  font: inherit;
-  font-size: 13px;
-  outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.borderFocus}; box-shadow: ${({ theme }) => theme.shadows.focus}; }
 `;
 
 const Count = styled.span`
@@ -188,7 +174,6 @@ export default function OpponentMatchReports({ selectedTeam, canMutate }) {
   const [rivals, setRivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
@@ -222,12 +207,11 @@ export default function OpponentMatchReports({ selectedTeam, canMutate }) {
   const filtered = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return reports.filter((report) => {
-      if (status !== 'all' && report.status !== status) return false;
       if (!normalizedQuery) return true;
       return [report.teamA?.name, report.teamB?.name, report.competitionName, report.tournamentId?.nombre, report.venue]
         .some((value) => value?.toLowerCase().includes(normalizedQuery));
     });
-  }, [reports, query, status]);
+  }, [reports, query]);
 
   const save = async (payload, id) => {
     const response = id ? await updateOpponentMatchReport(id, payload) : await createOpponentMatchReport(payload);
@@ -282,12 +266,6 @@ export default function OpponentMatchReports({ selectedTeam, canMutate }) {
           <MdSearch aria-hidden="true" />
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('opponentMatch.searchPlaceholder')} aria-label={t('opponentMatch.searchLabel')} />
         </Search>
-        <MdFilterList aria-hidden="true" />
-        <Select value={status} onChange={(event) => setStatus(event.target.value)} aria-label={t('opponentMatch.statusFilter')}>
-          <option value="all">{t('common.all')}</option>
-          <option value="draft">{t('opponentMatch.status.draft')}</option>
-          <option value="completed">{t('opponentMatch.status.completed')}</option>
-        </Select>
         <Count>{t('opponentMatch.reportCount', { count: filtered.length })}</Count>
       </Toolbar>
 
@@ -307,7 +285,6 @@ export default function OpponentMatchReports({ selectedTeam, canMutate }) {
             return (
               <ReportCard type="button" key={report._id} onClick={() => setViewing(report)} aria-label={t('opponentMatch.openReport', { home: report.teamA.name, away: report.teamB.name })}>
                 <CardTop>
-                  <Badge $tone={report.status === 'completed' ? 'success' : 'warning'}>{t(`opponentMatch.status.${report.status}`)}</Badge>
                   <span aria-label={t('opponentMatch.fields.watchedVia')}>{t(`opponentMatch.watchedVia.${report.watchedVia || 'other'}`)}</span>
                 </CardTop>
                 <Matchup>
