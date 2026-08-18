@@ -7,6 +7,7 @@ import { capturePayPalOrder } from '@/api/subscription';
 import { Card, Title, Button, Stack, Muted } from '@/ui/primitives';
 import styled from 'styled-components';
 import { MdCheckCircle, MdError, MdHourglassEmpty } from 'react-icons/md';
+import { getStoredAttribution } from '@/utils/attribution';
 
 const Page = styled.div`
   min-height: 100dvh;
@@ -41,7 +42,7 @@ export default function PayPalSuccess() {
     }
 
     try {
-      const res = await capturePayPalOrder(orderId);
+      const res = await capturePayPalOrder(orderId, getStoredAttribution());
       if (res.subscriptionStatus === 'active' || res.plan === 'pro') {
         await dispatch(checkSubscription()).unwrap();
         setStep('success');

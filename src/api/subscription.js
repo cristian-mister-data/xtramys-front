@@ -40,14 +40,14 @@ export const cancelLicenses = (quantity) =>
 export const previewLicenses = (quantity) =>
   api.post('/stripe/preview-licenses', { quantity }).then((res) => res.data);
 
-export const verifyPayPalSubscription = (subscriptionId) =>
-  api.post('/paypal/verify-subscription', { subscriptionId }).then((res) => {
+export const verifyPayPalSubscription = (subscriptionId, attribution = null) =>
+  api.post('/paypal/verify-subscription', { subscriptionId, attribution }).then((res) => {
     clearSubscriptionCache();
     return res.data;
   });
 
-export const capturePayPalOrder = (orderId) =>
-  api.post('/paypal/capture-order', { orderId }).then((res) => {
+export const capturePayPalOrder = (orderId, attribution = null) =>
+  api.post('/paypal/capture-order', { orderId, attribution }).then((res) => {
     clearSubscriptionCache();
     return res.data;
   });

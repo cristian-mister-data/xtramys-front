@@ -4,7 +4,7 @@
 import axios from 'axios';
 import i18n from '../i18n';
 import { API_URL, BACKEND_URL } from '../config';
-import { loadToken, loadUser } from '../auth/storage';
+import { loadToken, loadUser, loadWorkspace } from '../auth/storage';
 
 let _networkErrorHandler = null;
 export const setNetworkErrorHandler = (h) => {
@@ -218,7 +218,9 @@ function attachInterceptors(instance) {
     (config) => {
       const method = String(config.method || 'get').toLowerCase();
       const user = loadUser?.();
-      const cacheUserKey = `${user?._id || user?.id || ''}:${user?.accessMode || user?.plan || ''}`;
+      const workspace = loadWorkspace?.();
+      const workspaceId = workspace?.team?._id || workspace?.teamId || '';
+      const cacheUserKey = `${user?._id || user?.id || ''}:${user?.accessMode || user?.plan || ''}:${workspaceId}`;
       if (cacheUserKey !== lastCacheUserKey) {
         lastCacheUserKey = cacheUserKey;
         clearGetCache();
@@ -231,6 +233,7 @@ function attachInterceptors(instance) {
       // if cookies are blocked by browser settings or privacy extensions.
       const token = loadToken();
       if (token) config.headers.Authorization = `Bearer ${token}`;
+      if (workspaceId) config.headers['X-Team-Id'] = workspaceId;
       
       const isLongTimeout = LONG_TIMEOUT_ROUTES.some(route => config.url?.includes(route));
       if (isLongTimeout && !config.timeout) {

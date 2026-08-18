@@ -6,8 +6,9 @@ import { isNative } from '@/platform/capacitor';
 export const TOKEN_STORAGE_KEY = 'token'; // solo si AUTH_MODE=bearer
 export const MARKETING_TOKEN_STORAGE_KEY = 'auth_token';
 export const USER_STORAGE_KEY = 'usuario';
+export const WORKSPACE_STORAGE_KEY = 'workspace';
 
-const keys = [USER_STORAGE_KEY, TOKEN_STORAGE_KEY, MARKETING_TOKEN_STORAGE_KEY];
+const keys = [USER_STORAGE_KEY, TOKEN_STORAGE_KEY, MARKETING_TOKEN_STORAGE_KEY, WORKSPACE_STORAGE_KEY];
 
 const setPreference = (key, value) => {
   if (!isNative) return Promise.resolve();
@@ -70,6 +71,34 @@ export const saveToken = async (token) => {
       setPreference(TOKEN_STORAGE_KEY, token),
       setPreference(MARKETING_TOKEN_STORAGE_KEY, token),
     ]);
+  } catch (_e) {
+    // ignore
+  }
+};
+
+export const saveWorkspace = (workspace) => {
+  try {
+    const value = JSON.stringify(workspace);
+    localStorage.setItem(WORKSPACE_STORAGE_KEY, value);
+    setPreference(WORKSPACE_STORAGE_KEY, value);
+  } catch (_e) {
+    // Storage is an optimization; the API remains the source of truth.
+  }
+};
+
+export const loadWorkspace = () => {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_e) {
+    return null;
+  }
+};
+
+export const clearWorkspace = () => {
+  try {
+    localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+    removePreference(WORKSPACE_STORAGE_KEY);
   } catch (_e) {
     // ignore
   }

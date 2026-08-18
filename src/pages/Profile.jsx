@@ -30,7 +30,8 @@ import {
 import { updateUsuario, logoutThunk } from '@/store/slices/user/userThunks';
 import { setUser } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
-import { RESET_STORE } from '@/store/actionTypes';
+import { RESET_STORE, RESET_WORKSPACE } from '@/store/actionTypes';
+import { selectWorkspace } from '@/store/slices/workspace/workspaceSlice';
 import { saveToken, saveUser } from '@/auth/storage';
 import { createPortalSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
 import api from '@/api/client';
@@ -612,8 +613,11 @@ export default function Profile() {
   const navigate = useNavigate();
   const { openTutorial } = useTutorial();
   const user = useSelector((s) => s.usuario?.user);
+  const workspaces = useSelector((s) => s.workspace?.items || []);
+  const selectedWorkspace = useSelector((s) => s.workspace?.selected);
   const { mode, toggleTheme } = useThemeMode();
   const isAdmin = user?.role === 'admin';
+  const isClubAdminMode = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
 
   const [editing, setEditing] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -670,6 +674,14 @@ export default function Profile() {
     // Cargar estado de suscripción siempre para tener datos frescos
     dispatch(checkSubscription());
   }, [dispatch]);
+
+  const handleWorkspaceChange = async (workspace) => {
+    const currentId = selectedWorkspace?.team?._id || selectedWorkspace?.teamId;
+    if (String(currentId) === String(workspace.team?._id)) return;
+    await dispatch(selectWorkspace(workspace)).unwrap();
+    dispatch({ type: RESET_WORKSPACE });
+    navigate('/app');
+  };
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -1169,6 +1181,40 @@ export default function Profile() {
       </LeftColumn>
 
       <RightColumn>
+        {workspaces.length > 0 && !isClubAdminMode ? (
+          <FormCard>
+            <CardHeader>
+              <CardTitle>🛡️ {t('workspace.profileTitle')}</CardTitle>
+            </CardHeader>
+            <Muted style={{ marginBottom: 12 }}>{t('workspace.profileSubtitle')}</Muted>
+            <Stack style={{ gap: 10 }}>
+              {workspaces.map((workspace) => {
+                const teamId = workspace.team?._id;
+                const currentId = selectedWorkspace?.team?._id || selectedWorkspace?.teamId;
+                const active = String(teamId) === String(currentId);
+                return (
+                  <LangBtn
+                    key={teamId}
+                    type="button"
+                    $active={active}
+                    onClick={() => handleWorkspaceChange(workspace)}
+                  >
+                    <span style={{ fontSize: 22 }}>{workspace.historical ? '🕘' : '🛡️'}</span>
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <div style={{ fontWeight: 700 }}>{workspace.team?.nombre}</div>
+                      <Muted style={{ fontSize: 12 }}>
+                        {workspace.historical
+                          ? t('workspace.historical')
+                          : workspace.canWrite ? t('workspace.manage') : t('workspace.view')}
+                      </Muted>
+                    </div>
+                    {active ? <span style={{ color: '#10b981' }}>✓</span> : null}
+                  </LangBtn>
+                );
+              })}
+            </Stack>
+          </FormCard>
+        ) : null}
         {isAdmin ? (
           <FormCard>
             <CardHeader>

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import RequireSeason from './RequireSeason';
+import WorkspaceGate from './WorkspaceGate';
 import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
@@ -47,6 +48,7 @@ const Profile = lazy(() => import('@/pages/Profile'));
 const Friends = lazy(() => import('@/pages/Friends'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
 const ClubDashboard = lazy(() => import('@/pages/club/Dashboard'));
+const TeamSelect = lazy(() => import('@/pages/TeamSelect'));
 
 const TacticalBoardPage = lazy(() => import('@/pages/TacticalBoard'));
 const VideoEditor = lazy(() => import('@/pages/VideoEditor'));
@@ -176,13 +178,24 @@ export default function AppRouter() {
         )}
       />
 
+      <Route
+        path="/team-select"
+        element={(
+          <ProtectedRoute>
+            {lazy_(<TeamSelect />)}
+          </ProtectedRoute>
+        )}
+      />
+
       {/* App (protegidas) */}
       <Route
         element={
           <ProtectedRoute>
-            <RequireSeason>
-              <AppLayout />
-            </RequireSeason>
+            <WorkspaceGate>
+              <RequireSeason>
+                <AppLayout />
+              </RequireSeason>
+            </WorkspaceGate>
           </ProtectedRoute>
         }
       >

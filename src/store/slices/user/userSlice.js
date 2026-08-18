@@ -128,8 +128,10 @@ const userSlice = createSlice({
           s.user.paymentProvider = a.payload?.paymentProvider || null;
           s.user.subscriptionStartedAt = a.payload?.startedAt || null;
           s.user.subscriptionCanceledAt = a.payload?.canceledAt || null;
-          s.user.clubMaxUsers = a.payload?.maxUsers || null;
-          s.user.clubActiveUsers = a.payload?.activeUsers || null;
+          s.user.clubMaxTeams = a.payload?.maxTeams ?? a.payload?.maxUsers ?? null;
+          s.user.clubActiveTeams = a.payload?.activeTeams ?? a.payload?.activeUsers ?? null;
+          s.user.clubMaxUsers = s.user.clubMaxTeams;
+          s.user.clubActiveUsers = s.user.clubActiveTeams;
           s.user.invoices = a.payload?.invoices || [];
         }
       });

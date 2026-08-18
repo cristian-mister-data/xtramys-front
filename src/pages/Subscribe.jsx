@@ -13,6 +13,7 @@ import xtramysWhiteLogo from '@/images/xtramys_white.webp';
 import { websiteUrl } from '@/platform/externalWeb';
 import { checkSubscription, logoutThunk } from '@/store/slices/user/userThunks';
 import { useThemeMode } from '@/theme/ThemeContext';
+import { captureAttributionFromLocation, getStoredAttribution } from '@/utils/attribution';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 
 const CLUB_MIN_QUANTITY = 5;
@@ -676,6 +677,10 @@ export default function Subscribe() {
   ) && user?.subscriptionCurrentPeriodEnd && new Date() < new Date(user.subscriptionCurrentPeriodEnd);
 
   useEffect(() => {
+    captureAttributionFromLocation();
+  }, []);
+
+  useEffect(() => {
     const nextQuantity = Number.parseInt(new URLSearchParams(location.search).get('quantity'), 10);
     if (nextQuantity >= CLUB_MIN_QUANTITY) setQuantity(nextQuantity);
   }, [location.search]);
@@ -693,9 +698,10 @@ export default function Subscribe() {
     setLoading(true);
     setError(null);
     try {
+      const attribution = getStoredAttribution();
       const data = isClubPlan
-        ? await createCheckoutSession(window.location.origin, { priceType: 'club', quantity })
-        : await createCheckoutSession(window.location.origin);
+        ? await createCheckoutSession(window.location.origin, { priceType: 'club', quantity, attribution })
+        : await createCheckoutSession(window.location.origin, { attribution });
       if (data.url) {
         sessionStorage.setItem('xtramys:postCheckoutPath', isClubPlan ? '/club/dashboard' : '/season/create');
         window.location.href = data.url;
@@ -710,7 +716,7 @@ export default function Subscribe() {
   const handlePayPalApprove = async (data) => {
     setError(null);
     try {
-      await verifyPayPalSubscription(data.subscriptionID);
+      await verifyPayPalSubscription(data.subscriptionID, getStoredAttribution());
       await dispatch(checkSubscription()).unwrap();
       navigate('/season/create', { replace: true });
     } catch (err) {

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdCreditCardOff, MdEdit, MdCalendarMonth, MdSportsSoccer, MdRestaurant, MdLibraryBooks, MdSportsHandball } from 'react-icons/md';
+import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMail, MdEdit, MdCalendarMonth, MdSportsSoccer, MdRestaurant, MdLibraryBooks, MdSportsHandball } from 'react-icons/md';
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
@@ -12,6 +12,7 @@ import { checkSubscription } from '@/store/slices/user/userThunks';
 import { RESET_WORKSPACE } from '@/store/actionTypes';
 import Modal from '@/ui/Modal';
 import { isNative } from '@/platform/capacitor';
+import TeamPermissionManager from './TeamPermissionManager';
 
 const isDuplicateSeasonError = (error) => {
   const message = `${error?.message || ''} ${error?.response?.data?.mensaje || ''} ${error?.response?.data?.message || ''}`.toLowerCase();
@@ -339,6 +340,7 @@ const ConfirmBox = styled.div`
 `;
 
 const Page = styled.div`
+  width: 100%; min-width: 0; box-sizing: border-box; overflow-x: hidden;
   padding: 24px;
   max-width: 1200px;
   margin: 0 auto;
@@ -691,9 +693,6 @@ export default function ClubDashboard() {
   const [reduceQty, setReduceQty] = useState(5);
   const [reducingQty, setReducingQty] = useState(false);
   const [selectedCoachIds, setSelectedCoachIds] = useState([]);
-  // Cancel individual license (per coach)
-  const [cancelLicenseModal, setCancelLicenseModal] = useState(null); // { member }
-  const [cancelingLicense, setCancelingLicense] = useState(false);
   // Cancel subscription modal, 2-step redesign
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const [cancelingSub, setCancelingSub] = useState(false);
@@ -1077,8 +1076,8 @@ export default function ClubDashboard() {
       toast.error(`Debes mantener al menos ${CLUB_MIN_LICENSES} licencias y cancelar como mínimo una.`);
       return;
     }
-    const activeCoaches = (data?.members || []).filter(m => m.clubMemberStatus === 'active');
-    const needToFree = Math.max(0, activeCoaches.length - cancelKeepQty);
+    const activeTeams = (data?.teams || []).filter((team) => team.licenseActive !== false);
+    const needToFree = Math.max(0, activeTeams.length - cancelKeepQty);
     if (needToFree > 0) {
       setCancelSelectedIds([]);
       setCancelStep(2);
@@ -1109,8 +1108,8 @@ export default function ClubDashboard() {
         });
         toast.success('Cancelación programada. Mantendrás el acceso hasta la renovación de cada bloque.');
       } else {
-        const activeCoaches = (data?.members || []).filter(m => m.clubMemberStatus === 'active');
-        const needToFree = Math.max(0, activeCoaches.length - cancelKeepQty);
+        const activeTeams = (data?.teams || []).filter((team) => team.licenseActive !== false);
+        const needToFree = Math.max(0, activeTeams.length - cancelKeepQty);
         await api.post('/stripe/cancel-licenses', {
           quantity: cancelKeepQty,
           keepQuantity: cancelKeepQty,
@@ -1119,8 +1118,7 @@ export default function ClubDashboard() {
           strategy: 'earliest_period_end_first',
           minRenewingLicenses: CLUB_MIN_LICENSES,
           cancellationPlan: toCancellationPlanPayload(cancellationPlan),
-          usersToDeactivate: [],
-          usersToDeactivateAtPeriodEnd: needToFree > 0 ? cancelSelectedIds : [],
+          teamsToDeactivate: needToFree > 0 ? cancelSelectedIds : [],
         });
         toast.success(`Cancelación programada: ${cancelQuantity} licencia${cancelQuantity !== 1 ? 's' : ''} dejará${cancelQuantity !== 1 ? 'n' : ''} de renovar al vencimiento.`);
         fetchClubData();
@@ -1233,56 +1231,11 @@ export default function ClubDashboard() {
     }
   };
 
-  const handleCancelLicense = async () => {
-    if (!cancelLicenseModal) return;
-    const { member } = cancelLicenseModal;
-    const currentMax = data?.club?.maxUsers || CLUB_MIN_LICENSES;
-    const newMax = currentMax - 1;
-
-    if (subStatus?.cancelAtPeriodEnd) {
-            toast.error(t('clubDashboard.errorSubscriptionCancelledForPeriodEndGeneral', 'La suscripción ya está cancelada para final de período. Reactívala si quieres cambiar licencias.'));
-      setCancelLicenseModal(null);
-      return;
-    }
-
-    if (newMax < CLUB_MIN_LICENSES) {
-            toast.error(t('clubDashboard.errorBelowMinimumLicenses', 'No puedes bajar de {{min}} licencias. Usa {{btn}} para cancelar todo.', { min: CLUB_MIN_LICENSES, btn: t('clubDashboard.cancelSubscription') }));
-      setCancelLicenseModal(null);
-      return;
-    }
-
-    setCancelingLicense(true);
-    try {
-      const cancellationPlan = createCancellationPlan(licenseBatches, 1);
-      await api.post('/stripe/cancel-licenses', {
-        quantity: newMax,
-        keepQuantity: newMax,
-        cancelQuantity: 1,
-        effectiveAtPeriodEnd: true,
-        strategy: 'earliest_period_end_first',
-        minRenewingLicenses: CLUB_MIN_LICENSES,
-        cancellationPlan: toCancellationPlanPayload(cancellationPlan),
-        usersToDeactivate: [],
-        usersToDeactivateAtPeriodEnd: member.clubMemberStatus === 'active' ? [member._id] : [],
-      });
-            toast.success(t('clubDashboard.successCancelLicenseScheduled', 'Cancelación programada. {{name}} mantendrá el acceso hasta la renovación de la licencia.', { name: member.nombre }));
-      persistLicenseScheduleOverrides((prev) => mergeCancellationOverrides(prev, cancellationPlan));
-      setCancelLicenseModal(null);
-      fetchClubData();
-      fetchSubStatus();
-      dispatch(checkSubscription());
-    } catch (error) {
-            toast.error(error.response?.data?.mensaje || error.message || t('clubDashboard.errorCancelLicense', 'Error al cancelar la licencia'));
-    } finally {
-      setCancelingLicense(false);
-    }
-  };
-
   const handleReduceLicenses = async (e) => {
     e.preventDefault();
     const currentMax = data?.club?.maxUsers || 0;
-    const activeCoaches = data.members.filter(m => m.clubMemberStatus === 'active');
-    const needToFree = Math.max(0, activeCoaches.length - reduceQty);
+    const activeTeams = (data.teams || []).filter((team) => team.licenseActive !== false);
+    const needToFree = Math.max(0, activeTeams.length - reduceQty);
 
     if (subStatus?.cancelAtPeriodEnd) {
       toast.error('La suscripción ya está cancelada para final de período. Reactívala si quieres cambiar licencias.');
@@ -1312,8 +1265,7 @@ export default function ClubDashboard() {
         strategy: 'earliest_period_end_first',
         minRenewingLicenses: CLUB_MIN_LICENSES,
         cancellationPlan: toCancellationPlanPayload(cancellationPlan),
-        usersToDeactivate: [],
-        usersToDeactivateAtPeriodEnd: selectedCoachIds,
+        teamsToDeactivate: selectedCoachIds,
       });
             toast.success(response.data?.mensaje || t('clubDashboard.successCancelLicenses', 'Cancelación de licencias programada correctamente.'));
       persistLicenseScheduleOverrides((prev) => mergeCancellationOverrides(prev, cancellationPlan));
@@ -1336,10 +1288,6 @@ export default function ClubDashboard() {
             toast.error(t('clubDashboard.errorSubscriptionCancelledForPeriodEndInvite', 'La suscripción está cancelada para final de período. Reactívala antes de invitar entrenadores.'));
       return;
     }
-    if (isFull) {
-            toast.error(t('clubDashboard.errorNoFreeLicensesInvite', 'No hay licencias libres. Añade licencias antes de invitar entrenadores.'));
-      return;
-    }
     setInviting(true);
     try {
       await api.post('/club/invite', { email: inviteEmail });
@@ -1359,10 +1307,6 @@ export default function ClubDashboard() {
     const isActivating = confirmModal.type === 'activate' || confirmModal.member?.clubMemberStatus !== 'active';
     if (isActivating && subStatus?.cancelAtPeriodEnd) {
             toast.error(t('clubDashboard.errorSubscriptionCancelledForPeriodEndReactivate', 'La suscripción está cancelada para final de período. Reactívala antes de reactivar entrenadores.'));
-      return;
-    }
-    if (isActivating && isFull) {
-            toast.error(t('clubDashboard.errorNoFreeLicensesReactivate', 'No hay licencias libres para reactivar este entrenador.'));
       return;
     }
     setActionLoading(true);
@@ -1409,8 +1353,8 @@ export default function ClubDashboard() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const activeCount = club.activeUsers || 0;
-  const maxCount = club.maxUsers || 0;
+  const activeCount = club.activeTeams ?? (data.teams || []).filter((team) => team.licenseActive !== false).length;
+  const maxCount = club.maxTeams ?? club.maxUsers ?? 0;
   const availableSlots = Math.max(0, maxCount - activeCount);
   const isFull = activeCount >= maxCount;
   const pct = maxCount > 0 ? Math.min(100, Math.round((activeCount / maxCount) * 100)) : 0;
@@ -1436,7 +1380,7 @@ export default function ClubDashboard() {
         <div>
           <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>{club.name}</h1>
           <p style={{ margin: '6px 0 0', opacity: 0.8, fontSize: 13 }}>
-            {t('clubDashboard.adminPanel')} · {t('clubDashboard.licensesUsed', { used: activeCount, total: maxCount })}
+            {t('clubDashboard.adminPanel')} · {t('clubTeamManager.licenseCount', { used: activeCount, total: maxCount })}
           </p>
           <LicenseBar $full={isFull}>
             <div style={{ width: `${pct}%` }} />
@@ -1485,14 +1429,14 @@ export default function ClubDashboard() {
         </Button>
         <Button
           style={{
-            background: isFull || isSubscriptionEnding ? 'rgba(255,255,255,0.15)' : '#10b981',
+            background: isSubscriptionEnding ? 'rgba(255,255,255,0.15)' : '#10b981',
             color: '#fff',
             border: 'none',
             padding: '12px 20px',
             borderRadius: 10,
-            boxShadow: isFull || isSubscriptionEnding ? 'none' : '0 4px 12px rgba(16,185,129,0.3)',
-            cursor: isFull || isSubscriptionEnding ? 'not-allowed' : 'pointer',
-            opacity: isFull || isSubscriptionEnding ? 0.6 : 1,
+            boxShadow: isSubscriptionEnding ? 'none' : '0 4px 12px rgba(16,185,129,0.3)',
+            cursor: isSubscriptionEnding ? 'not-allowed' : 'pointer',
+            opacity: isSubscriptionEnding ? 0.6 : 1,
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -1500,12 +1444,12 @@ export default function ClubDashboard() {
             fontSize: 14,
             justifyContent: 'center',
           }}
-          onClick={() => !isFull && !isSubscriptionEnding && setIsInviteOpen(true)}
-          disabled={isFull || isSubscriptionEnding}
-                    title={isFull ? t('clubDashboard.limitReachedTitle', 'Límite de licencias alcanzado') : t('clubDashboard.inviteMemberTitle', 'Invitar miembro')}
+          onClick={() => !isSubscriptionEnding && setIsInviteOpen(true)}
+          disabled={isSubscriptionEnding}
+          title={t('clubDashboard.inviteMemberTitle', 'Invitar miembro')}
         >
           <MdPersonAdd size={18} />
-                    {isFull ? t('clubDashboard.limitReached', 'Límite alcanzado') : t('club.actions.invite', 'Invitar Miembro')}
+          {t('club.actions.invite', 'Invitar Miembro')}
         </Button>
         </BannerActions>
       </ClubBanner>
@@ -1514,7 +1458,7 @@ export default function ClubDashboard() {
       <StatsGrid>
         <StatCard $color="linear-gradient(90deg, #10b981, #34d399)">
           <StatIcon><MdShield /></StatIcon>
-          <StatLabel>{t('club.activeUsers', 'Licencias activas')}</StatLabel>
+          <StatLabel>{t('clubTeamManager.activeTeamLicenses')}</StatLabel>
           <StatNumber>{activeCount} / {maxCount}</StatNumber>
                     <Muted style={{ fontSize: 12 }}>{t('clubDashboard.freeLicensesCount', '{{count}} libres', { count: availableSlots })}</Muted>
         </StatCard>
@@ -1534,6 +1478,10 @@ export default function ClubDashboard() {
           <Muted style={{ fontSize: 12 }}>{t('clubDashboard.sharedTactics')}</Muted>
         </StatCard>
       </StatsGrid>
+
+      {club.permissionsModel === 'teams' ? (
+        <TeamPermissionManager data={data} onRefresh={fetchClubData} />
+      ) : null}
 
       {/* Recursos Compartidos del Club */}
       <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>
@@ -2002,23 +1950,12 @@ export default function ClubDashboard() {
                             $type="success"
                             title={t('clubDashboard.reactivateAccessTitle', 'Reactivar acceso')}
                             onClick={() => setConfirmModal({ type: 'activate', member })}
-                            disabled={isFull}
+                            disabled={false}
                           >
                             <MdLockOpen size={14} />
                             {t('clubDashboard.reactivateBtn', 'Reactivar')}
                           </ActionBtn>
                         ) : null}
-                        {/* Cancel license (suspend + reduce Stripe by 1) ? only if > 5 licenses */}
-                        {!isNative && (isActive || member.clubMemberStatus === 'inactive') && maxCount > 5 && subStatus?.stripeSubscriptionId && !subStatus?.cancelAtPeriodEnd && (
-                                                    <ActionBtn
-                            $type="danger"
-                            title={t('clubDashboard.suspendAndReduceTitle', 'Suspender acceso Y reducir 1 licencia de Stripe (ahorra dinero)')}
-                            onClick={() => setCancelLicenseModal({ member })}
-                          >
-                            <MdCreditCardOff size={14} />
-                            {t('clubDashboard.cancelLicenseBtn', 'Cancelar licencia')}
-                          </ActionBtn>
-                        )}
                         {/* Remove from club */}
                                                 <ActionBtn
                           $type="danger"
@@ -2237,12 +2174,6 @@ export default function ClubDashboard() {
               {t('clubDashboard.reactivateMemberDesc')}
             </p>
           )}
-          {confirmModal?.type === 'activate' && isFull && (
-            <div style={{ color: '#ef4444', fontSize: 13, fontWeight: 600 }}>
-              {t('clubDashboard.noLicensesAvailable')}
-            </div>
-          )}
-
           <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
             <Button type="button" $variant="secondary" onClick={() => setConfirmModal(null)}>
               {t('clubDashboard.cancel')}
@@ -2250,7 +2181,7 @@ export default function ClubDashboard() {
             <Button
               type="button"
               $variant={confirmModal?.type === 'remove' ? 'danger' : 'primary'}
-              disabled={actionLoading || (confirmModal?.type === 'activate' && isFull)}
+              disabled={actionLoading}
               onClick={handleConfirmAction}
             >
               {actionLoading
@@ -2379,11 +2310,11 @@ export default function ClubDashboard() {
       >
         <form onSubmit={handleReduceLicenses}>
           {(() => {
-            const currentMax = data?.club?.maxUsers || CLUB_MIN_LICENSES;
+            const currentMax = data?.club?.maxTeams ?? data?.club?.maxUsers ?? CLUB_MIN_LICENSES;
             const canCancelPartially = currentMax > CLUB_MIN_LICENSES;
             const partialCancellationPlan = createCancellationPlan(licenseBatches, Math.max(0, currentMax - cancelKeepQty));
-            const activeCoaches = data.members.filter(m => m.clubMemberStatus === 'active');
-            const needToFree = Math.max(0, activeCoaches.length - reduceQty);
+            const activeTeams = (data.teams || []).filter((team) => team.licenseActive !== false);
+            const needToFree = Math.max(0, activeTeams.length - reduceQty);
             const invalidRange = reduceQty > 0 && reduceQty < 5;
             const notAReduction = reduceQty >= currentMax;
 
@@ -2437,22 +2368,22 @@ export default function ClubDashboard() {
                   )}
                 </Field>
 
-                {/* Coach selector: only shown when we need to deactivate coaches */}
+                {/* Team selector: a reduced license count must leave only licensed teams active. */}
                 {needToFree > 0 && (
                   <Field>
                     <Label style={{ color: '#f59e0b', fontWeight: 700 }}>
-                      {t('clubDashboard.selectCoachesLabel', { qty: needToFree, plural: needToFree > 1 ? 'es' : '' })}
+                      {t('clubTeamManager.selectTeamsLabel', { count: needToFree })}
                     </Label>
                     <Muted style={{ fontSize: 12, marginBottom: 8 }}>
-                      {t('clubDashboard.selectCoachesDesc', { active: activeCoaches.length, keep: reduceQty, plural: needToFree > 1 ? 'es' : '', selected: selectedCoachIds.length, need: needToFree })}
+                      {t('clubTeamManager.selectTeamsDescription', { active: activeTeams.length, keep: reduceQty, selected: selectedCoachIds.length, need: needToFree })}
                     </Muted>
                     <div style={{ border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
-                      {activeCoaches.map((coach, idx) => {
-                        const isChecked = selectedCoachIds.includes(coach._id);
+                      {activeTeams.map((team, idx) => {
+                        const isChecked = selectedCoachIds.includes(team._id);
                         const isDisabled = !isChecked && selectedCoachIds.length >= needToFree;
                         return (
                           <label
-                            key={coach._id}
+                            key={team._id}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -2474,24 +2405,24 @@ export default function ClubDashboard() {
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   if (selectedCoachIds.length < needToFree) {
-                                    setSelectedCoachIds([...selectedCoachIds, coach._id]);
+                                    setSelectedCoachIds([...selectedCoachIds, team._id]);
                                   }
                                 } else {
-                                  setSelectedCoachIds(selectedCoachIds.filter(id => id !== coach._id));
+                                  setSelectedCoachIds(selectedCoachIds.filter(id => id !== team._id));
                                 }
                               }}
                               style={{ width: 16, height: 16, flexShrink: 0 }}
                             />
                             <div>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
-                                {coach.nombre} {coach.apellido}
+                                {team.nombre}
                                 {isChecked && (
                                   <span style={{ color: '#ef4444', fontSize: 11, fontWeight: 600, marginLeft: 8 }}>
                                     {t('clubDashboard.atExpirationLabel')}
                                   </span>
                                 )}
                               </div>
-                              <div style={{ fontSize: 11, opacity: 0.6 }}>{coach.correo}</div>
+                              <div style={{ fontSize: 11, opacity: 0.6 }}>{team.temporada?.año || ''}</div>
                             </div>
                           </label>
                         );
@@ -2499,7 +2430,7 @@ export default function ClubDashboard() {
                     </div>
                     {selectedCoachIds.length === needToFree && (
                       <Muted style={{ color: '#10b981', fontSize: 11, marginTop: 6, fontWeight: 600 }}>
-                        {t('clubDashboard.coachesSelectedReady', { qty: needToFree, plural: needToFree > 1 ? 'es' : '' })}
+                        {t('clubTeamManager.teamsSelectedReady', { count: needToFree })}
                       </Muted>
                     )}
                   </Field>
@@ -2700,8 +2631,8 @@ export default function ClubDashboard() {
 
           {/* STEP 2: pick users to deactivate (partial) or confirm (all) */}
           {cancelStep === 2 && (() => {
-            const activeCoaches = (data?.members || []).filter(m => m.clubMemberStatus === 'active');
-            const needToFree = cancelType === 'partial' ? Math.max(0, activeCoaches.length - cancelKeepQty) : 0;
+            const activeTeams = (data?.teams || []).filter((team) => team.licenseActive !== false);
+            const needToFree = cancelType === 'partial' ? Math.max(0, activeTeams.length - cancelKeepQty) : 0;
             const selectionComplete = needToFree === 0 || cancelSelectedIds.length === needToFree;
             const cancelQuantity = cancelType === 'partial' ? (data?.club?.maxUsers || 0) - cancelKeepQty : (data?.club?.maxUsers || 0);
             const cancellationPlan = createCancellationPlan(licenseBatches, cancelQuantity);
@@ -2756,22 +2687,22 @@ export default function ClubDashboard() {
                   </div>
                 </BillingNoticeBox>
 
-                {/* User selection (only for partial when there are conflicts) */}
+                {/* Team selection (only for partial reductions with active-team conflicts) */}
                 {cancelType === 'partial' && needToFree > 0 && (
                   <Field>
                     <Label style={{ color: '#f59e0b', fontWeight: 700 }}>
-                      {t('clubDashboard.selectCoachesLabel', { qty: needToFree, plural: needToFree > 1 ? 'es' : '' })}
+                      {t('clubTeamManager.selectTeamsLabel', { count: needToFree })}
                     </Label>
                     <Muted style={{ fontSize: 12, marginBottom: 8 }}>
-                      {t('clubDashboard.selectCoachesDescCancel', { active: activeCoaches.length, keep: cancelKeepQty, plural: needToFree > 1 ? 'es' : '', selected: cancelSelectedIds.length, need: needToFree })}
+                      {t('clubTeamManager.selectTeamsDescription', { active: activeTeams.length, keep: cancelKeepQty, selected: cancelSelectedIds.length, need: needToFree })}
                     </Muted>
                     <div style={{ border: '1px solid rgba(245,158,11,0.3)', borderRadius: 10, overflow: 'hidden', maxHeight: 240, overflowY: 'auto' }}>
-                      {activeCoaches.map((coach, idx) => {
-                        const isChecked = cancelSelectedIds.includes(coach._id);
+                      {activeTeams.map((team, idx) => {
+                        const isChecked = cancelSelectedIds.includes(team._id);
                         const isDisabled = !isChecked && cancelSelectedIds.length >= needToFree;
                         return (
                           <label
-                            key={coach._id}
+                            key={team._id}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -2793,25 +2724,23 @@ export default function ClubDashboard() {
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   if (cancelSelectedIds.length < needToFree) {
-                                    setCancelSelectedIds(ids => [...ids, coach._id]);
+                                    setCancelSelectedIds(ids => [...ids, team._id]);
                                   }
                                 } else {
-                                  setCancelSelectedIds(ids => ids.filter(id => id !== coach._id));
+                                  setCancelSelectedIds(ids => ids.filter(id => id !== team._id));
                                 }
                               }}
                               style={{ width: 16, height: 16, flexShrink: 0 }}
                             />
-                            <Avatar $src={coach.imagen} style={{ width: 30, height: 30, fontSize: 11, flexShrink: 0 }}>
-                              {!coach.imagen && `${coach.nombre?.[0] || ''}${coach.apellido?.[0] || ''}`.toUpperCase()}
-                            </Avatar>
+                            <MdShield size={24} />
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
-                                {coach.nombre} {coach.apellido}
+                                {team.nombre}
                                 {isChecked && (
                                   <span style={{ color: '#ef4444', fontSize: 11, fontWeight: 600, marginLeft: 8 }}>{t('clubDashboard.atExpirationLabel')}</span>
                                 )}
                               </div>
-                              <div style={{ fontSize: 11, opacity: 0.6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{coach.correo}</div>
+                              <div style={{ fontSize: 11, opacity: 0.6 }}>{team.temporada?.año || ''}</div>
                             </div>
                           </label>
                         );
@@ -2819,7 +2748,7 @@ export default function ClubDashboard() {
                     </div>
                     {selectionComplete && (
                       <Muted style={{ color: '#10b981', fontSize: 11, marginTop: 6, fontWeight: 600 }}>
-                        {t('clubDashboard.coachesSelectedReady', { qty: needToFree, plural: needToFree > 1 ? 'es' : '' })}
+                        {t('clubTeamManager.teamsSelectedReady', { count: needToFree })}
                       </Muted>
                     )}
                   </Field>
@@ -2848,61 +2777,6 @@ export default function ClubDashboard() {
 
         </Stack>
       </Modal>
-      {/* CANCEL INDIVIDUAL LICENSE MODAL */}
-      <Modal
-        open={!!cancelLicenseModal}
-        onClose={() => setCancelLicenseModal(null)}
-        title={t('clubDashboard.cancelIndividualLicenseTitle')}
-      >
-        <Stack $gap={16}>
-          <ConfirmBox>
-            <strong>{cancelLicenseModal?.member?.nombre} {cancelLicenseModal?.member?.apellido}</strong>
-            <br />
-            <span style={{ fontSize: 13, opacity: 0.7 }}>{cancelLicenseModal?.member?.correo}</span>
-          </ConfirmBox>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6 }}>
-            {t('clubDashboard.cancelIndividualLicenseDesc')}
-          </p>
-          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.8 }}>
-            {cancelLicenseModal?.member?.clubMemberStatus === 'active' && (
-              <li>{t('clubDashboard.accessMaintainedUntilExpiration')}</li>
-            )}
-            <li>
-              {t('clubDashboard.planWillDecreaseLabel', { current: maxCount, next: maxCount - 1 })}
-            </li>
-          </ul>
-          {maxCount - 1 < 5 && (
-            <InfoNotice style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: '#fca5a5' }}>
-              {t('clubDashboard.cannotGoBelowMinimumNotice', { min: 5, btn: t('clubDashboard.cancelSubscription') })}
-            </InfoNotice>
-          )}
-
-          <BillingNoticeBox>
-            <BillingNoticeTitle>
-              {t('clubDashboard.noteRenewDates')}
-            </BillingNoticeTitle>
-            <div>
-              {t('clubDashboard.noteDesc1')}<br /><br />
-              {t('clubDashboard.noteDesc2')}
-            </div>
-          </BillingNoticeBox>
-
-          <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
-            <Button type="button" $variant="secondary" onClick={() => setCancelLicenseModal(null)} disabled={cancelingLicense}>
-              {t('clubDashboard.noKeep')}
-            </Button>
-            <Button
-              type="button"
-              $variant="danger"
-              disabled={cancelingLicense || maxCount - 1 < 5}
-              onClick={handleCancelLicense}
-            >
-              {cancelingLicense ? t('clubDashboard.processing') : t('clubDashboard.scheduleCancellationBtn', { qty: maxCount - 1 })}
-            </Button>
-          </Row>
-        </Stack>
-      </Modal>
-
       {/* WAITING FOR PAYMENT MODAL */}
       <Modal
         open={isWaitingPayment}

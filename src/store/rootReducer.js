@@ -13,6 +13,7 @@ import strategyReducer from './slices/strategy/strategySlice';
 import rivalReducer from './slices/rival/rivalSlice';
 import tournamentReducer from './slices/tournament/tournamentSlice';
 import userReducer from './slices/user/userSlice';
+import workspaceReducer from './slices/workspace/workspaceSlice';
 import { RESET_STORE, RESET_WORKSPACE } from './actionTypes';
 
 const appReducer = combineReducers({
@@ -29,17 +30,23 @@ const appReducer = combineReducers({
   rival: rivalReducer,
   tournament: tournamentReducer,
   usuario: userReducer,
+  workspace: workspaceReducer,
 });
 
 // Al despachar RESET_STORE, todos los reducers reciben state=undefined
 // y devuelven su initialState
 const rootReducer = (state, action) => {
   if (action.type === RESET_STORE) {
-    return appReducer(undefined, action);
+    const resetState = appReducer(undefined, action);
+    return { ...resetState, workspace: { ...resetState.workspace, selected: null } };
   }
   if (action.type === RESET_WORKSPACE) {
     const resetState = appReducer(undefined, { type: '@@RESET_WORKSPACE' });
-    return { ...resetState, usuario: state?.usuario || resetState.usuario };
+    return {
+      ...resetState,
+      usuario: state?.usuario || resetState.usuario,
+      workspace: state?.workspace || resetState.workspace,
+    };
   }
   return appReducer(state, action);
 };

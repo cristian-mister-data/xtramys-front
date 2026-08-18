@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import * as authApi from '@/api/auth';
 import * as subscriptionApi from '@/api/subscription';
-import { saveUser, saveToken, clearUser } from '@/auth/storage';
+import { saveUser, saveToken, clearUser, clearWorkspace } from '@/auth/storage';
 import { RESET_STORE } from '@/store/actionTypes';
 import { createReadCache } from '@/utils/readCache';
 
@@ -38,6 +38,7 @@ export const loginThunk = createAsyncThunk(
         ? await authApi.apple(credentials.credential)
         : await authApi.login(credentials);
       clearUserCache();
+      clearWorkspace();
       dispatch({ type: RESET_STORE });
       // Backend returns { token, user } or similar; store regardless of mode
       // Bearer mode: persist token; cookie mode: token cookie set by backend

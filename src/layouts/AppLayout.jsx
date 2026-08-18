@@ -152,6 +152,8 @@ export default function AppLayout() {
   const supervising = useSelector((s) => s.usuario.supervising);
   const supervisedUser = useSelector((s) => s.usuario.user);
   const archivedSeason = isSeasonReadOnly(season, supervisedUser);
+  const workspace = useSelector((s) => s.workspace.selected);
+  const workspaceReadOnly = Boolean(workspace && !workspace.canWrite);
   const userId = supervisedUser?._id || supervisedUser?.id || supervisedUser?.correo;
   const isClubAdmin = supervisedUser?.role === 'club_admin';
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -196,7 +198,7 @@ export default function AppLayout() {
       <Shell>
         <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <Header onMenu={() => setDrawerOpen((v) => !v)} hideSearch={hideSearch} />
-        {(supervising || archivedSeason) && !bannerDismissed && (
+        {(supervising || archivedSeason || workspaceReadOnly) && !bannerDismissed && (
           <SupervisionBanner role="status">
             {supervising ? <MdVisibility size={18} /> : <MdLock size={18} />}
             <span>
@@ -206,7 +208,11 @@ export default function AppLayout() {
                   {supervisedUser?.apellido ? ` ${supervisedUser.apellido}` : ''}
                   {' — '}{t('supervision.readOnly', 'Modo solo lectura')}
                 </>
-              ) : t('season.archivedReadOnly', 'Temporada anterior · Solo lectura. Puedes consultar los datos, pero no crear, editar ni eliminar nada.')}
+              ) : workspace?.historical
+                ? t('workspace.historicalBanner')
+                : workspaceReadOnly
+                  ? t('workspace.readOnlyBanner')
+                  : t('season.archivedReadOnly', 'Temporada anterior · Solo lectura. Puedes consultar los datos, pero no crear, editar ni eliminar nada.')}
             </span>
             <button
               onClick={() => setBannerDismissed(true)}

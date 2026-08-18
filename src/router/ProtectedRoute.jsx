@@ -81,30 +81,6 @@ export default function ProtectedRoute({ children }) {
   const accessMode = getAccessMode(user, subscriptionStatus);
   const hasAccess = hasAppAccess(user, subscriptionStatus);
 
-  if (user?.role === 'club_admin') {
-    const allowedPrefixes = [
-      '/club',
-      '/profile',
-      '/subscribe',
-      '/subscribe-club',
-      '/suscripcion',
-      '/payment',
-      '/season/create',   // initial setup: create season, team and shield
-      '/auth/verify-email',
-      '/auth/reset-password',
-      '/exercises',
-      '/nutrition',
-      '/methodology',
-      '/goalkeeper-methodology',
-      '/tactical-board',
-    ];
-    const currentPath = location.pathname;
-    const isAllowed = allowedPrefixes.some((p) => currentPath.startsWith(p)) || currentPath === '/';
-    if (!isAllowed) {
-      return <Navigate to="/club/dashboard" replace />;
-    }
-  }
-
   if (accessMode === 'demo') {
     const currentPath = location.pathname;
     const isBlocked = DEMO_REDIRECT_PREFIXES.some((p) => currentPath.startsWith(p));
