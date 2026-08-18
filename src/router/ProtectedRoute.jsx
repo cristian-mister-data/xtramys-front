@@ -74,6 +74,15 @@ export default function ProtectedRoute({ children }) {
     const isSubscribeFlow = SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p));
     return <Navigate to={isSubscribeFlow || isNative ? '/auth/login' : '/auth/welcome'} state={{ from: location }} replace />;
   }
+  // Las cuentas administradoras de club tienen su entrada en el panel del
+  // club. Esto también corrige sesiones antiguas que aún intentan abrir /app.
+  if (
+    location.pathname === '/app' &&
+    user?.role === 'club_admin' &&
+    user?.clubRole !== 'coach'
+  ) {
+    return <Navigate to="/club/dashboard" replace />;
+  }
   if (user?.authProvider === 'local' && user.emailVerificado === false) {
     return <Navigate to="/auth/verify-email" state={{ correo: user.correo, from: location }} replace />;
   }
