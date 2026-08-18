@@ -743,7 +743,9 @@ export default function Profile() {
         dispatch({ type: RESET_STORE });
         dispatch(setUser(nextUser));
         toast.success(`Has entrado como ${nextUser.correo}`);
-        navigate('/season');
+        // La entrada a una cuenta debe comenzar en Inicio. La temporada se
+        // abre solo cuando el usuario la elige desde la navegación.
+        navigate('/app');
       }
     } catch (err) {
       toast.error(err?.response?.data?.mensaje || 'No se pudo acceder a esa cuenta');
