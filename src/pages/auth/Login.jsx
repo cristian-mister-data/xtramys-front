@@ -31,7 +31,7 @@ export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { loading, error, isAuthenticated, authChecked } = useSelector((state) => state.usuario);
+  const { loading, error, isAuthenticated, authChecked, user } = useSelector((state) => state.usuario);
 
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
@@ -40,9 +40,10 @@ export default function Login() {
 
   useEffect(() => {
     if (authChecked && isAuthenticated) {
-      navigate('/app', { replace: true });
+      const isClubAdmin = user?.role === 'club_admin' && user?.clubRole !== 'coach';
+      navigate(isClubAdmin ? '/club/dashboard' : '/app', { replace: true });
     }
-  }, [authChecked, isAuthenticated, navigate]);
+  }, [authChecked, isAuthenticated, navigate, user?.clubRole, user?.role]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -55,11 +56,12 @@ export default function Login() {
 
     const correoNorm = normalizeEmail(correo);
     try {
-      await dispatch(loginThunk({ correo: correoNorm, contraseña: password })).unwrap();
+      const loggedUser = await dispatch(loginThunk({ correo: correoNorm, contraseña: password })).unwrap();
       const fromPath = location.state?.from?.pathname || '/app';
       const fromSearch = location.state?.from?.search || '';
       const from = fromPath + fromSearch;
-      navigate(from, { replace: true });
+      const isClubAdmin = loggedUser?.role === 'club_admin' && loggedUser?.clubRole !== 'coach';
+      navigate(isClubAdmin && (!location.state?.from || fromPath === '/app') ? '/club/dashboard' : from, { replace: true });
     } catch (err) {
       const code = err?.code || err?.data?.code;
       if (code === 'EMAIL_NOT_VERIFIED') {

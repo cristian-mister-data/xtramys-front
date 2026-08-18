@@ -198,7 +198,7 @@ export default function AppLayout() {
       <Shell>
         <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <Header onMenu={() => setDrawerOpen((v) => !v)} hideSearch={hideSearch} />
-        {(supervising || archivedSeason || workspaceReadOnly) && !bannerDismissed && (
+        {(supervising || (!isClubAdmin && (archivedSeason || workspaceReadOnly))) && !bannerDismissed && (
           <SupervisionBanner role="status">
             {supervising ? <MdVisibility size={18} /> : <MdLock size={18} />}
             <span>

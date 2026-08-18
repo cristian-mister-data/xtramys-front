@@ -31,6 +31,9 @@ const ErrorFallback = ({ onRetry }) => {
 export default function RequireSeason({ children }) {
   const dispatch = useDispatch();
   const workspace = useSelector((state) => state.workspace.selected);
+  const user = useSelector((state) => state.usuario.user);
+  const supervising = useSelector((state) => state.usuario.supervising);
+  const isClubAdmin = user?.role === 'club_admin' && user?.clubRole !== 'coach';
   const seasonId = workspace?.team?.temporada?._id || workspace?.team?.temporada || null;
   const teamId = workspace?.team?._id || workspace?.teamId || null;
   const [status, setStatus] = useState('idle');
@@ -51,7 +54,16 @@ export default function RequireSeason({ children }) {
     ]).then(() => setStatus('ok')).catch(() => setStatus('error'));
   }, [dispatch, seasonId, teamId]);
 
-  useEffect(() => load(false), [load]);
+  useEffect(() => {
+    if (isClubAdmin && !supervising) {
+      setStatus('ok');
+      return;
+    }
+    load(false);
+  }, [isClubAdmin, load, supervising]);
+
+  // El panel del club no está ligado a una temporada/equipo seleccionado.
+  if (isClubAdmin && !supervising) return children;
 
   if (status === 'error') return <ErrorFallback onRetry={() => load(true)} />;
   if (status !== 'ok') return <SetupFallback />;
