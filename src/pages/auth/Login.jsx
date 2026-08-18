@@ -40,7 +40,7 @@ export default function Login() {
 
   useEffect(() => {
     if (authChecked && isAuthenticated) {
-      const isClubAdmin = user?.role === 'club_admin' && user?.clubRole !== 'coach';
+      const isClubAdmin = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
       navigate(isClubAdmin ? '/club/dashboard' : '/app', { replace: true });
     }
   }, [authChecked, isAuthenticated, navigate, user?.clubRole, user?.role]);
@@ -60,7 +60,7 @@ export default function Login() {
       const fromPath = location.state?.from?.pathname || '/app';
       const fromSearch = location.state?.from?.search || '';
       const from = fromPath + fromSearch;
-      const isClubAdmin = loggedUser?.role === 'club_admin' && loggedUser?.clubRole !== 'coach';
+      const isClubAdmin = loggedUser?.clubRole === 'admin' || (loggedUser?.role === 'club_admin' && loggedUser?.clubRole !== 'coach');
       navigate(isClubAdmin && (!location.state?.from || fromPath === '/app') ? '/club/dashboard' : from, { replace: true });
     } catch (err) {
       const code = err?.code || err?.data?.code;

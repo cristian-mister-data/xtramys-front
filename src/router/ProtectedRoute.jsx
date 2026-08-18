@@ -78,8 +78,7 @@ export default function ProtectedRoute({ children }) {
   // club. Esto también corrige sesiones antiguas que aún intentan abrir /app.
   if (
     location.pathname === '/app' &&
-    user?.role === 'club_admin' &&
-    user?.clubRole !== 'coach'
+    (user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach'))
   ) {
     return <Navigate to="/club/dashboard" replace />;
   }

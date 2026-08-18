@@ -33,7 +33,7 @@ export default function RequireSeason({ children }) {
   const workspace = useSelector((state) => state.workspace.selected);
   const user = useSelector((state) => state.usuario.user);
   const supervising = useSelector((state) => state.usuario.supervising);
-  const isClubAdmin = user?.role === 'club_admin' && user?.clubRole !== 'coach';
+  const isClubAdmin = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
   const seasonId = workspace?.team?.temporada?._id || workspace?.team?.temporada || null;
   const teamId = workspace?.team?._id || workspace?.teamId || null;
   const [status, setStatus] = useState('idle');
