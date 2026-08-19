@@ -25,7 +25,7 @@ import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { confirmAction } from '@/ui/confirm';
 import { toast } from '@/ui/toast';
 import { Button, Input, Select, Row, Stack, Muted } from '@/ui/primitives';
-import { getScoreColor } from './evaluationsData';
+import { getScoreColor, getTemplateDisplayName } from './evaluationsData';
 import useSupervision from '@/hooks/useSupervision';
 import CanMutate from '@/components/shared/CanMutate';
 import DemoSubscriptionNotice from '@/components/shared/DemoSubscriptionNotice';
@@ -515,18 +515,14 @@ export default function Evaluations() {
         </HeaderTitleBox>
 
         <Row $gap={10} style={{ flexWrap: 'wrap' }}>
-          <CanMutate>
-            <Button $variant="secondary" onClick={() => setShowTemplateModal(true)}>
-              <MdSettings size={18} />
-              {t('evaluations.templates', 'Plantillas')}
-            </Button>
-          </CanMutate>
-          <CanMutate>
-            <Button $variant="primary" onClick={handleOpenNew}>
-              <MdAdd size={18} />
-              {t('evaluations.newEvaluation', 'Nueva Evaluación')}
-            </Button>
-          </CanMutate>
+          <Button $variant="secondary" onClick={() => setShowTemplateModal(true)}>
+            <MdSettings size={18} />
+            {t('evaluations.templates', 'Plantillas')}
+          </Button>
+          <Button $variant="primary" onClick={handleOpenNew}>
+            <MdAdd size={18} />
+            {t('evaluations.newEvaluation', 'Nueva Evaluación')}
+          </Button>
         </Row>
       </PageHeader>
 
@@ -654,12 +650,10 @@ export default function Evaluations() {
               <Muted style={{ maxWidth: 400 }}>
                 {t('evaluations.emptySubtitle', 'Comienza registrando la primera evaluación del equipo o individual de un jugador utilizando tus plantillas personalizadas.')}
               </Muted>
-              <CanMutate>
-                <Button $variant="primary" onClick={handleOpenNew} style={{ marginTop: 8 }}>
-                  <MdAdd size={18} />
-                  {t('evaluations.createNow', 'Crear Evaluación Ahora')}
-                </Button>
-              </CanMutate>
+              <Button $variant="primary" onClick={handleOpenNew} style={{ marginTop: 8 }}>
+                <MdAdd size={18} />
+                {t('evaluations.createNow', 'Crear Evaluación Ahora')}
+              </Button>
             </EmptyState>
           ) : (
             <EvaluationGrid>
@@ -678,11 +672,11 @@ export default function Evaluations() {
                         </Avatar>
                         <div>
                           <PlayerName>
-                            {item.playerName || (item.scope === 'GENERAL' ? t('evaluations.generalScope', 'General / Equipo') : 'Jugador')}
+                            {item.playerName || (item.scope === 'GENERAL' ? t('evaluations.generalScope', 'General / Equipo') : t('evaluations.player', 'Jugador'))}
                             {item.playerDorsal ? ` (#${item.playerDorsal})` : ''}
                           </PlayerName>
                           <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, fontWeight: 500 }}>
-                            {item.templateName}
+                            {getTemplateDisplayName({ _id: item.templateId, name: item.templateName }, t)}
                           </div>
                         </div>
                       </PlayerInfo>
@@ -784,7 +778,11 @@ export default function Evaluations() {
                           {p.dorsal ? `#${p.dorsal} - ` : ''}
                           {p.name}
                         </td>
-                        <td>{p.count} evaluaciones</td>
+                        <td>
+                          {t('evaluations.rankingCount', '{{count}} evaluaciones', {
+                            count: p.count,
+                          })}
+                        </td>
                         <td>
                           <ScoreBadge $bg={scoreColors.bg} $color={scoreColors.color}>
                             {p.avgScore} / 10

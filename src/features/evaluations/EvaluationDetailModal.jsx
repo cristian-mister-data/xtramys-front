@@ -22,6 +22,8 @@ import {
   getIconComponent,
   getScoreColor,
   resolveOptionLabel,
+  resolveQuestionText,
+  getTemplateDisplayName,
 } from './evaluationsData';
 
 const HeaderBanner = styled.div`
@@ -153,7 +155,7 @@ export default function EvaluationDetailModal({
       await generateEvaluationPdf(evaluation, tpl, t);
     } catch (err) {
       console.error('Error generating evaluation PDF:', err);
-      toast.error('Error al generar el PDF de la evaluación');
+      toast.error(t('evaluations.detail.pdfError', 'Error al generar el PDF de la evaluación'));
     }
   };
 
@@ -190,7 +192,7 @@ export default function EvaluationDetailModal({
           <Row $gap={8}>
             <Button $variant="primary" onClick={handlePdf}>
               <MdPictureAsPdf size={16} />
-              Descargar PDF / Compartir
+              {t('evaluations.detail.downloadPdf', 'Descargar PDF / Compartir')}
             </Button>
             <Button $variant="secondary" onClick={onClose}>
               {t('common.close', 'Cerrar')}
@@ -208,7 +210,7 @@ export default function EvaluationDetailModal({
             </Avatar>
             <div>
               <div style={{ fontWeight: 700, fontSize: 16 }}>
-                {evaluation.playerName || 'General / Equipo'}
+                {evaluation.playerName || (evaluation.scope === 'GENERAL' ? t('evaluations.generalScope', 'General / Equipo') : t('evaluations.player', 'Jugador'))}
                 {evaluation.playerDorsal ? ` (#${evaluation.playerDorsal})` : ''}
               </div>
               <Muted style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 12, marginTop: 2 }}>
@@ -216,14 +218,14 @@ export default function EvaluationDetailModal({
                   <MdCalendarToday size={14} />
                   {evaluation.date}
                 </span>
-                <span>• {evaluation.templateName}</span>
+                <span>• {getTemplateDisplayName({ _id: evaluation.templateId, name: evaluation.templateName }, t)}</span>
               </Muted>
             </div>
           </PlayerBadge>
 
           {evaluation.overallScore !== null && evaluation.overallScore !== undefined && (
             <ScoreBadge $bg={scoreColors.bg} $color={scoreColors.color}>
-              Nota: {evaluation.overallScore} / 10
+              {t('evaluations.detail.scoreLabel', 'Nota')}: {evaluation.overallScore} / 10
             </ScoreBadge>
           )}
         </HeaderBanner>
@@ -241,13 +243,13 @@ export default function EvaluationDetailModal({
                     <Icon size={16} />
                   </IconCircle>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>
-                    {idx + 1}. {q.questionText}
+                    {idx + 1}. {resolveQuestionText(q, t)}
                   </div>
                 </QuestionRow>
 
                 <ValueBox>
                   {val === undefined || val === null || val === '' ? (
-                    <Muted style={{ fontStyle: 'italic' }}>Sin responder</Muted>
+                    <Muted style={{ fontStyle: 'italic' }}>{t('evaluations.detail.unanswered', 'Sin responder')}</Muted>
                   ) : q.type === 'rating10' ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontWeight: 700, fontSize: 16, color: getScoreColor(val).color }}>
@@ -269,14 +271,15 @@ export default function EvaluationDetailModal({
                     </div>
                   ) : q.type === 'boolean' ? (
                     <span style={{ fontWeight: 600, color: val ? '#10b981' : '#ef4444' }}>
-                      {val ? 'Sí / Afirmativo' : 'No / Negativo'}
+                      {val ? t('evaluations.form.yes', 'Sí / Afirmativo') : t('evaluations.form.no', 'No / Negativo')}
                     </span>
                   ) : q.type === 'select' ? (
                     <span>
                       {resolveOptionLabel(
                         (q.options || []).find(
                           (o) => (typeof o === 'object' ? o.key : o) === val
-                        ) || val
+                        ) || val,
+                        t
                       )}
                     </span>
                   ) : q.type === 'multiSelect' ? (
@@ -286,10 +289,10 @@ export default function EvaluationDetailModal({
                           const matchedOpt = (q.options || []).find(
                             (o) => (typeof o === 'object' ? o.key : o) === k
                           );
-                          return <Chip key={k}>{resolveOptionLabel(matchedOpt || k)}</Chip>;
+                          return <Chip key={k}>{resolveOptionLabel(matchedOpt || k, t)}</Chip>;
                         })
                       ) : (
-                        <Muted>Ninguna opción seleccionada</Muted>
+                        <Muted>{t('evaluations.detail.noOptionSelected', 'Ninguna opción seleccionada')}</Muted>
                       )}
                     </div>
                   ) : q.type === 'player' ? (
@@ -311,7 +314,7 @@ export default function EvaluationDetailModal({
         {evaluation.generalNotes && (
           <AnswerCard>
             <div style={{ fontWeight: 600, fontSize: 14 }}>
-              Observaciones Generales Adicionales
+              {t('evaluations.detail.additionalNotes', 'Observaciones Generales Adicionales')}
             </div>
             <ValueBox style={{ whiteSpace: 'pre-wrap' }}>
               {evaluation.generalNotes}

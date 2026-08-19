@@ -41,10 +41,12 @@ import useSupervision from '@/hooks/useSupervision';
 import CanMutate from '@/components/shared/CanMutate';
 
 import {
-  QUESTION_TYPES,
+  getQuestionTypes,
   AVAILABLE_ICONS,
   getIconComponent,
   resolveOptionLabel,
+  resolveQuestionText,
+  getTemplateDisplayName,
 } from './evaluationsData';
 
 // ---------- styles ----------
@@ -319,6 +321,14 @@ export default function TemplateManagerModal({ open, onClose }) {
   const { canMutate, isDemo } = useSupervision();
 
   // ---------- templates ----------
+  const handleOpenCreateModal = () => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
+    setShowCreateModal(true);
+  };
+
   const handleCreateTemplate = () => {
     if (!canMutate && isDemo) {
       toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
@@ -353,11 +363,19 @@ export default function TemplateManagerModal({ open, onClose }) {
   };
 
   const handleOpenEditName = (template) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     setEditTemplateNameVal(template.name);
     setShowEditNameModal(true);
   };
 
   const handleSaveTemplateName = () => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     if (!editTemplateNameVal.trim()) {
       toast.error(t('evaluations.template.nameRequired', 'Introduce un nombre'));
       return;
@@ -373,11 +391,19 @@ export default function TemplateManagerModal({ open, onClose }) {
   };
 
   const handleSetDefault = (template) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     dispatch(setDefaultTemplate(template._id));
     toast.success(t('evaluations.template.setDefaultSuccess', 'Plantilla activa actualizada'));
   };
 
   const handleDeleteTemplate = async (template) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     const ok = await confirmAction(
       t('evaluations.template.deleteConfirm', '¿Eliminar la plantilla "{{name}}"?', {
         name: template.name,
@@ -391,11 +417,19 @@ export default function TemplateManagerModal({ open, onClose }) {
 
   // ---------- questions ----------
   const openCreateQuestion = () => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     resetQuestionForm();
     setShowQuestionModal(true);
   };
 
   const openEditQuestion = (question) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     setEditingQuestion(question);
     setQText(question.questionText || '');
     setQType(question.type || 'rating10');
@@ -420,6 +454,10 @@ export default function TemplateManagerModal({ open, onClose }) {
   };
 
   const handleSaveQuestion = () => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     if (!qText.trim()) {
       setQError(t('evaluations.template.questionTextRequired', 'El texto de la pregunta es obligatorio'));
       return;
@@ -459,6 +497,10 @@ export default function TemplateManagerModal({ open, onClose }) {
   };
 
   const handleRemoveQuestion = async (question) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
+      return;
+    }
     const ok = await confirmAction(
       t('evaluations.template.removeQuestionConfirm', '¿Eliminar esta pregunta?')
     );
@@ -479,7 +521,7 @@ export default function TemplateManagerModal({ open, onClose }) {
         <TemplateCard key={tpl._id}>
           <TemplateHead>
             <TemplateName>
-              {tpl.name}
+              {getTemplateDisplayName(tpl, t)}
               {tpl.isDefault && (
                 <Badge $tone="default">
                   <MdCheckCircle size={12} />
@@ -493,7 +535,9 @@ export default function TemplateManagerModal({ open, onClose }) {
                 </Badge>
               )}
               <Badge $tone="info">
-                {tpl.scope === 'GENERAL' ? 'General / Equipo' : 'Por Jugador'}
+                {tpl.scope === 'GENERAL'
+                  ? t('evaluations.generalScope', 'General / Equipo')
+                  : t('evaluations.playerScope', 'Por Jugador')}
               </Badge>
             </TemplateName>
             <Row $gap={6}>
@@ -503,7 +547,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                 </Button>
               )}
               <Button $variant="secondary" onClick={() => setSelectedTemplate(tpl)}>
-                {t('common.open', 'Editar Preguntas')}
+                {t('evaluations.template.open', 'Abrir')}
               </Button>
               {!tpl.isRecommended && (
                 <Button $variant="danger" onClick={() => handleDeleteTemplate(tpl)}>
@@ -513,16 +557,16 @@ export default function TemplateManagerModal({ open, onClose }) {
             </Row>
           </TemplateHead>
           <Muted style={{ fontSize: 13 }}>
-            {(tpl.questions?.length || 0)} {t('evaluations.template.questionsCount', 'preguntas configuradas')}
+            {t('evaluations.template.questionsCount', '{{count}} preguntas', {
+              count: tpl.questions?.length || 0,
+            })}
           </Muted>
         </TemplateCard>
       ))}
-      <CanMutate>
-        <DashedBtn type="button" onClick={() => setShowCreateModal(true)}>
-          <MdAdd size={18} />
-          {t('evaluations.template.create', 'Crear Nueva Plantilla Personalizada')}
-        </DashedBtn>
-      </CanMutate>
+      <DashedBtn type="button" onClick={handleOpenCreateModal}>
+        <MdAdd size={18} />
+        {t('evaluations.template.create', 'Crear Nueva Plantilla Personalizada')}
+      </DashedBtn>
     </Stack>
   );
 
@@ -536,10 +580,10 @@ export default function TemplateManagerModal({ open, onClose }) {
         <Row $gap={8}>
           <Button $variant="ghost" onClick={() => setSelectedTemplate(null)}>
             <MdArrowBack size={18} />
-            {t('common.back', 'Volver al listado')}
+            {t('evaluations.template.backToList', 'Volver al listado')}
           </Button>
           <TemplateName>
-            {tpl.name}
+            {getTemplateDisplayName(tpl, t)}
             {!tpl.isRecommended && (
               <Button $variant="ghost" onClick={() => handleOpenEditName(tpl)} style={{ padding: 4 }}>
                 <MdEdit size={16} />
@@ -563,7 +607,7 @@ export default function TemplateManagerModal({ open, onClose }) {
         <Stack $gap={8}>
           {questions.map((q, idx) => {
             const Icon = getIconComponent(q.icon);
-            const qTypeLabel = QUESTION_TYPES.find((t) => t.key === q.type)?.label || q.type;
+            const qTypeLabel = getQuestionTypes(t).find((item) => item.key === q.type)?.label || q.type;
             return (
               <QuestionCard key={q.id || idx}>
                 <IconBox $color={q.iconColor || '#3b82f6'}>
@@ -571,7 +615,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                 </IconBox>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>
-                    {idx + 1}. {q.questionText}
+                    {idx + 1}. {resolveQuestionText(q, t)}
                   </div>
                   <div style={{ marginTop: 4 }}>
                     <TypeBadge>{qTypeLabel}</TypeBadge>
@@ -579,7 +623,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                   {(q.type === 'select' || q.type === 'multiSelect') && q.options?.length > 0 && (
                     <ChipRow>
                       {q.options.map((opt, i) => (
-                        <Chip key={i}>{resolveOptionLabel(opt)}</Chip>
+                        <Chip key={i}>{resolveOptionLabel(opt, t)}</Chip>
                       ))}
                     </ChipRow>
                   )}
@@ -649,7 +693,7 @@ export default function TemplateManagerModal({ open, onClose }) {
       >
         <Stack $gap={14}>
           <Field>
-            <Label>{t('evaluations.template.name', 'Nombre de la Plantilla')}</Label>
+            <Label>{t('evaluations.template.nameLabel', 'Nombre de la Plantilla')}</Label>
             <Input
               value={newTemplateName}
               onChange={(e) => setNewTemplateName(e.target.value)}
@@ -658,7 +702,7 @@ export default function TemplateManagerModal({ open, onClose }) {
             />
           </Field>
           <Field>
-            <Label>{t('evaluations.template.scope', 'Ámbito de Aplicación')}</Label>
+            <Label>{t('evaluations.template.scopeLabel', 'Ámbito de Aplicación')}</Label>
             <Row $gap={12}>
               <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer', fontSize: 14 }}>
                 <input
@@ -667,7 +711,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                   checked={newTemplateScope === 'POR_JUGADOR'}
                   onChange={() => setNewTemplateScope('POR_JUGADOR')}
                 />
-                Por Jugador (Individual)
+                {t('evaluations.template.scopePlayer', 'Por Jugador (Individual)')}
               </label>
               <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer', fontSize: 14 }}>
                 <input
@@ -676,7 +720,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                   checked={newTemplateScope === 'GENERAL'}
                   onChange={() => setNewTemplateScope('GENERAL')}
                 />
-                General (Equipo / Sesión)
+                {t('evaluations.template.scopeGeneral', 'General (Equipo / Sesión)')}
               </label>
             </Row>
           </Field>
@@ -689,7 +733,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                   checked={createFromRecommended}
                   onChange={() => setCreateFromRecommended(true)}
                 />
-                Copiar desde una plantilla existente
+                {t('evaluations.template.copyFromExisting', 'Copiar desde una plantilla existente')}
               </label>
               {createFromRecommended && (
                 <div style={{ marginLeft: 24 }}>
@@ -697,9 +741,13 @@ export default function TemplateManagerModal({ open, onClose }) {
                     value={baseTemplateId}
                     onChange={(e) => setBaseTemplateId(e.target.value)}
                   >
-                    {templates.map((t) => (
-                      <option key={t._id} value={t._id}>
-                        {t.name} ({t.questions?.length || 0} preguntas)
+                    {templates.map((tpl) => (
+                      <option key={tpl._id} value={tpl._id}>
+                        {getTemplateDisplayName(tpl, t)} (
+                        {t('evaluations.template.questionsCount', '{{count}} preguntas', {
+                          count: tpl.questions?.length || 0,
+                        })}
+                        )
                       </option>
                     ))}
                   </Select>
@@ -711,7 +759,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                   checked={!createFromRecommended}
                   onChange={() => setCreateFromRecommended(false)}
                 />
-                Empezar desde cero (sin preguntas)
+                {t('evaluations.template.startFromScratch', 'Empezar desde cero (sin preguntas)')}
               </label>
             </Stack>
           </Field>
@@ -737,7 +785,7 @@ export default function TemplateManagerModal({ open, onClose }) {
       >
         <Stack $gap={12}>
           <Field>
-            <Label>{t('evaluations.template.name', 'Nombre')}</Label>
+            <Label>{t('evaluations.template.nameLabel', 'Nombre')}</Label>
             <Input
               value={editTemplateNameVal}
               onChange={(e) => setEditTemplateNameVal(e.target.value)}
@@ -757,7 +805,7 @@ export default function TemplateManagerModal({ open, onClose }) {
         title={
           editingQuestion
             ? t('evaluations.template.editQuestion', 'Editar Pregunta')
-            : t('evaluations.template.addQuestion', 'Añadir Nueva Pregunta')
+            : t('evaluations.template.addQuestionModalTitle', 'Añadir Nueva Pregunta')
         }
         width={FORM_MODAL_WIDTH}
         footer={
@@ -772,7 +820,7 @@ export default function TemplateManagerModal({ open, onClose }) {
               {t('common.cancel', 'Cancelar')}
             </Button>
             <Button $variant="primary" onClick={handleSaveQuestion}>
-              {t('common.save', 'Guardar Pregunta')}
+              {t('evaluations.template.saveQuestion', 'Guardar Pregunta')}
             </Button>
           </Row>
         }
@@ -784,7 +832,10 @@ export default function TemplateManagerModal({ open, onClose }) {
               rows={2}
               value={qText}
               onChange={(e) => setQText(e.target.value)}
-              placeholder="Ej: ¿Cómo evaluas su nivel de concentración en el partido?"
+              placeholder={t(
+                'evaluations.template.questionTextPlaceholder',
+                'Ej: ¿Cómo evaluas su nivel de concentración en el partido?'
+              )}
               autoFocus
             />
             {qError && <ErrorText>{qError}</ErrorText>}
@@ -793,7 +844,7 @@ export default function TemplateManagerModal({ open, onClose }) {
           <Field>
             <Label>{t('evaluations.template.questionType', 'Tipo de Respuesta')}</Label>
             <TypeGrid>
-              {QUESTION_TYPES.map((qt) => {
+              {getQuestionTypes(t).map((qt) => {
                 const Icon = qt.icon;
                 const selected = qType === qt.key;
                 return (
@@ -816,11 +867,11 @@ export default function TemplateManagerModal({ open, onClose }) {
 
           {(qType === 'select' || qType === 'multiSelect') && (
             <Field>
-              <Label>Opciones de respuesta</Label>
+              <Label>{t('evaluations.template.optionsLabel', 'Opciones de respuesta')}</Label>
               <Stack $gap={6}>
                 {qOptions.map((opt, i) => (
                   <OptionRow key={i}>
-                    <span>{resolveOptionLabel(opt)}</span>
+                    <span>{resolveOptionLabel(opt, t)}</span>
                     <Button $variant="ghost" onClick={() => handleRemoveOption(i)} style={{ padding: 2 }}>
                       <MdClose size={16} />
                     </Button>
@@ -830,7 +881,10 @@ export default function TemplateManagerModal({ open, onClose }) {
                   <Input
                     value={qOptionInput}
                     onChange={(e) => setQOptionInput(e.target.value)}
-                    placeholder="Escribe una opción y pulsa Añadir"
+                    placeholder={t(
+                      'evaluations.template.addOptionPlaceholder',
+                      'Escribe una opción y pulsa Añadir'
+                    )}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -839,7 +893,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                     }}
                   />
                   <Button $variant="secondary" type="button" onClick={handleAddOption}>
-                    Añadir
+                    {t('common.add', 'Añadir')}
                   </Button>
                 </Row>
               </Stack>
@@ -847,7 +901,7 @@ export default function TemplateManagerModal({ open, onClose }) {
           )}
 
           <Field>
-            <Label>Icono Personalizado</Label>
+            <Label>{t('evaluations.template.customIconLabel', 'Icono Personalizado')}</Label>
             <IconPickerRow>
               {AVAILABLE_ICONS.map((ic) => {
                 const IconComp = ic.component;

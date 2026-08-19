@@ -6073,6 +6073,7 @@
     "player": "Jugador",
     "evalCount": "Nº Evaluaciones",
     "avgScore": "Promedio General",
+    "rankingCount": "{{count}} evaluaciones",
     "deleteConfirm": "¿Deseas eliminar la evaluación del día {{date}}?",
     "deleteSuccess": "Evaluación eliminada correctamente",
     "form": {
@@ -6092,16 +6093,74 @@
       "calculatedScore": "Nota General Calculada:",
       "questionnaireTitle": "Cuestionario de Evaluación",
       "generalNotes": "Observaciones Generales Adicionales",
-      "notesPlaceholder": "Añade cualquier nota final sobre esta evaluación..."
+      "notesPlaceholder": "Añade cualquier nota final sobre esta evaluación...",
+      "unrated": "Sin puntuar",
+      "freeTextPlaceholder": "Escribe aquí las observaciones o respuesta libre...",
+      "yes": "Sí / Afirmativo",
+      "no": "No / Negativo"
     },
     "detail": {
       "title": "Detalle de la Evaluación",
       "deleteConfirm": "¿Eliminar esta evaluación?",
       "deleteSuccess": "Evaluación eliminada",
       "downloadPdf": "Descargar PDF / Compartir",
+      "pdfError": "Error al generar el PDF de la evaluación",
+      "scoreLabel": "Nota",
       "unanswered": "Sin responder",
       "noOptionSelected": "Ninguna opción seleccionada",
       "additionalNotes": "Observaciones Generales Adicionales"
+    },
+    "pdf": {
+      "generalTitle": "EVALUACIÓN GENERAL DE EQUIPO",
+      "playerTitlePrefix": "INFORME DE EVALUACIÓN",
+      "playerDefault": "JUGADOR",
+      "templateDefault": "Plantilla de Evaluación",
+      "noScore": "Sin Nota",
+      "date": "Fecha",
+      "scope": "Ámbito",
+      "general": "GENERAL",
+      "individual": "INDIVIDUAL",
+      "generalSub": "Equipo / Grupo",
+      "playerSub": "Por Jugador",
+      "subject": "Evaluado / Sujeto",
+      "teamDefault": "Equipo",
+      "dorsal": "Dorsal",
+      "scoreLabel": "Nota Ponderada",
+      "scale": "Escala 1 al 10",
+      "stars": "Estrellas",
+      "yes": "Sí / Afirmativo",
+      "no": "No / Negativo",
+      "footerText": "Informe Oficial de Evaluación"
+    },
+    "questionTypes": {
+      "rating10": {
+        "label": "Escala 1 - 10",
+        "desc": "Puntuación numérica del 1 al 10"
+      },
+      "stars5": {
+        "label": "Estrellas (1-5)",
+        "desc": "Calificación con 5 estrellas"
+      },
+      "select": {
+        "label": "Selección Única",
+        "desc": "Elegir una sola opción entre varias"
+      },
+      "multiSelect": {
+        "label": "Selección Múltiple",
+        "desc": "Elegir varias opciones aplicables"
+      },
+      "text": {
+        "label": "Texto Libre / Campo a mano",
+        "desc": "Campo de texto descriptivo u observaciones"
+      },
+      "boolean": {
+        "label": "Sí / No",
+        "desc": "Respuesta afirmativa o negativa"
+      },
+      "player": {
+        "label": "Selección de Jugador",
+        "desc": "Seleccionar un jugador del equipo"
+      }
     },
     "template": {
       "title": "Gestor de Plantillas de Evaluación",
@@ -6113,6 +6172,31 @@
       "newTemplate": "Nueva Plantilla",
       "questionsCount": "{{count}} preguntas",
       "activeDefault": "Activa por Defecto",
+      "default": "Activa / Predeterminada",
+      "recommended": "Recomendada",
+      "open": "Abrir",
+      "setDefault": "Activar",
+      "create": "Crear Nueva Plantilla Personalizada",
+      "addQuestion": "Añadir Pregunta",
+      "addQuestionModalTitle": "Añadir Nueva Pregunta",
+      "editQuestion": "Editar Pregunta",
+      "questionText": "Pregunta / Enunciado",
+      "questionTextPlaceholder": "Ej: ¿Cómo evalúas su nivel de concentración en el partido?",
+      "questionType": "Tipo de Respuesta",
+      "optionsLabel": "Opciones de respuesta",
+      "addOptionPlaceholder": "Escribe una opción y pulsa Añadir...",
+      "customIconLabel": "Icono Personalizado",
+      "saveQuestion": "Guardar Pregunta",
+      "copyFromExisting": "Copiar desde una plantilla existente",
+      "startFromScratch": "Empezar desde cero (sin preguntas)",
+      "backToList": "Volver al listado",
+      "createTitle": "Nueva Plantilla de Evaluación",
+      "nameLabel": "Nombre de la Plantilla",
+      "namePlaceholder": "Ej: Evaluación de Rendimiento Semanal",
+      "scopeLabel": "Ámbito de Aplicación",
+      "scopePlayer": "Por Jugador (Individual)",
+      "scopeGeneral": "General (Equipo / Sesión)",
+      "basedOn": "Punto de partida",
       "setActive": "Establecer como Activa",
       "editNameTitle": "Editar nombre de plantilla",
       "nameRequired": "Introduce un nombre para la plantilla",
@@ -6126,7 +6210,27 @@
       "questionUpdated": "Pregunta actualizada",
       "questionAdded": "Pregunta añadida",
       "questionDeleted": "Pregunta eliminada",
+      "questionRemoved": "Pregunta eliminada",
+      "removeQuestionConfirm": "¿Eliminar esta pregunta?",
+      "noQuestions": "Esta plantilla no tiene preguntas aún. Añade la primera.",
+      "readonlyNotice": "Esta plantilla de sistema es de solo lectura. Puedes crear una copia propia para modificar sus preguntas.",
       "activeTemplateNotice": "Esta es la plantilla activa por defecto para nuevas evaluaciones."
+    },
+    "options": {
+      "goalkeeper": "Portero",
+      "defender": "Defensa",
+      "midfielder": "Centrocampista",
+      "forward": "Delantero"
+    },
+    "defaultQuestions": {
+      "tacticalPerformance": "Rendimiento Táctico Individual",
+      "physicalIntensity": "Intensidad Física y Despliegue",
+      "decisionMaking": "Toma de Decisiones y Calidad Técnica",
+      "attitudeLeadership": "Actitud y Liderazgo en el Campo",
+      "gamePlanMet": "¿Cumplió el plan de juego asignado?",
+      "rolePosition": "Rol o Posición desempeñada principal",
+      "strengths": "Puntos Fuertes y Aspectos Destacados",
+      "improvementAreas": "Aspectos a Mejorar en el Próximo Entrenamiento"
     },
     "defaultTemplates": {
       "matchPlayer": {

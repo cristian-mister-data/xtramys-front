@@ -6066,6 +6066,7 @@
     "player": "Player",
     "evalCount": "No. Evaluations",
     "avgScore": "Overall Average",
+    "rankingCount": "{{count}} evaluations",
     "deleteConfirm": "Do you want to delete the evaluation from {{date}}?",
     "deleteSuccess": "Evaluation deleted successfully",
     "form": {
@@ -6085,16 +6086,74 @@
       "calculatedScore": "Calculated Overall Score:",
       "questionnaireTitle": "Evaluation Questionnaire",
       "generalNotes": "Additional General Notes",
-      "notesPlaceholder": "Add any final notes for this evaluation..."
+      "notesPlaceholder": "Add any final notes for this evaluation...",
+      "unrated": "Unrated",
+      "freeTextPlaceholder": "Type observations or free response here...",
+      "yes": "Yes / Affirmative",
+      "no": "No / Negative"
     },
     "detail": {
       "title": "Evaluation Details",
       "deleteConfirm": "Delete this evaluation?",
       "deleteSuccess": "Evaluation deleted",
       "downloadPdf": "Download PDF / Share",
+      "pdfError": "Error generating the evaluation PDF",
+      "scoreLabel": "Score",
       "unanswered": "Unanswered",
       "noOptionSelected": "No options selected",
       "additionalNotes": "Additional General Notes"
+    },
+    "pdf": {
+      "generalTitle": "GENERAL TEAM EVALUATION",
+      "playerTitlePrefix": "EVALUATION REPORT",
+      "playerDefault": "PLAYER",
+      "templateDefault": "Evaluation Template",
+      "noScore": "No Score",
+      "date": "Date",
+      "scope": "Scope",
+      "general": "GENERAL",
+      "individual": "INDIVIDUAL",
+      "generalSub": "Team / Group",
+      "playerSub": "By Player",
+      "subject": "Subject / Evaluated",
+      "teamDefault": "Team",
+      "dorsal": "Kit Number",
+      "scoreLabel": "Overall Score",
+      "scale": "Scale 1 to 10",
+      "stars": "Stars",
+      "yes": "Yes / Affirmative",
+      "no": "No / Negative",
+      "footerText": "Official Evaluation Report"
+    },
+    "questionTypes": {
+      "rating10": {
+        "label": "Scale 1 - 10",
+        "desc": "Numeric score from 1 to 10"
+      },
+      "stars5": {
+        "label": "Stars (1-5)",
+        "desc": "Rating with 5 stars"
+      },
+      "select": {
+        "label": "Single Choice",
+        "desc": "Choose a single option among several"
+      },
+      "multiSelect": {
+        "label": "Multiple Choice",
+        "desc": "Choose multiple applicable options"
+      },
+      "text": {
+        "label": "Free Text / Hand Field",
+        "desc": "Descriptive text field or observations"
+      },
+      "boolean": {
+        "label": "Yes / No",
+        "desc": "Affirmative or negative answer"
+      },
+      "player": {
+        "label": "Player Selection",
+        "desc": "Select a player from the team"
+      }
     },
     "template": {
       "title": "Evaluation Template Manager",
@@ -6106,6 +6165,31 @@
       "newTemplate": "New Template",
       "questionsCount": "{{count}} questions",
       "activeDefault": "Active Default",
+      "default": "Active / Default",
+      "recommended": "Recommended",
+      "open": "Open",
+      "setDefault": "Activate",
+      "create": "Create New Custom Template",
+      "addQuestion": "Add Question",
+      "addQuestionModalTitle": "Add New Question",
+      "editQuestion": "Edit Question",
+      "questionText": "Question / Prompt",
+      "questionTextPlaceholder": "e.g. How do you rate their concentration during the match?",
+      "questionType": "Response Type",
+      "optionsLabel": "Response options",
+      "addOptionPlaceholder": "Type an option and click Add...",
+      "customIconLabel": "Custom Icon",
+      "saveQuestion": "Save Question",
+      "copyFromExisting": "Copy from an existing template",
+      "startFromScratch": "Start from scratch (no questions)",
+      "backToList": "Back to list",
+      "createTitle": "New Evaluation Template",
+      "nameLabel": "Template Name",
+      "namePlaceholder": "e.g. Weekly Performance Evaluation",
+      "scopeLabel": "Application Scope",
+      "scopePlayer": "By Player (Individual)",
+      "scopeGeneral": "General (Team / Session)",
+      "basedOn": "Starting point",
       "setActive": "Set as Active",
       "editNameTitle": "Edit template name",
       "nameRequired": "Enter a name for the template",
@@ -6119,7 +6203,27 @@
       "questionUpdated": "Question updated",
       "questionAdded": "Question added",
       "questionDeleted": "Question deleted",
+      "questionRemoved": "Question removed",
+      "removeQuestionConfirm": "Delete this question?",
+      "noQuestions": "This template has no questions yet. Add the first one.",
+      "readonlyNotice": "This system template is read-only. Create your own copy to modify its questions.",
       "activeTemplateNotice": "This is the active default template for new evaluations."
+    },
+    "options": {
+      "goalkeeper": "Goalkeeper",
+      "defender": "Defender",
+      "midfielder": "Midfielder",
+      "forward": "Forward"
+    },
+    "defaultQuestions": {
+      "tacticalPerformance": "Individual Tactical Performance",
+      "physicalIntensity": "Physical Intensity & Work Rate",
+      "decisionMaking": "Decision Making & Technical Quality",
+      "attitudeLeadership": "Attitude & On-Field Leadership",
+      "gamePlanMet": "Did they follow the assigned game plan?",
+      "rolePosition": "Main Role or Position Played",
+      "strengths": "Strengths & Key Highlights",
+      "improvementAreas": "Areas to Improve for Next Training"
     },
     "defaultTemplates": {
       "matchPlayer": {

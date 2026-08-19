@@ -26,6 +26,8 @@ import {
   getScoreColor,
   computeEvaluationScore,
   resolveOptionLabel,
+  resolveQuestionText,
+  getTemplateDisplayName,
 } from './evaluationsData';
 
 // ---------- styles ----------
@@ -423,11 +425,11 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
       date,
       scope,
       playerId: scope === 'POR_JUGADOR' ? playerId : null,
-      playerName: scope === 'POR_JUGADOR' ? playerName : 'Equipo / General',
+      playerName: scope === 'POR_JUGADOR' ? playerName : null,
       playerPhoto: scope === 'POR_JUGADOR' ? selectedPlayer?.foto || selectedPlayer?.imagen : null,
       playerDorsal: scope === 'POR_JUGADOR' ? selectedPlayer?.dorsal : null,
       templateId,
-      templateName: selectedTemplate?.name || 'Evaluación',
+      templateName: selectedTemplate?.name || '',
       answers,
       overallScore: calculatedScore,
       generalNotes: generalNotes.trim(),
@@ -483,7 +485,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
             <Field style={{ margin: 0 }}>
               <Label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MdCalendarToday size={16} />
-                Fecha de la Evaluación
+                {t('evaluations.form.date', 'Fecha de la Evaluación')}
               </Label>
               <Input
                 type="date"
@@ -495,7 +497,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
             <Field style={{ margin: 0 }}>
               <Label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MdAssignment size={16} />
-                Ámbito de la Evaluación
+                {t('evaluations.form.scope', 'Ámbito de la Evaluación')}
               </Label>
               <ScopeTabGrid>
                 <ScopeTabBtn
@@ -504,7 +506,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                   onClick={() => setScope('POR_JUGADOR')}
                 >
                   <MdPerson size={18} />
-                  Por Jugador
+                  {t('evaluations.playerScope', 'Por Jugador')}
                 </ScopeTabBtn>
 
                 <ScopeTabBtn
@@ -516,7 +518,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                   }}
                 >
                   <MdGroup size={18} />
-                  General / Equipo
+                  {t('evaluations.generalScope', 'General / Equipo')}
                 </ScopeTabBtn>
               </ScopeTabGrid>
             </Field>
@@ -527,11 +529,16 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
         <SectionBox>
           <Label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
             <MdLayers size={18} color="#3b82f6" />
-            Selecciona la Plantilla de Preguntas
+            {t('evaluations.form.selectTemplate', 'Selecciona la Plantilla de Preguntas')}
           </Label>
           <TemplateCardGrid>
             {templates.map((tpl) => {
               const isSelected = templateId === tpl._id;
+              const tplName = getTemplateDisplayName(tpl, t);
+              const scopeText = tpl.scope === 'GENERAL'
+                ? t('evaluations.generalScope', 'General')
+                : t('evaluations.playerScope', 'Por Jugador');
+
               return (
                 <TemplateCardBtn
                   key={tpl._id}
@@ -547,9 +554,12 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                       <MdCheckCircle size={18} />
                     </div>
                   )}
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{tpl.name}</span>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{tplName}</span>
                   <Muted style={{ fontSize: 12 }}>
-                    {tpl.questions?.length || 0} preguntas · {tpl.scope === 'GENERAL' ? 'General' : 'Por Jugador'}
+                    {t('evaluations.template.questionsCount', '{{count}} preguntas', {
+                      count: tpl.questions?.length || 0,
+                    })}{' '}
+                    · {scopeText}
                   </Muted>
                 </TemplateCardBtn>
               );
@@ -562,14 +572,14 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
           <SectionBox>
             <Label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
               <MdPerson size={18} color="#3b82f6" />
-              Selecciona el Jugador a Evaluar
+              {t('evaluations.form.selectPlayer', 'Selecciona el Jugador a Evaluar')}
             </Label>
 
             <PlayerSearchInput>
               <MdSearch size={18} color="#94a3b8" />
               <input
                 type="text"
-                placeholder="Buscar por nombre o dorsal..."
+                placeholder={t('evaluations.form.searchPlayerPlaceholder', 'Buscar por nombre o dorsal...')}
                 value={playerSearch}
                 onChange={(e) => setPlayerSearch(e.target.value)}
               />
@@ -578,8 +588,8 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
             {filteredPlayers.length === 0 ? (
               <Muted style={{ padding: 12, textAlign: 'center' }}>
                 {players.length === 0
-                  ? 'Cargando plantilla de jugadores...'
-                  : 'No se encontraron jugadores con ese filtro'}
+                  ? t('evaluations.form.loadingPlayers', 'Cargando plantilla de jugadores...')
+                  : t('evaluations.form.noPlayersFound', 'No se encontraron jugadores con ese filtro')}
               </Muted>
             ) : (
               <PlayerGridScroll>
@@ -616,7 +626,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
         {/* Calculated score summary badge */}
         {calculatedScore !== null && (
           <ScoreSummaryBadge $bg={scoreColors.bg} $color={scoreColors.color}>
-            <span>Nota General Calculada:</span>
+            <span>{t('evaluations.form.calculatedScore', 'Nota General Calculada:')}</span>
             <span style={{ fontSize: 20 }}>{calculatedScore} / 10</span>
           </ScoreSummaryBadge>
         )}
@@ -624,7 +634,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
         {/* Dynamic Questions rendering */}
         <Stack $gap={12}>
           <Label style={{ fontSize: 15, fontWeight: 700, marginTop: 4 }}>
-            Cuestionario de Evaluación
+            {t('evaluations.form.questionnaireTitle', 'Cuestionario de Evaluación')}
           </Label>
 
           {questions.map((q, idx) => {
@@ -638,7 +648,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                     <Icon size={18} />
                   </IconCircle>
                   <QuestionTitle>
-                    {idx + 1}. {q.questionText}
+                    {idx + 1}. {resolveQuestionText(q, t)}
                   </QuestionTitle>
                 </QuestionHeader>
 
@@ -677,7 +687,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                       </StarBtn>
                     ))}
                     <span style={{ marginLeft: 8, fontSize: 13, fontWeight: 600 }}>
-                      {val ? `${val} / 5 estrellas` : 'Sin puntuar'}
+                      {val ? `${val} / 5 ${t('evaluations.pdf.stars', 'estrellas')}` : t('evaluations.form.unrated', 'Sin puntuar')}
                     </span>
                   </StarsRow>
                 )}
@@ -696,7 +706,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                           onClick={() => handleAnswerChange(q.id, optKey)}
                         >
                           {isSel && <MdCheck size={16} />}
-                          {resolveOptionLabel(opt)}
+                          {resolveOptionLabel(opt, t)}
                         </OptionPill>
                       );
                     })}
@@ -718,7 +728,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                           onClick={() => handleToggleMultiSelect(q.id, optKey)}
                         >
                           {isSel && <MdCheck size={16} />}
-                          {resolveOptionLabel(opt)}
+                          {resolveOptionLabel(opt, t)}
                         </OptionPill>
                       );
                     })}
@@ -734,7 +744,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                       onClick={() => handleAnswerChange(q.id, true)}
                     >
                       {val === true && <MdCheck size={16} />}
-                      Sí / Afirmativo
+                      {t('evaluations.form.yes', 'Sí / Afirmativo')}
                     </OptionPill>
                     <OptionPill
                       type="button"
@@ -742,7 +752,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                       onClick={() => handleAnswerChange(q.id, false)}
                     >
                       {val === false && <MdCheck size={16} />}
-                      No / Negativo
+                      {t('evaluations.form.no', 'No / Negativo')}
                     </OptionPill>
                   </OptionPillGroup>
                 )}
@@ -783,7 +793,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
                     rows={3}
                     value={val || ''}
                     onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                    placeholder="Escribe aquí las observaciones o respuesta libre..."
+                    placeholder={t('evaluations.form.freeTextPlaceholder', 'Escribe aquí las observaciones o respuesta libre...')}
                   />
                 )}
               </QuestionBox>
@@ -793,12 +803,12 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
 
         {/* General notes */}
         <Field>
-          <Label>Observaciones Generales Adicionales</Label>
+          <Label>{t('evaluations.form.generalNotes', 'Observaciones Generales Adicionales')}</Label>
           <TextArea
             rows={3}
             value={generalNotes}
             onChange={(e) => setGeneralNotes(e.target.value)}
-            placeholder="Añade cualquier nota final sobre esta evaluación..."
+            placeholder={t('evaluations.form.notesPlaceholder', 'Añade cualquier nota final sobre esta evaluación...')}
           />
         </Field>
       </Stack>

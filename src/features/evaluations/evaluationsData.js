@@ -35,6 +35,54 @@ export const QUESTION_TYPES = [
   { key: 'player', label: 'Selección de Jugador', description: 'Seleccionar un jugador del equipo', icon: MdPerson },
 ];
 
+export function getQuestionTypes(t) {
+  if (!t) return QUESTION_TYPES;
+  return [
+    {
+      key: 'rating10',
+      label: t('evaluations.questionTypes.rating10.label', 'Escala 1 - 10'),
+      description: t('evaluations.questionTypes.rating10.desc', 'Puntuación numérica del 1 al 10'),
+      icon: MdFormatListNumbered,
+    },
+    {
+      key: 'stars5',
+      label: t('evaluations.questionTypes.stars5.label', 'Estrellas (1-5)'),
+      description: t('evaluations.questionTypes.stars5.desc', 'Calificación con 5 estrellas'),
+      icon: MdStar,
+    },
+    {
+      key: 'select',
+      label: t('evaluations.questionTypes.select.label', 'Selección Única'),
+      description: t('evaluations.questionTypes.select.desc', 'Elegir una sola opción entre varias'),
+      icon: MdList,
+    },
+    {
+      key: 'multiSelect',
+      label: t('evaluations.questionTypes.multiSelect.label', 'Selección Múltiple'),
+      description: t('evaluations.questionTypes.multiSelect.desc', 'Elegir varias opciones aplicables'),
+      icon: MdChecklist,
+    },
+    {
+      key: 'text',
+      label: t('evaluations.questionTypes.text.label', 'Texto Libre / Campo a mano'),
+      description: t('evaluations.questionTypes.text.desc', 'Campo de texto descriptivo u observaciones'),
+      icon: MdEdit,
+    },
+    {
+      key: 'boolean',
+      label: t('evaluations.questionTypes.boolean.label', 'Sí / No'),
+      description: t('evaluations.questionTypes.boolean.desc', 'Respuesta afirmativa o negativa'),
+      icon: MdToggleOn,
+    },
+    {
+      key: 'player',
+      label: t('evaluations.questionTypes.player.label', 'Selección de Jugador'),
+      description: t('evaluations.questionTypes.player.desc', 'Seleccionar un jugador del equipo'),
+      icon: MdPerson,
+    },
+  ];
+}
+
 export const AVAILABLE_ICONS = [
   { name: 'analytics', color: '#3b82f6', component: MdAnalytics },
   { name: 'flame', color: '#ef4444', component: MdLocalFireDepartment },
@@ -101,8 +149,45 @@ export function computeEvaluationScore(answers, questions = []) {
   return Math.round((totalScore / count) * 10) / 10;
 }
 
-export function resolveOptionLabel(option) {
+export function resolveOptionLabel(option, t) {
   if (!option) return '';
-  if (typeof option === 'string') return option;
-  return option.label || option.key || '';
+  const raw = typeof option === 'string' ? option : option.label || option.key || '';
+  if (!t) return raw;
+  const keyMap = {
+    'Portero': t('evaluations.options.goalkeeper', 'Portero'),
+    'Defensa': t('evaluations.options.defender', 'Defensa'),
+    'Centrocampista': t('evaluations.options.midfielder', 'Centrocampista'),
+    'Delantero': t('evaluations.options.forward', 'Delantero'),
+  };
+  return keyMap[raw] || raw;
+}
+
+export function resolveQuestionText(q, t) {
+  if (!q || !q.questionText) return '';
+  if (!t) return q.questionText;
+  const qMap = {
+    'Rendimiento Táctico Individual': t('evaluations.defaultQuestions.tacticalPerformance', 'Rendimiento Táctico Individual'),
+    'Intensidad Física y Despliegue': t('evaluations.defaultQuestions.physicalIntensity', 'Intensidad Física y Despliegue'),
+    'Toma de Decisiones y Calidad Técnica': t('evaluations.defaultQuestions.decisionMaking', 'Toma de Decisiones y Calidad Técnica'),
+    'Actitud y Liderazgo en el Campo': t('evaluations.defaultQuestions.attitudeLeadership', 'Actitud y Liderazgo en el Campo'),
+    '¿Cumplió el plan de juego asignado?': t('evaluations.defaultQuestions.gamePlanMet', '¿Cumplió el plan de juego asignado?'),
+    'Rol o Posición desempeñada principal': t('evaluations.defaultQuestions.rolePosition', 'Rol o Posición desempeñada principal'),
+    'Puntos Fuertes y Aspectos Destacados': t('evaluations.defaultQuestions.strengths', 'Puntos Fuertes y Aspectos Destacados'),
+    'Aspectos a Mejorar en el Próximo Entrenamiento': t('evaluations.defaultQuestions.improvementAreas', 'Aspectos a Mejorar en el Próximo Entrenamiento'),
+  };
+  return qMap[q.questionText] || q.questionText;
+}
+
+export function getTemplateDisplayName(tpl, t) {
+  if (!tpl) return '';
+  if (tpl._id === 'tpl_partido_jugador') {
+    return t ? t('evaluations.defaultTemplates.matchPlayer.name', tpl.name) : tpl.name;
+  }
+  if (tpl._id === 'tpl_semanal_equipo') {
+    return t ? t('evaluations.defaultTemplates.weeklyTeam.name', tpl.name) : tpl.name;
+  }
+  if (tpl._id === 'tpl_fisico_rendimiento') {
+    return t ? t('evaluations.defaultTemplates.physicalPerformance.name', tpl.name) : tpl.name;
+  }
+  return tpl.name;
 }
