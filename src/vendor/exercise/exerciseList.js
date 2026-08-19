@@ -1360,7 +1360,11 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   const userRole = user?.role || "user";
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const canEditExerciseItem = useCallback((item) => !item?.sharedByFriend && canEditClubOwnedItem(item, idUsuario, userRole), [idUsuario, userRole]);
-  const [listFilter, setListFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites' | 'shared'
+  const [listFilter, setListFilter] = useState(() => (
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('filter') === 'club'
+      ? 'club'
+      : 'all'
+  )); // 'all' | 'mine' | 'club' | 'global' | 'favorites' | 'shared'
   const [viewMode, setViewMode] = useState("list");
   const [scrollEnabled, setScrollEnabled] = useState(true);
 

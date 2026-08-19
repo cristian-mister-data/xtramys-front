@@ -8,6 +8,7 @@ import sessionReducer from './slices/session/sessionSlice';
 import injuryReducer from './slices/injury/injurySlice';
 import matchSheetReducer from './slices/matchSheet/matchSheetSlice';
 import rivalAnalysisReducer from './slices/rivalAnalysis/rivalAnalysisSlice';
+import evaluationsReducer from './slices/evaluations/evaluationsSlice';
 import anthropometryReducer from './slices/anthropometry/anthropometrySlice';
 import strategyReducer from './slices/strategy/strategySlice';
 import rivalReducer from './slices/rival/rivalSlice';
@@ -25,6 +26,7 @@ const appReducer = combineReducers({
   injury: injuryReducer,
   matchSheet: matchSheetReducer,
   rivalAnalysis: rivalAnalysisReducer,
+  evaluations: evaluationsReducer,
   anthropometry: anthropometryReducer,
   strategy: strategyReducer,
   rival: rivalReducer,
@@ -52,6 +54,4 @@ const rootReducer = (state, action) => {
 };
 
 export default rootReducer;
-// Re-export RESET_STORE para que vendor copies de RN puedan importarlo
-// desde el mismo path que el source original (`redux/rootReducer`).
 export { RESET_STORE };

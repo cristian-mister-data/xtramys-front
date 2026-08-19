@@ -6046,5 +6046,101 @@
       "diagonal": "Diagonal",
       "sash": "Banda"
     }
+  },
+  "evaluations": {
+    "title": "Evaluaciones & Cuestionarios",
+    "subtitle": "Registra y analiza el rendimiento individual y de equipo mediante plantillas y fechas personalizadas",
+    "newEvaluation": "Nueva Evaluación",
+    "templates": "Plantillas",
+    "totalEvaluations": "Total de Evaluaciones",
+    "overallAverage": "Promedio General",
+    "individualEvaluations": "Evaluaciones Individuales",
+    "generalEvaluations": "Evaluaciones Generales",
+    "searchPlaceholder": "Buscar por jugador, nota o plantilla...",
+    "allScopes": "Todos los Ámbitos",
+    "playerScope": "Por Jugador",
+    "generalScope": "General / Equipo",
+    "allPlayers": "Todos los Jugadores",
+    "clearDate": "Limpiar Fecha",
+    "historyTab": "Historial de Evaluaciones",
+    "rankingsTab": "Promedios & Rankings",
+    "emptyTitle": "No hay evaluaciones registradas",
+    "emptySubtitle": "Comienza registrando la primera evaluación del equipo o individual de un jugador utilizando tus plantillas personalizadas.",
+    "createNow": "Crear Evaluación Ahora",
+    "playerRankingTitle": "Clasificación de Promedios por Jugador",
+    "noPlayerRanking": "No hay evaluaciones individuales de jugadores registradas aún.",
+    "position": "Posición",
+    "player": "Jugador",
+    "evalCount": "Nº Evaluaciones",
+    "avgScore": "Promedio General",
+    "deleteConfirm": "¿Deseas eliminar la evaluación del día {{date}}?",
+    "deleteSuccess": "Evaluación eliminada correctamente",
+    "form": {
+      "newTitle": "Nueva Evaluación",
+      "editTitle": "Editar Evaluación",
+      "date": "Fecha de la Evaluación",
+      "scope": "Ámbito de la Evaluación",
+      "playerRequired": "Selecciona un jugador para la evaluación",
+      "templateRequired": "Selecciona una plantilla de evaluación",
+      "updateSuccess": "Evaluación actualizada correctamente",
+      "saveSuccess": "Evaluación guardada correctamente",
+      "selectTemplate": "Selecciona la Plantilla de Preguntas",
+      "selectPlayer": "Selecciona el Jugador a Evaluar",
+      "searchPlayerPlaceholder": "Buscar por nombre o dorsal...",
+      "loadingPlayers": "Cargando plantilla de jugadores...",
+      "noPlayersFound": "No se encontraron jugadores con ese filtro",
+      "calculatedScore": "Nota General Calculada:",
+      "questionnaireTitle": "Cuestionario de Evaluación",
+      "generalNotes": "Observaciones Generales Adicionales",
+      "notesPlaceholder": "Añade cualquier nota final sobre esta evaluación..."
+    },
+    "detail": {
+      "title": "Detalle de la Evaluación",
+      "deleteConfirm": "¿Eliminar esta evaluación?",
+      "deleteSuccess": "Evaluación eliminada",
+      "downloadPdf": "Descargar PDF / Compartir",
+      "unanswered": "Sin responder",
+      "noOptionSelected": "Ninguna opción seleccionada",
+      "additionalNotes": "Observaciones Generales Adicionales"
+    },
+    "template": {
+      "title": "Gestor de Plantillas de Evaluación",
+      "subtitle": "Crea y personaliza las plantillas de cuestionarios para tu equipo",
+      "recommendedTitle": "Plantillas Recomendadas",
+      "recommendedDesc": "Usa una plantilla base para comenzar rápidamente",
+      "useTemplate": "Usar Plantilla",
+      "myTemplatesTitle": "Tus Plantillas Personalizadas",
+      "newTemplate": "Nueva Plantilla",
+      "questionsCount": "{{count}} preguntas",
+      "activeDefault": "Activa por Defecto",
+      "setActive": "Establecer como Activa",
+      "editNameTitle": "Editar nombre de plantilla",
+      "nameRequired": "Introduce un nombre para la plantilla",
+      "createSuccess": "Plantilla creada con éxito",
+      "updateSuccess": "Plantilla actualizada",
+      "setDefaultSuccess": "Plantilla activa actualizada",
+      "deleteConfirm": "¿Eliminar la plantilla \"{{name}}\"?",
+      "deleteSuccess": "Plantilla eliminada",
+      "questionTextRequired": "El texto de la pregunta es obligatorio",
+      "optionsRequired": "Añade al menos una opción para esta pregunta",
+      "questionUpdated": "Pregunta actualizada",
+      "questionAdded": "Pregunta añadida",
+      "questionDeleted": "Pregunta eliminada",
+      "activeTemplateNotice": "Esta es la plantilla activa por defecto para nuevas evaluaciones."
+    },
+    "defaultTemplates": {
+      "matchPlayer": {
+        "name": "Evaluación de Partido (Jugador)",
+        "desc": "Evaluación completa del rendimiento táctico, técnico y físico en competición."
+      },
+      "weeklyTeam": {
+        "name": "Evaluación Semanal de Equipo (General)",
+        "desc": "Balance semanal de intensidad, dinámica grupal y objetivos del microciclo."
+      },
+      "physicalPerformance": {
+        "name": "Evaluación Física & Rendimiento",
+        "desc": "Control de fatiga, nivel de recuperación y rendimiento físico individual."
+      }
+    }
   }
 }

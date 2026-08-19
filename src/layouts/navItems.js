@@ -22,6 +22,7 @@ import {
   MdMap,
   MdPerson,
   MdPersonSearch,
+  MdAssignment,
 } from 'react-icons/md';
 
 /**
@@ -48,6 +49,10 @@ export function getNavSections(t, options = {}) {
         {
           to: '/players', label: t('menu.players', 'Jugadores'), Icon: MdPeople,
           keywords: ['jugadores', 'players', 'plantilla', 'equipo']
+        },
+        {
+          to: '/evaluations', label: t('menu.evaluations', 'Evaluaciones'), Icon: MdAssignment,
+          keywords: ['evaluaciones', 'evaluations', 'cuestionarios', 'evaluacion', 'jugadores', 'plantillas', 'preguntas', 'encuestas']
         },
         ...(!options.isDemo ? [{
           to: '/friends', label: t('friends.title', 'Amigos'), Icon: MdPeople,

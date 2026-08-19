@@ -6039,5 +6039,101 @@
       "diagonal": "Diagonal",
       "sash": "Sash"
     }
+  },
+  "evaluations": {
+    "title": "Evaluations & Questionnaires",
+    "subtitle": "Record and analyze individual and team performance using custom templates and dates",
+    "newEvaluation": "New Evaluation",
+    "templates": "Templates",
+    "totalEvaluations": "Total Evaluations",
+    "overallAverage": "Overall Average",
+    "individualEvaluations": "Individual Evaluations",
+    "generalEvaluations": "General Evaluations",
+    "searchPlaceholder": "Search by player, score or template...",
+    "allScopes": "All Scopes",
+    "playerScope": "By Player",
+    "generalScope": "General / Team",
+    "allPlayers": "All Players",
+    "clearDate": "Clear Date",
+    "historyTab": "Evaluation History",
+    "rankingsTab": "Averages & Rankings",
+    "emptyTitle": "No evaluations recorded",
+    "emptySubtitle": "Start by recording the first team or individual player evaluation using your custom templates.",
+    "createNow": "Create Evaluation Now",
+    "playerRankingTitle": "Player Average Ranking",
+    "noPlayerRanking": "No individual player evaluations recorded yet.",
+    "position": "Position",
+    "player": "Player",
+    "evalCount": "No. Evaluations",
+    "avgScore": "Overall Average",
+    "deleteConfirm": "Do you want to delete the evaluation from {{date}}?",
+    "deleteSuccess": "Evaluation deleted successfully",
+    "form": {
+      "newTitle": "New Evaluation",
+      "editTitle": "Edit Evaluation",
+      "date": "Evaluation Date",
+      "scope": "Evaluation Scope",
+      "playerRequired": "Select a player for the evaluation",
+      "templateRequired": "Select an evaluation template",
+      "updateSuccess": "Evaluation updated successfully",
+      "saveSuccess": "Evaluation saved successfully",
+      "selectTemplate": "Select Question Template",
+      "selectPlayer": "Select Player to Evaluate",
+      "searchPlayerPlaceholder": "Search by name or number...",
+      "loadingPlayers": "Loading player roster...",
+      "noPlayersFound": "No players match that filter",
+      "calculatedScore": "Calculated Overall Score:",
+      "questionnaireTitle": "Evaluation Questionnaire",
+      "generalNotes": "Additional General Notes",
+      "notesPlaceholder": "Add any final notes for this evaluation..."
+    },
+    "detail": {
+      "title": "Evaluation Details",
+      "deleteConfirm": "Delete this evaluation?",
+      "deleteSuccess": "Evaluation deleted",
+      "downloadPdf": "Download PDF / Share",
+      "unanswered": "Unanswered",
+      "noOptionSelected": "No options selected",
+      "additionalNotes": "Additional General Notes"
+    },
+    "template": {
+      "title": "Evaluation Template Manager",
+      "subtitle": "Create and customize questionnaire templates for your team",
+      "recommendedTitle": "Recommended Templates",
+      "recommendedDesc": "Use a base template to get started quickly",
+      "useTemplate": "Use Template",
+      "myTemplatesTitle": "Your Custom Templates",
+      "newTemplate": "New Template",
+      "questionsCount": "{{count}} questions",
+      "activeDefault": "Active Default",
+      "setActive": "Set as Active",
+      "editNameTitle": "Edit template name",
+      "nameRequired": "Enter a name for the template",
+      "createSuccess": "Template created successfully",
+      "updateSuccess": "Template updated",
+      "setDefaultSuccess": "Active template updated",
+      "deleteConfirm": "Delete template \"{{name}}\"?",
+      "deleteSuccess": "Template deleted",
+      "questionTextRequired": "Question text is required",
+      "optionsRequired": "Add at least one option for this question",
+      "questionUpdated": "Question updated",
+      "questionAdded": "Question added",
+      "questionDeleted": "Question deleted",
+      "activeTemplateNotice": "This is the active default template for new evaluations."
+    },
+    "defaultTemplates": {
+      "matchPlayer": {
+        "name": "Match Evaluation (Player)",
+        "desc": "Comprehensive assessment of tactical, technical, and physical performance in competition."
+      },
+      "weeklyTeam": {
+        "name": "Weekly Team Evaluation (General)",
+        "desc": "Weekly overview of intensity, group dynamics, and microcycle objectives."
+      },
+      "physicalPerformance": {
+        "name": "Physical & Performance Evaluation",
+        "desc": "Fatigue tracking, recovery status, and individual physical fitness."
+      }
+    }
   }
 }

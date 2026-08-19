@@ -98,6 +98,7 @@ export default function Home({ navigation: navigationProp, canMutate = true }) {
   const temporada = useSelector(state => state.season.season);
   const seasonLoading = useSelector(state => state.season.loading);
   const user = useSelector(state => state.usuario.user);
+  const supervising = useSelector(state => state.usuario.supervising);
   const equipos = useSelector(selectTeams);
   const jugadores = useSelector(selectPlayers);
   const lesiones = useSelector(selectInjuries);
@@ -168,10 +169,10 @@ export default function Home({ navigation: navigationProp, canMutate = true }) {
   }, [idUsuario, initialSeasonLoaded, temporada, dispatch]);
 
   useEffect(() => {
-    if (idUsuario && initialSeasonLoaded && !seasonLoading && !temporada) {
+    if (idUsuario && initialSeasonLoaded && !seasonLoading && !temporada && !supervising) {
       routerNavigate('/season/create', { replace: true });
     }
-  }, [idUsuario, initialSeasonLoaded, seasonLoading, temporada, routerNavigate]);
+  }, [idUsuario, initialSeasonLoaded, seasonLoading, temporada, supervising, routerNavigate]);
 
   const handleCreateExerciseFromSession = useCallback(() => {
     saveFormDraft(STORAGE_KEYS.EXERCISE_LIST, { creating: true, editingExercise: null, addToTrainingDraft: true });

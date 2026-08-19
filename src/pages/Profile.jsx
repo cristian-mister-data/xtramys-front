@@ -32,7 +32,7 @@ import { setUser } from '@/store/slices/user/userSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { RESET_STORE, RESET_WORKSPACE } from '@/store/actionTypes';
 import { selectWorkspace } from '@/store/slices/workspace/workspaceSlice';
-import { saveToken, saveUser } from '@/auth/storage';
+import { clearWorkspace, saveToken, saveUser } from '@/auth/storage';
 import { createPortalSession, reactivateSubscription, cancelSubscription } from '@/api/subscription';
 import api from '@/api/client';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
@@ -740,6 +740,7 @@ export default function Profile() {
       if (data?.token) await saveToken(data.token);
       if (nextUser) {
         saveUser(nextUser);
+        clearWorkspace();
         dispatch({ type: RESET_STORE });
         dispatch(setUser(nextUser));
         toast.success(`Has entrado como ${nextUser.correo}`);

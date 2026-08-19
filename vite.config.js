@@ -134,6 +134,7 @@ export default defineConfig(({ mode }) => {
     port: 4173,
   },
   optimizeDeps: {
+    entries: ['index.html'],
     exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
     include: [
       'react-native-web',

@@ -8,6 +8,7 @@ import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
 import { startSupervision } from '@/store/slices/user/userSlice';
+import { forgetWorkspace } from '@/store/slices/workspace/workspaceSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { RESET_WORKSPACE } from '@/store/actionTypes';
 import Modal from '@/ui/Modal';
@@ -1502,7 +1503,7 @@ export default function ClubDashboard() {
             type="button"
             $variant="primary"
             style={{ borderRadius: 10, fontWeight: 600, fontSize: 13, marginTop: 'auto' }}
-            onClick={() => navigate('/exercises')}
+            onClick={() => navigate('/exercises?filter=club')}
           >
             Gestionar Biblioteca
           </Button>
@@ -1903,6 +1904,7 @@ export default function ClubDashboard() {
                               const res = await api.get(`/user/${member._id}`);
                               const coachUser = res.data?.usuario || res.data;
                               dispatch(startSupervision(coachUser));
+                              dispatch(forgetWorkspace());
                               dispatch({ type: RESET_WORKSPACE });
                               navigate('/app', { replace: true });
                             } catch (err) {

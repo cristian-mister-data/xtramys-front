@@ -24,6 +24,7 @@ const Season = lazy(() => import('@/pages/Season'));
 const CreateSeason = lazy(() => import('@/pages/CreateSeason'));
 const Tournaments = lazy(() => import('@/pages/Tournaments'));
 const Players = lazy(() => import('@/pages/Players'));
+const Evaluations = lazy(() => import('@/pages/Evaluations'));
 const PlayerProfile = lazy(() => import('@/pages/PlayerProfile'));
 const Exercises = lazy(() => import('@/pages/Exercises'));
 const Strategies = lazy(() => import('@/pages/Strategies'));
@@ -204,6 +205,7 @@ export default function AppRouter() {
         <Route path="/season" element={lazy_(<Season />)} />
         <Route path="/tournaments" element={lazy_(<Tournaments />)} />
         <Route path="/players" element={lazy_(<Players />)} />
+        <Route path="/evaluations" element={lazy_(<Evaluations />)} />
         <Route path="/players/:id" element={lazy_(<PlayerProfile />)} />
         <Route path="/exercises/*" element={lazy_(<Exercises />)} />
         <Route path="/strength-exercises" element={lazy_(<DemoSubscribeGate><StrengthExercises /></DemoSubscribeGate>)} />
@@ -230,7 +232,6 @@ export default function AppRouter() {
         <Route path="/friends" element={lazy_(<Friends />)} />
         <Route path="/notifications" element={lazy_(<Notifications />)} />
         <Route path="/club/dashboard" element={lazy_(<ClubDashboard />)} />
-        
       </Route>
 
       {/* Tactical Board: layout fullscreen sin sidebar */}
