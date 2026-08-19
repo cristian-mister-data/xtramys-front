@@ -1055,7 +1055,7 @@ function FolderManagement({
 }
 
 // Mejorada: solo muestra el campo si hay elementosCampo y tipoCampo
-function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, forceHeight = null, isGrid = false, onOpenOptions, styles, isSelected = false, selectionMode = false, onToggleSelect, onToggleFavorite }) {
+function ExerciseCard({ exercise, folderLabel, onPress, onLongPress, forceWidth = null, forceHeight = null, isGrid = false, onOpenOptions, styles, isSelected = false, selectionMode = false, onToggleSelect, onToggleFavorite }) {
   const { width: screenWidth } = useWindowDimensions();
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -1204,6 +1204,12 @@ function ExerciseCard({ exercise, onPress, onLongPress, forceWidth = null, force
             <Text style={styles.cardDuration} numberOfLines={1}>
               {t('friends.sharedBy', { name: exercise.sharedByFriend.nombre })}
             </Text>
+          )}
+          {folderLabel && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <Ionicons name="folder-outline" size={12} color={theme.colors.textMuted || '#94A3B8'} />
+              <Text style={styles.cardDuration} numberOfLines={1}>{folderLabel}</Text>
+            </View>
           )}
           <Text style={[styles.cardDuration, IS_MOBILE && { fontSize: 12 }, isGrid && styles.cardDurationGrid]}>{exercise.tiempo} min</Text>
 
@@ -1704,7 +1710,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
     if (listFilter === 'favorites') {
       const favsById = new Map();
-      [...ejercicios, ...(isDemo ? [] : globalExercises)].filter(Boolean).forEach((exercise) => {
+      [...ejercicios, ...sharedExercises, ...(isDemo ? [] : globalExercises)].filter(Boolean).forEach((exercise) => {
         const id = getItemId(exercise);
         if (!id) return;
         const prev = favsById.get(String(id));
@@ -1721,12 +1727,21 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => !ex.isGlobal && (sameId(getOwnerId(ex), idUsuario) || !getOwnerId(ex)));
       }
       if (listFilter === 'club') {
-        return ejercicios.filter(ex => ex.visibility === 'CLUB');
+        return mergeById(
+          ejercicios.filter(ex => ex.visibility === 'CLUB'),
+          sharedExercises.filter(ex => ex.visibility === 'CLUB' || ex.clubId),
+        );
       }
-      return isDemo ? demoOnly(ejercicios) : mergeById(ejercicios, globalExercises);
+      // “Todos” incluye también el contenido compartido que llega por
+      // /shared-content, además de la biblioteca del club y la global.
+      return isDemo ? demoOnly(ejercicios) : mergeById(ejercicios, sharedExercises, globalExercises);
     })();
     if (currentFolderId && !isTitleSearch) return sort(isDemo ? demoOnly(currentFolderExercises) : currentFolderExercises);
-    if (listFilter === 'club') return sort(base);
+    // En la raíz solo viven las carpetas y los ejercicios sin carpeta. El
+    // contenido de una carpeta se muestra al abrirla.
+    if (listFilter === 'all' || listFilter === 'club') {
+      return sort(isTitleSearch ? base : base.filter(ex => !hasFolder(ex)));
+    }
     return sort(isTitleSearch ? base : base.filter(ex => !hasFolder(ex)));
   }, [listFilter, currentFolderId, currentFolderExercises, globalExercises, ejercicios, idUsuario, filters.titulo, lang, isDemo, sharedExercises]);
 
@@ -1753,9 +1768,36 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (currentFolderId) return sortByLocalizedName(currentFolderSubfolders, lang);
     if (listFilter === 'global') return isDemo ? [] : sortByLocalizedName(globalFolders.filter(f => !f.parentFolder), lang);
     if (listFilter === 'mine') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && !f.isGlobal && (isDemo || sameId(getOwnerId(f), idUsuario) || !getOwnerId(f))), lang);
-    if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && f.visibility === 'CLUB'), lang);
+    if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && (f.isClub || f.visibility === 'CLUB')), lang);
     return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang, isDemo]);
+
+  const folderLabels = useMemo(() => {
+    const folders = mergeById(exerciseFolders, exerciseFoldersFlat, globalFolders);
+    const byId = new Map(folders.map((folder) => [String(getItemId(folder)), folder]));
+    const labels = new Map();
+    const build = (folder, visited = new Set()) => {
+      const id = String(getItemId(folder) || '');
+      if (!id || visited.has(id)) return folder?.nombre || '';
+      if (labels.has(id)) return labels.get(id);
+      visited.add(id);
+      const parentId = getItemId(folder?.parentFolder) || folder?.parentFolder;
+      const parent = parentId ? byId.get(String(parentId)) : null;
+      const label = parent ? `${build(parent, visited)} / ${folder.nombre}` : (folder.nombre || '');
+      labels.set(id, label);
+      return label;
+    };
+    folders.forEach((folder) => build(folder));
+    return labels;
+  }, [exerciseFolders, exerciseFoldersFlat, globalFolders]);
+
+  const getExerciseFolderLabel = useCallback((exercise) => {
+    const folder = exercise?.folder;
+    const folderId = getItemId(folder) || folder;
+    return (folderId && folderLabels.get(String(folderId)))
+      || (typeof folder === 'object' ? folder?.nombre : '')
+      || '';
+  }, [folderLabels]);
 
   const handleDelete = (exercise) => {
     if (canMutate === false) return;
@@ -2506,6 +2548,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                     <View key={item._id || item.id} style={{ width: '100%' }}>
                       <ExerciseCard
                         exercise={item}
+                        folderLabel={getExerciseFolderLabel(item)}
                         onPress={handleExercisePress}
                         onLongPress={handleExerciseLongPress}
                         isGrid={false}

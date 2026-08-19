@@ -5620,6 +5620,8 @@
     "statusSuspended": "Suspendido",
     "viewActivityTitle": "Ver actividad",
     "viewActivityBtn": "Ver",
+    "manageActivityTitle": "Gestionar equipo",
+    "manageActivityBtn": "Gestionar",
     "resendInviteTitle": "Reenviar invitación",
     "successInviteResent": "Invitación reenviada",
     "errorInviteResent": "Error al reenviar invitación",

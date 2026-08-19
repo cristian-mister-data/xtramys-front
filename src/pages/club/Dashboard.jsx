@@ -7,8 +7,8 @@ import { MdPersonAdd, MdShield, MdDelete, MdVisibility, MdLockOpen, MdLock, MdMa
 import api from '@/api/client';
 import { Card, Button, Field, Input, Label, Row, Stack, Badge, Muted, PageHeader, PageTitle, Divider } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
-import { startSupervision } from '@/store/slices/user/userSlice';
-import { forgetWorkspace } from '@/store/slices/workspace/workspaceSlice';
+import { startSupervision, stopSupervision } from '@/store/slices/user/userSlice';
+import { forgetWorkspace, selectWorkspace, setSupervisionWorkspaces } from '@/store/slices/workspace/workspaceSlice';
 import { checkSubscription } from '@/store/slices/user/userThunks';
 import { RESET_WORKSPACE } from '@/store/actionTypes';
 import Modal from '@/ui/Modal';
@@ -748,6 +748,13 @@ export default function ClubDashboard() {
 
   const fetchClubData = async () => {
     try {
+      sessionStorage.removeItem('xtramys:club-manage-user');
+      sessionStorage.removeItem('xtramys:club-supervision-user');
+      sessionStorage.removeItem('xtramys:club-supervision-mode');
+      sessionStorage.removeItem('xtramys:club-supervision-owner');
+      sessionStorage.removeItem('xtramys:club-supervision-user-data');
+      sessionStorage.removeItem('xtramys:club-supervision-active');
+      dispatch(stopSupervision());
       const response = await api.get('/club/my-club');
       setData(response.data);
     } catch (error) {
@@ -755,6 +762,61 @@ export default function ClubDashboard() {
       toast.error(error.message || t('connection.loadError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStartCoachSupervision = async (member, mode = 'view') => {
+    try {
+      const res = await api.get(`/user/${member._id}`);
+      const coachUser = res.data?.usuario || res.data;
+      if (!coachUser?._id) {
+        throw new Error(t('connection.loadError', 'Error al cargar los datos del entrenador'));
+      }
+
+      // Resolvemos primero los equipos mientras el panel sigue estable. Si
+      // activamos la supervisión antes, WorkspaceGate alcanza a leer los
+      // workspaces del director y abre el selector con datos incorrectos.
+      const workspacesRes = await api.get(`/club/workspaces?userId=${encodeURIComponent(coachUser._id)}`);
+      const workspaces = workspacesRes.data?.workspaces || [];
+      const managing = mode === 'manage';
+      const target = workspaces.length === 1 ? workspaces[0] : null;
+      const teamId = target?.team?._id || target?.teamId;
+      const selected = target ? {
+        ...target,
+        teamId,
+        permission: managing ? 'manage' : 'view',
+        historical: false,
+        canWrite: managing,
+      } : null;
+
+      const directorId = data?.club?.ownerUserId || coachUser.clubId;
+      sessionStorage.setItem('xtramys:club-supervision-owner', directorId);
+      sessionStorage.setItem('xtramys:club-supervision-user', coachUser._id);
+      sessionStorage.setItem('xtramys:club-supervision-user-data', JSON.stringify(coachUser));
+      sessionStorage.setItem('xtramys:club-supervision-mode', mode);
+      sessionStorage.setItem('xtramys:club-supervision-active', '1');
+      sessionStorage.setItem('xtramys:club-manage-user', coachUser._id);
+      dispatch({ type: RESET_WORKSPACE });
+      dispatch(setSupervisionWorkspaces({ items: workspaces, selected }));
+      dispatch(startSupervision({ user: coachUser, mode }));
+
+      if (workspaces.length === 1) {
+        navigate('/app', { replace: true });
+      } else if (workspaces.length > 1) {
+        navigate('/team-select', {
+          replace: true,
+          state: { from: { pathname: '/app' }, clubSupervision: true },
+        });
+      } else {
+        navigate('/app', { replace: true });
+      }
+    } catch (err) {
+      console.error('Error starting supervision:', err);
+      toast.error(
+        err?.status === 403
+          ? t('clubDashboard.pendingInviteAccessDenied', 'El entrenador aun no ha aceptado la invitacion del club.')
+          : (err.message || t('connection.loadError', 'Error al cargar los datos del entrenador'))
+      );
     }
   };
 
@@ -1880,7 +1942,17 @@ export default function ClubDashboard() {
                       </Td>
                       <Td style={{ fontSize: 13, color: 'inherit', opacity: 0.8 }}>{member.correo}</Td>
                       <Td>
-                        {member.categoriaKey ? (
+                        {member.accessCategories?.length ? (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {member.accessCategories.map((category) => (
+                              <Badge key={category} $tone="neutral">
+                                {category === 'otro'
+                                  ? t('team.categories.otro', 'Otro')
+                                  : t(`team.categories.${category}`, category)}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : member.categoriaKey ? (
                           <Badge $tone="neutral">
                             {member.categoriaKey === 'otro'
                               ? (member.categoriaCustom || member.categoria || t('team.categories.otro', 'Otro'))
@@ -1897,27 +1969,20 @@ export default function ClubDashboard() {
                       </Td>
                       <Td>
                         {/* View coach data (read-only) */}
-                                                <ActionBtn
+                        <ActionBtn
                           title={t('clubDashboard.viewActivityTitle', 'Ver actividad')}
-                          onClick={async () => {
-                            try {
-                              const res = await api.get(`/user/${member._id}`);
-                              const coachUser = res.data?.usuario || res.data;
-                              dispatch(startSupervision(coachUser));
-                              dispatch(forgetWorkspace());
-                              dispatch({ type: RESET_WORKSPACE });
-                              navigate('/app', { replace: true });
-                            } catch (err) {
-                              toast.error(
-                                err?.status === 403
-                                  ? t('clubDashboard.pendingInviteAccessDenied', 'El entrenador aun no ha aceptado la invitacion del club.')
-                                  : t('connection.loadError', 'Error al cargar los datos del entrenador')
-                              );
-                            }
-                          }}
+                          onClick={() => handleStartCoachSupervision(member, 'view')}
                         >
-                                                    <MdVisibility size={14} />
+                          <MdVisibility size={14} />
                           {t('clubDashboard.viewActivityBtn', 'Ver')}
+                        </ActionBtn>
+                        {/* Manage coach team (edit mode) */}
+                        <ActionBtn
+                          title={t('clubDashboard.manageActivityTitle', 'Gestionar equipo')}
+                          onClick={() => handleStartCoachSupervision(member, 'manage')}
+                        >
+                          <MdEdit size={14} />
+                          {t('clubDashboard.manageActivityBtn', 'Gestionar')}
                         </ActionBtn>
                         {/* Resend invite for pending members */}
                         {isPending && (

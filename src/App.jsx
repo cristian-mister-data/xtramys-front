@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import AppRouter from './router/AppRouter';
 import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
 import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
-import { subscriptionRequired } from './store/slices/user/userSlice';
+import { subscriptionRequired, startSupervision } from './store/slices/user/userSlice';
+import { api } from './api/client';
 import Toaster from './ui/Toaster';
 import i18n from './i18n';
 import { saveToken } from './auth/storage';
@@ -136,7 +137,40 @@ export default function App() {
     const checkSession = (force = false) => {
       dispatch(fetchMe({ force }))
         .unwrap()
-        .then(() => {
+        .then(async (currentUser) => {
+          // La supervisión de un club vive en sessionStorage porque Redux se
+          // reinicia al recargar. Restauramos el usuario objetivo y el modo
+          // antes de que WorkspaceGate vuelva a cargar sus datos.
+          const targetId = sessionStorage.getItem('xtramys:club-supervision-user')
+            || sessionStorage.getItem('xtramys:club-manage-user');
+          const supervisionOwnerId = sessionStorage.getItem('xtramys:club-supervision-owner');
+          const mode = sessionStorage.getItem('xtramys:club-supervision-mode')
+            || (sessionStorage.getItem('xtramys:club-manage-user') ? 'manage' : 'view');
+          const isClubAdmin = currentUser?.role === 'club_admin' || currentUser?.clubRole === 'admin';
+          if (targetId && isClubAdmin && targetId !== currentUser?._id
+            && supervisionOwnerId === String(currentUser?._id)) {
+            try {
+              const response = await api.get(`/user/${targetId}`);
+              const target = response.data?.usuario || response.data;
+              if (target?._id) dispatch(startSupervision({ user: target, mode }));
+            } catch {
+              sessionStorage.removeItem('xtramys:club-supervision-user');
+              sessionStorage.removeItem('xtramys:club-supervision-mode');
+              sessionStorage.removeItem('xtramys:club-manage-user');
+              sessionStorage.removeItem('xtramys:club-supervision-owner');
+              sessionStorage.removeItem('xtramys:club-supervision-user-data');
+            }
+          } else if (targetId && sessionStorage.getItem('xtramys:club-supervision-active') !== '1'
+            && targetId !== String(currentUser?._id)
+            && (!isClubAdmin || supervisionOwnerId !== String(currentUser?._id))) {
+            // Claves antiguas o de otra cuenta: no se debe convertir una
+            // cuenta de club en la cuenta supervisada al entrar/recargar.
+            sessionStorage.removeItem('xtramys:club-supervision-user');
+            sessionStorage.removeItem('xtramys:club-supervision-mode');
+            sessionStorage.removeItem('xtramys:club-manage-user');
+            sessionStorage.removeItem('xtramys:club-supervision-owner');
+            sessionStorage.removeItem('xtramys:club-supervision-user-data');
+          }
           sessionReadyRef.current = true;
           apiUnavailableRef.current = false;
           setApiUnavailable(false);

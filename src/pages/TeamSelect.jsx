@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { MdArrowForward, MdHistory, MdLockOutline, MdRefresh, MdShield } from 'react-icons/md';
 import { fetchWorkspaces, selectWorkspace } from '@/store/slices/workspace/workspaceSlice';
-import { RESET_WORKSPACE } from '@/store/actionTypes';
+import { startSupervision } from '@/store/slices/user/userSlice';
 
 const Page = styled.main`
   min-height: 100dvh;
@@ -111,10 +111,8 @@ export default function TeamSelect() {
 
   useEffect(() => {
     const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
-    const isClubAdminMode = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
-    if (supervising || isDemo) navigate('/app', { replace: true });
-    else if (isClubAdminMode) navigate('/club/dashboard', { replace: true });
-  }, [navigate, supervising, user?.clubRole, user?.role, user?.plan, user?.accessMode]);
+    if (isDemo) navigate('/app', { replace: true });
+  }, [navigate, user?.plan, user?.accessMode]);
 
   useEffect(() => {
     if (!loaded && !loading) dispatch(fetchWorkspaces());
@@ -124,10 +122,39 @@ export default function TeamSelect() {
     const teamId = workspace.team?._id;
     setSelectingId(teamId);
     try {
+      // La selección puede ocurrir después de que auth haya rehidratado la
+      // cuenta original. Restaura explícitamente la cuenta objetivo antes de
+      // navegar para que las guards no la interpreten como administrador del
+      // club y la devuelvan al dashboard.
+      if (!supervising) {
+        const rawTarget = sessionStorage.getItem('xtramys:club-supervision-user-data');
+        const targetId = sessionStorage.getItem('xtramys:club-supervision-user');
+        if (rawTarget && targetId) {
+          try {
+            const targetUser = JSON.parse(rawTarget);
+            if (String(targetUser?._id) === String(targetId)) {
+              dispatch(startSupervision({
+                user: targetUser,
+                mode: sessionStorage.getItem('xtramys:club-supervision-mode') || 'view',
+              }));
+            }
+          } catch {
+            // La selección del equipo sigue siendo válida aunque no haya
+            // datos de perfil persistidos.
+          }
+        }
+      }
       await dispatch(selectWorkspace(workspace)).unwrap();
-      dispatch({ type: RESET_WORKSPACE });
-      const destination = location.state?.from?.pathname;
-      navigate(destination && destination !== '/team-select' ? destination : '/app', { replace: true });
+      const isClubSupervision = supervising
+        || sessionStorage.getItem('xtramys:club-supervision-active') === '1';
+      const requestedDestination = location.state?.from?.pathname;
+      const destination = isClubSupervision
+        ? '/app'
+        : (requestedDestination && requestedDestination !== '/team-select' ? requestedDestination : '/app');
+      navigate(destination, {
+        replace: true,
+        state: isClubSupervision ? { clubSupervision: true } : undefined,
+      });
     } finally {
       setSelectingId(null);
     }

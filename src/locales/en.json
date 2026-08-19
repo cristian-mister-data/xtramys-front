@@ -5613,6 +5613,8 @@
     "statusSuspended": "Suspended",
     "viewActivityTitle": "View activity",
     "viewActivityBtn": "View",
+    "manageActivityTitle": "Manage team",
+    "manageActivityBtn": "Manage",
     "resendInviteTitle": "Resend invitation",
     "successInviteResent": "Invitation resent",
     "errorInviteResent": "Error resending invitation",

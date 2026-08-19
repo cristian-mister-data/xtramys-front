@@ -233,6 +233,8 @@ function attachInterceptors(instance) {
       // if cookies are blocked by browser settings or privacy extensions.
       const token = loadToken();
       if (token) config.headers.Authorization = `Bearer ${token}`;
+      const managedUserId = sessionStorage.getItem('xtramys:club-manage-user');
+      if (managedUserId) config.headers['X-Club-Manage-User'] = managedUserId;
       if (workspaceId) config.headers['X-Team-Id'] = workspaceId;
       
       const isLongTimeout = LONG_TIMEOUT_ROUTES.some(route => config.url?.includes(route));

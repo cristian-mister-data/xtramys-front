@@ -31,9 +31,11 @@ const ErrorFallback = ({ onRetry }) => {
 export default function RequireSeason({ children }) {
   const dispatch = useDispatch();
   const workspace = useSelector((state) => state.workspace.selected);
+  const workspaceLoaded = useSelector((state) => state.workspace.loaded);
+  const workspaceLoading = useSelector((state) => state.workspace.loading);
   const user = useSelector((state) => state.usuario.user);
   const supervising = useSelector((state) => state.usuario.supervising);
-  const isClubAdmin = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
+  const isClubAdmin = user?.role === 'club_admin' || user?.clubRole === 'admin';
   const seasonId = workspace?.team?.temporada?._id || workspace?.team?.temporada || null;
   const teamId = workspace?.team?._id || workspace?.teamId || null;
   const [status, setStatus] = useState('idle');
@@ -59,8 +61,15 @@ export default function RequireSeason({ children }) {
       setStatus('ok');
       return;
     }
+    // Al recargar, el workspace persistido puede apuntar a un equipo
+    // eliminado o perteneciente a otra cuenta. Esperamos a que WorkspaceGate
+    // valide la lista accesible antes de pedir temporada/equipos.
+    if (!workspaceLoaded || workspaceLoading) {
+      setStatus('loading');
+      return;
+    }
     load(false);
-  }, [isClubAdmin, load, supervising]);
+  }, [isClubAdmin, load, supervising, workspaceLoaded, workspaceLoading]);
 
   // El panel del club no está ligado a una temporada/equipo seleccionado.
   if (isClubAdmin && !supervising) return children;

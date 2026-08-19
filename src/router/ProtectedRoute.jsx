@@ -64,6 +64,7 @@ export default function ProtectedRoute({ children }) {
   const isAuthenticated = useSelector((s) => s.usuario.isAuthenticated);
   const authChecked = useSelector((s) => s.usuario.authChecked);
   const user = useSelector((s) => s.usuario.user);
+  const supervising = useSelector((s) => s.usuario.supervising);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
   const location = useLocation();
 
@@ -77,8 +78,17 @@ export default function ProtectedRoute({ children }) {
   }
   // Las cuentas administradoras de club tienen su entrada en el panel del
   // club. Esto también corrige sesiones antiguas que aún intentan abrir /app.
+  const restoringSupervision = Boolean(location.state?.clubSupervision) || (
+    typeof window !== 'undefined'
+    && (sessionStorage.getItem('xtramys:club-supervision-active') === '1'
+      || sessionStorage.getItem('xtramys:club-supervision-user'))
+    && (sessionStorage.getItem('xtramys:club-supervision-owner') === String(user?._id || '')
+      || sessionStorage.getItem('xtramys:club-supervision-user') === String(user?._id || ''))
+  );
   if (
     location.pathname === '/app' &&
+    !supervising &&
+    !restoringSupervision &&
     (user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach'))
   ) {
     return <Navigate to="/club/dashboard" replace />;

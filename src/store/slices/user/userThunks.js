@@ -34,6 +34,12 @@ export const loginThunk = createAsyncThunk(
   'usuario/login',
   async (credentials, { dispatch, rejectWithValue }) => {
     try {
+      // Una nueva sesión nunca debe heredar una supervisión anterior.
+      sessionStorage.removeItem('xtramys:club-supervision-user');
+      sessionStorage.removeItem('xtramys:club-supervision-mode');
+      sessionStorage.removeItem('xtramys:club-supervision-owner');
+      sessionStorage.removeItem('xtramys:club-manage-user');
+      sessionStorage.removeItem('xtramys:club-supervision-user-data');
       const data = credentials?.provider === 'apple'
         ? await authApi.apple(credentials.credential)
         : await authApi.login(credentials);
@@ -92,6 +98,11 @@ export const logoutThunk = createAsyncThunk(
     } catch {
       // ignore network errors on logout
     }
+    sessionStorage.removeItem('xtramys:club-supervision-user');
+    sessionStorage.removeItem('xtramys:club-supervision-mode');
+    sessionStorage.removeItem('xtramys:club-supervision-owner');
+    sessionStorage.removeItem('xtramys:club-manage-user');
+    sessionStorage.removeItem('xtramys:club-supervision-user-data');
     authApi.clearMeCache();
     clearUserCache();
     clearUser();

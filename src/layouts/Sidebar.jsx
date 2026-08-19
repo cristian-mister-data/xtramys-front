@@ -4,7 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { MdLogout, MdShield, MdPerson, MdVisibilityOff } from 'react-icons/md';
-import { logoutThunk } from '@/store/slices/user/userThunks';
+import { fetchMe, logoutThunk } from '@/store/slices/user/userThunks';
 import { stopSupervision } from '@/store/slices/user/userSlice';
 import { forgetWorkspace } from '@/store/slices/workspace/workspaceSlice';
 import { RESET_WORKSPACE } from '@/store/actionTypes';
@@ -292,12 +292,24 @@ export default function Sidebar({ open, onClose }) {
     navigate('/auth/welcome', { replace: true });
   };
 
-  const handleStopSupervising = () => {
+  const handleStopSupervising = async () => {
+    sessionStorage.setItem('xtramys:club-supervision-leaving', '1');
+    sessionStorage.removeItem('xtramys:club-manage-user');
+    sessionStorage.removeItem('xtramys:club-supervision-user');
+    sessionStorage.removeItem('xtramys:club-supervision-mode');
+    sessionStorage.removeItem('xtramys:club-supervision-owner');
+    sessionStorage.removeItem('xtramys:club-supervision-user-data');
+    sessionStorage.removeItem('xtramys:club-supervision-active');
     dispatch(stopSupervision());
     dispatch(forgetWorkspace());
     dispatch({ type: RESET_WORKSPACE });
+    try {
+      await dispatch(fetchMe({ force: true })).unwrap();
+    } finally {
+      navigate('/club/dashboard', { replace: true, state: { leavingSupervision: true } });
+      sessionStorage.removeItem('xtramys:club-supervision-leaving');
+    }
     onClose && onClose();
-    navigate('/club/dashboard', { replace: true });
   };
 
   const logoImage = mode === 'dark' ? xtramysWhiteLogo : xtramysLogo;

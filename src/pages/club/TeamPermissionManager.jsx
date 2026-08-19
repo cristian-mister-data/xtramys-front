@@ -270,11 +270,18 @@ export default function TeamPermissionManager({ data, onRefresh }) {
   const [confirmTeam, setConfirmTeam] = useState(null);
   const [saving, setSaving] = useState(false);
   const [busyKey, setBusyKey] = useState('');
-  const teams = useMemo(() => data?.teams || [], [data?.teams]);
+  // El gestor solo debe mostrar equipos con licencia activa. Los registros
+  // desactivados se conservan para histórico, pero no forman parte de los
+  // equipos operativos ni deben duplicar las opciones de permisos.
+  const teams = useMemo(
+    () => (data?.teams || []).filter((team) => team.licenseActive !== false),
+    [data?.teams],
+  );
   const members = data?.members || [];
   const accesses = data?.accesses || [];
   const maxTeams = data?.club?.maxTeams ?? data?.club?.maxUsers ?? 0;
   const activeTeams = teams.filter((team) => team.licenseActive !== false).length;
+  const activeTeamIds = useMemo(() => new Set(teams.map((team) => String(team._id))), [teams]);
   const atLimit = maxTeams > 0 && activeTeams >= maxTeams;
   const seasons = useMemo(() => [...new Map(
     (data?.seasons?.length ? data.seasons : teams.map((team) => team.temporada))
@@ -402,7 +409,9 @@ export default function TeamPermissionManager({ data, onRefresh }) {
           <Members>
             {members.map((member) => {
               const isOpen = openMemberId === String(member._id);
-              const teamCount = accesses.filter((access) => String(access.userId) === String(member._id)).length;
+              const teamCount = accesses.filter((access) =>
+                String(access.userId) === String(member._id) && activeTeamIds.has(String(access.teamId))
+              ).length;
               const displayName = `${member.nombre || ''} ${member.apellido || ''}`.trim() || member.correo;
               const initials = displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
               return (

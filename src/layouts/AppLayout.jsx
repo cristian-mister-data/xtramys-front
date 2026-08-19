@@ -150,6 +150,7 @@ export default function AppLayout() {
   const season = useSelector((s) => s.season.season);
   const seasonId = season?._id;
   const supervising = useSelector((s) => s.usuario.supervising);
+  const supervisionMode = useSelector((s) => s.usuario.supervisionMode || 'view');
   const supervisedUser = useSelector((s) => s.usuario.user);
   const archivedSeason = isSeasonReadOnly(season, supervisedUser);
   const workspace = useSelector((s) => s.workspace.selected);
@@ -198,7 +199,7 @@ export default function AppLayout() {
       <Shell>
         <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <Header onMenu={() => setDrawerOpen((v) => !v)} hideSearch={hideSearch} />
-        {(supervising || (!isClubAdmin && (archivedSeason || workspaceReadOnly))) && !bannerDismissed && (
+        {((supervising && supervisionMode !== 'manage') || (!isClubAdmin && (archivedSeason || workspaceReadOnly))) && !bannerDismissed && (
           <SupervisionBanner role="status">
             {supervising ? <MdVisibility size={18} /> : <MdLock size={18} />}
             <span>

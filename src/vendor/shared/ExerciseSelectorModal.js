@@ -50,6 +50,7 @@ import {
   sameId,
 } from '@/utils/favoritePersistence';
 import { getContentImage } from '@/utils/contentVisual';
+import { getSharedWithMe } from '@/api/sharedContent';
 
 const THEME_DEFAULT = {
   primary: '#2474E5',
@@ -129,7 +130,8 @@ export default function ExerciseSelectorModal({
   const [titleFilter, setTitleFilter] = useState('');
   const [playersFilter, setPlayersFilter] = useState('');
   const [teamsFilter, setTeamsFilter] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('all'); // 'all' | 'mine' | 'global' | 'favorites'
+  const [sourceFilter, setSourceFilter] = useState('all'); // 'all' | 'mine' | 'club' | 'shared' | 'global' | 'favorites'
+  const [sharedExercises, setSharedExercises] = useState([]);
   const [favoritePrefs, setFavoritePrefs] = useState(null);
 
   // Navegación carpetas
@@ -155,6 +157,13 @@ export default function ExerciseSelectorModal({
       dispatch(fetchExerciseFoldersFlat({ lang }));
       dispatch(fetchGlobalExercises({ lang }));
       readFavoritePrefs('exercise').then(setFavoritePrefs).catch(() => setFavoritePrefs(null));
+      if (!isDemo) {
+        getSharedWithMe('exercise')
+          .then(({ data }) => setSharedExercises(Array.isArray(data) ? data : []))
+          .catch(() => setSharedExercises([]));
+      } else {
+        setSharedExercises([]);
+      }
     }
   }, [visible, dispatch, i18n.language]);
 
@@ -204,7 +213,7 @@ export default function ExerciseSelectorModal({
   // ═══════════════════════════════════════════════
   const allExercises = useMemo(() => {
     const byId = new Map();
-    [...(ejercicios || []), ...globalExercises].filter(Boolean).forEach((exercise) => {
+    [...(ejercicios || []), ...sharedExercises, ...globalExercises].filter(Boolean).forEach((exercise) => {
       const id = getItemId(exercise);
       if (!id) return;
       const prev = byId.get(String(id));
@@ -216,7 +225,7 @@ export default function ExerciseSelectorModal({
     });
     const merged = Array.from(byId.values());
     return favoritePrefs ? applyFavoritePrefsToItems(merged, favoritePrefs) : merged;
-  }, [ejercicios, globalExercises, favoritePrefs]);
+  }, [ejercicios, sharedExercises, globalExercises, favoritePrefs]);
 
   // ═══════════════════════════════════════════════
   //  Contar ejercicios y subcarpetas por carpeta
@@ -283,6 +292,8 @@ export default function ExerciseSelectorModal({
       candidates = candidates.filter((f) => f.isGlobal);
     } else if (sourceFilter === 'mine') {
       candidates = candidates.filter((f) => !f.isGlobal);
+    } else if (sourceFilter === 'club' || sourceFilter === 'shared') {
+      candidates = [];
     } else if (sourceFilter === 'favorites') {
       candidates = [];
     }
@@ -299,6 +310,10 @@ export default function ExerciseSelectorModal({
       source = globalExercises;
     } else if (sourceFilter === 'mine') {
       source = ejercicios || [];
+    } else if (sourceFilter === 'club') {
+      source = allExercises.filter((e) => e.visibility === 'CLUB' || e.clubId);
+    } else if (sourceFilter === 'shared') {
+      source = allExercises.filter((e) => e.sharedByFriend);
     } else if (sourceFilter === 'favorites') {
       source = allExercises.filter((e) => e.favorito);
     } else {
@@ -309,9 +324,7 @@ export default function ExerciseSelectorModal({
       return source;
     }
 
-    if (!currentFolderId) {
-      return source.filter((e) => !e.folder);
-    }
+    if (!currentFolderId) return source.filter((e) => !e.folder);
     return source.filter((e) => {
       if (!e.folder) return false;
       const fId = typeof e.folder === 'object' ? e.folder._id : e.folder;
@@ -347,6 +360,10 @@ export default function ExerciseSelectorModal({
         ? globalExercises
         : sourceFilter === 'mine'
           ? ejercicios || []
+          : sourceFilter === 'club'
+            ? allExercises.filter((e) => e.visibility === 'CLUB' || e.clubId)
+            : sourceFilter === 'shared'
+              ? allExercises.filter((e) => e.sharedByFriend)
           : sourceFilter === 'favorites'
             ? allExercises.filter((e) => e.favorito)
             : allExercises;
@@ -764,6 +781,8 @@ export default function ExerciseSelectorModal({
               { key: 'favorites', label: t('common.favorites', 'Favoritos'), icon: 'star' },
               { key: 'all', label: t('exercise.allExercises') },
               { key: 'mine', label: t('exercise.myExercises') },
+              ...(!isDemo ? [{ key: 'shared', label: t('friends.sharedByFriends', 'Compartidos') }] : []),
+              ...(user?.clubId && !isDemo ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club') }] : []),
               ...(!isDemo ? [{ key: 'global', label: t('exercise.appExercises') }] : []),
             ].map((tab) => (
               <TouchableOpacity

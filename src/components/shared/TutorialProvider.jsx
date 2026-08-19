@@ -9,6 +9,10 @@ function demoTutorialKey(userId) {
   return `xtramys.demoTutorialCompleto.${userId}`;
 }
 
+function tutorialKey(userId) {
+  return `xtramys.tutorialCompleto.${userId}`;
+}
+
 export function TutorialProvider({ children }) {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.usuario?.user);
@@ -25,7 +29,8 @@ export function TutorialProvider({ children }) {
     if (autoShownForUserRef.current === user._id) return;
     const isDemo = user.plan === 'demo' || user.accessMode === 'demo';
     const demoCompleted = isDemo && localStorage.getItem(demoTutorialKey(user._id)) === 'true';
-    if (user.tutorialCompleto || demoCompleted) {
+    const locallyCompleted = localStorage.getItem(tutorialKey(user._id)) === 'true';
+    if (user.tutorialCompleto || demoCompleted || locallyCompleted) {
       autoShownForUserRef.current = user._id;
       return;
     }
@@ -44,7 +49,12 @@ export function TutorialProvider({ children }) {
 
   const completeTutorial = useCallback(async () => {
     setVisible(false);
-    if (!user?._id || user.tutorialCompleto) return;
+    if (!user?._id) return;
+
+    // Se guarda primero localmente para que “Saltar” sea definitivo aunque
+    // la API esté temporalmente desconectada o se trate de una supervisión.
+    localStorage.setItem(tutorialKey(user._id), 'true');
+    if (user.tutorialCompleto) return;
 
     if (user.plan === 'demo' || user.accessMode === 'demo') {
       localStorage.setItem(demoTutorialKey(user._id), 'true');

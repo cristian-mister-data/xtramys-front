@@ -14,23 +14,40 @@ export default function WorkspaceGate({ children }) {
   const selecting = useRef(false);
 
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
-  const isClubAdmin = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
+  const hasSupervisionSession = Boolean(
+    supervising ||
+    location.state?.clubSupervision ||
+    sessionStorage.getItem('xtramys:club-supervision-active') === '1' ||
+    (sessionStorage.getItem('xtramys:club-supervision-user') &&
+      (sessionStorage.getItem('xtramys:club-supervision-owner') === String(user?._id) ||
+        sessionStorage.getItem('xtramys:club-supervision-user') === String(user?._id))) ||
+    (sessionStorage.getItem('xtramys:club-manage-user') &&
+      (sessionStorage.getItem('xtramys:club-supervision-owner') === String(user?._id) ||
+        sessionStorage.getItem('xtramys:club-supervision-user') === String(user?._id)))
+  );
+
+  const isClubAdmin = (user?.role === 'club_admin' || user?.clubRole === 'admin') && !hasSupervisionSession;
 
   useEffect(() => {
-    // La supervisión y el modo demo no requieren selector de equipo ni workspace propio del admin.
-    if (user && !supervising && !isDemo && !loaded && !loading) {
+    // En supervisión cargamos los workspaces del usuario objetivo.
+    if (user && !isDemo && !loaded && !loading) {
       dispatch(fetchWorkspaces());
     }
   }, [dispatch, loaded, loading, supervising, user, isDemo]);
 
   useEffect(() => {
-    if (supervising || isDemo || isClubAdmin || !loaded || selected || items.length !== 1 || selecting.current) return;
+    if (isDemo || isClubAdmin || !loaded || selected || items.length !== 1 || selecting.current) return;
     selecting.current = true;
     dispatch(selectWorkspace(items[0])).finally(() => { selecting.current = false; });
   }, [dispatch, items, loaded, selected, supervising, isDemo, isClubAdmin]);
 
-  // "Ver en panel" (supervisión) y "Modo Demo" permiten navegar directamente sobre la app
-  if (supervising || isDemo) return children;
+  if (isDemo) return children;
+
+  if (sessionStorage.getItem('xtramys:club-supervision-leaving') === '1') return children;
+
+  // Al cerrar una supervisión el workspace se limpia antes de que termine de
+  // restaurarse el usuario administrador. El dashboard no necesita equipo.
+  if (location.pathname === '/club/dashboard' && location.state?.leavingSupervision) return children;
 
   // Un administrador del club trabaja sobre el panel completo; no necesita elegir equipo para entrar.
   if (isClubAdmin) {
@@ -39,6 +56,12 @@ export default function WorkspaceGate({ children }) {
   }
 
   if (!loaded || loading || selecting.current) return <Fallback />;
+  if (supervising) {
+    if (items.length > 1 && !selected) {
+      return <Navigate to="/team-select" state={{ from: { pathname: '/app' }, clubSupervision: true }} replace />;
+    }
+    return children;
+  }
   if (selected) return children;
   if (error) {
     if (location.pathname === '/team-select') return children;

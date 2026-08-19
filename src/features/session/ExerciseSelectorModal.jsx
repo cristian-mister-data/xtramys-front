@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useSelector } from 'react-redux';
-import { MdSearch, MdCheck, MdImage, MdStar, MdFolderShared, MdPerson } from 'react-icons/md';
+import { useDispatch, useSelector } from 'react-redux';
+import { MdSearch, MdCheck, MdImage, MdStar, MdFolderShared, MdPerson, MdFolder, MdArrowBack } from 'react-icons/md';
 import Modal from '@/ui/Modal';
 import { Button, Input, Row, Muted } from '@/ui/primitives';
 import { getContentImage } from '@/utils/contentVisual';
+import { getSharedWithMe } from '@/api/sharedContent';
+import { fetchExerciseFolders, fetchExerciseFolderById } from '@/store/slices/exercise/exerciseThunks';
 
 const SearchBox = styled.div`
   position: relative;
@@ -98,6 +100,21 @@ const Check = styled(MdCheck)`
   font-size: 22px;
 `;
 
+const FolderRow = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  color: ${({ theme }) => theme.colors.text};
+  &:hover { border-color: ${({ theme }) => theme.colors.primary}; }
+`;
+
 export default function ExerciseSelectorModal({
   open,
   onClose,
@@ -111,7 +128,15 @@ export default function ExerciseSelectorModal({
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState(selectedIds);
   const [sourceFilter, setSourceFilter] = useState('all');
+  const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [sharedExercises, setSharedExercises] = useState([]);
+  const dispatch = useDispatch();
   const user = useSelector((s) => s.usuario.user);
+  const userId = user?._id || user?.id;
+  const folders = useSelector((s) => s.exercise?.folders || []);
+  const globalExercises = useSelector((s) => s.exercise?.globalExercises || []);
+  const currentFolderExercises = useSelector((s) => s.exercise?.currentFolderExercises || []);
+  const currentFolderSubfolders = useSelector((s) => s.exercise?.currentFolderSubfolders || []);
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
 
   useEffect(() => {
@@ -119,21 +144,63 @@ export default function ExerciseSelectorModal({
       setPicked(selectedIds);
       setSearch('');
       setSourceFilter('all');
+      setCurrentFolderId(null);
+      dispatch(fetchExerciseFolders({ user: userId }));
+      if (!isDemo) {
+        getSharedWithMe('exercise')
+          .then(({ data }) => setSharedExercises(Array.isArray(data) ? data : []))
+          .catch(() => setSharedExercises([]));
+      } else {
+        setSharedExercises([]);
+      }
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, isDemo, userId, dispatch]);
+
+  useEffect(() => {
+    if (open && currentFolderId) {
+      dispatch(fetchExerciseFolderById({ id: currentFolderId, user: userId }));
+    }
+  }, [open, currentFolderId, userId, dispatch]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return exercises
+    const byId = new Map();
+    [...exercises, ...sharedExercises, ...globalExercises].filter(Boolean).forEach((exercise) => {
+      const id = exercise._id || exercise.id;
+      if (id) byId.set(String(id), { ...byId.get(String(id)), ...exercise });
+    });
+    const source = Array.from(byId.values())
       .filter((e) => !excludeIds.includes(e._id))
       .filter((e) => {
         if (sourceFilter === 'favorites') return e.favorito;
         if (sourceFilter === 'mine') return !e.isGlobal;
+        if (sourceFilter === 'club') return e.visibility === 'CLUB' || e.clubId;
+        if (sourceFilter === 'shared') return Boolean(e.sharedByFriend);
         if (sourceFilter === 'global') return e.isGlobal;
         return true;
       })
       .filter((e) => !q || (e.nombre || '').toLowerCase().includes(q));
-  }, [exercises, search, excludeIds, sourceFilter]);
+    const folderExercises = currentFolderId ? currentFolderExercises : source.filter((e) => !e.folder);
+    return currentFolderId
+      ? folderExercises.filter((e) => !excludeIds.includes(e._id)).filter((e) => {
+        if (sourceFilter === 'favorites') return e.favorito;
+        if (sourceFilter === 'mine') return !e.isGlobal;
+        if (sourceFilter === 'club') return e.visibility === 'CLUB' || e.clubId;
+        if (sourceFilter === 'shared') return Boolean(e.sharedByFriend);
+        if (sourceFilter === 'global') return e.isGlobal;
+        return true;
+      }).filter((e) => !q || (e.nombre || '').toLowerCase().includes(q))
+      : folderExercises;
+  }, [exercises, sharedExercises, globalExercises, currentFolderId, currentFolderExercises, search, excludeIds, sourceFilter]);
+
+  const visibleFolders = useMemo(() => {
+    if (search.trim() || sourceFilter === 'favorites' || sourceFilter === 'shared') return [];
+    const pool = currentFolderId ? currentFolderSubfolders : folders.filter((folder) => !folder.parentFolder);
+    if (sourceFilter === 'mine') return pool.filter((folder) => !folder.isGlobal && (!folder.usuario || String(folder.usuario) === String(userId)));
+    if (sourceFilter === 'club') return pool.filter((folder) => folder.isClub || folder.visibility === 'CLUB');
+    if (sourceFilter === 'global') return pool.filter((folder) => folder.isGlobal);
+    return pool;
+  }, [folders, currentFolderId, currentFolderSubfolders, sourceFilter, search, userId]);
 
   const toggle = (id) => {
     if (!multi) {
@@ -141,7 +208,12 @@ export default function ExerciseSelectorModal({
       onClose?.();
       return;
     }
-    setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+      setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const openFolder = (folder) => {
+    setSearch('');
+    setCurrentFolderId(folder._id || folder.id);
   };
 
   return (
@@ -183,19 +255,45 @@ export default function ExerciseSelectorModal({
           { key: 'all', label: t('common.all', 'Todos'), icon: null },
           { key: 'favorites', label: t('common.favorites', 'Favoritos'), icon: MdStar },
           { key: 'mine', label: t('exercise.mine', 'Mis ejercicios'), icon: MdPerson },
+          ...(!isDemo ? [{ key: 'shared', label: t('friends.sharedByFriends', 'Compartidos') , icon: MdFolderShared }] : []),
+          ...(user?.clubId && !isDemo ? [{ key: 'club', label: t('club.sharedLibrary', 'Compartido por mi club'), icon: MdFolderShared }] : []),
           ...(!isDemo ? [{ key: 'global', label: t('exercise.appExercises', 'App'), icon: MdFolderShared }] : []),
         ].map(({ key, label, icon: Icon }) => (
           <FilterButton
             key={key}
             type="button"
             $active={sourceFilter === key}
-            onClick={() => setSourceFilter(key)}
+            onClick={() => {
+              setSourceFilter(key);
+              setCurrentFolderId(null);
+              setSearch('');
+            }}
           >
             {Icon ? <Icon size={15} /> : null}
             {label}
           </FilterButton>
         ))}
       </Filters>
+
+      {currentFolderId ? (
+        <Button type="button" $variant="ghost" onClick={() => setCurrentFolderId(null)} style={{ marginBottom: 8, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <MdArrowBack size={16} /> {t('folders.back', 'Volver a carpetas')}
+        </Button>
+      ) : null}
+
+      {visibleFolders.length > 0 && (
+        <List style={{ marginBottom: filtered.length ? 10 : 0 }}>
+          {visibleFolders.map((folder) => (
+            <FolderRow key={folder._id || folder.id} type="button" onClick={() => openFolder(folder)}>
+              <MdFolder size={22} color={folder.color || undefined} />
+              <Body>
+                <Name>{folder.nombre}</Name>
+                <Meta>{folder.exerciseCount || 0} {t('exercise.exercises', 'ejercicios')}</Meta>
+              </Body>
+            </FolderRow>
+          ))}
+        </List>
+      )}
 
       {filtered.length === 0 ? (
         <Muted style={{ textAlign: 'center', padding: 20 }}>

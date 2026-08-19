@@ -3,19 +3,33 @@ import { fetchUsuario, updateUsuario, loginThunk, fetchMe, logoutThunk, checkSub
 import { loadUser } from '@/auth/storage';
 
 const cachedUser = loadUser();
+const cachedSupervision = (() => {
+  if (typeof window === 'undefined' || !cachedUser?._id) return null;
+  try {
+    const ownerId = sessionStorage.getItem('xtramys:club-supervision-owner');
+    const targetId = sessionStorage.getItem('xtramys:club-supervision-user');
+    const target = JSON.parse(sessionStorage.getItem('xtramys:club-supervision-user-data') || 'null');
+    return ownerId === String(cachedUser._id) && targetId === String(target?._id) ? target : null;
+  } catch {
+    return null;
+  }
+})();
 
 const userSlice = createSlice({
   name: 'usuario',
   initialState: {
-    user: cachedUser || null,
+    user: cachedSupervision || cachedUser || null,
     isAuthenticated: !!cachedUser,
     authChecked: false,
     loading: false,
     error: null,
     subscriptionStatus: cachedUser?.subscriptionStatus || null,
     plan: cachedUser?.plan || 'free',
-    backupUser: null,
-    supervising: false,
+    backupUser: cachedSupervision ? cachedUser : null,
+    supervising: Boolean(cachedSupervision),
+    supervisionMode: cachedSupervision
+      ? (sessionStorage.getItem('xtramys:club-supervision-mode') || 'view')
+      : 'view',
   },
   reducers: {
     setUser: (state, action) => {
@@ -42,9 +56,11 @@ const userSlice = createSlice({
       state.plan = 'free';
     },
     startSupervision: (state, action) => {
-      state.backupUser = state.user;
-      state.user = { ...action.payload };
+      const target = action.payload?.user || action.payload;
+      if (!state.supervising) state.backupUser = state.user;
+      state.user = { ...target };
       state.supervising = true;
+      state.supervisionMode = action.payload?.mode || 'view';
     },
     stopSupervision: (state) => {
       if (state.backupUser) {
@@ -52,6 +68,7 @@ const userSlice = createSlice({
         state.backupUser = null;
       }
       state.supervising = false;
+      state.supervisionMode = 'view';
     },
   },
   extraReducers: (builder) => {
@@ -92,7 +109,8 @@ const userSlice = createSlice({
       })
       .addCase(fetchMe.fulfilled, (s, a) => {
         s.loading = false;
-        s.user = a.payload;
+        if (s.supervising) s.backupUser = a.payload;
+        else s.user = a.payload;
         s.isAuthenticated = !!a.payload;
         s.authChecked = true;
         s.subscriptionStatus = a.payload?.subscriptionStatus || null;
