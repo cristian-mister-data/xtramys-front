@@ -541,7 +541,7 @@ export default function TemplateManagerModal({ open, onClose }) {
               </Badge>
             </TemplateName>
             <Row $gap={6}>
-              {!tpl.isDefault && (
+              {canMutate && !tpl.isDefault && (
                 <Button $variant="ghost" onClick={() => handleSetDefault(tpl)}>
                   {t('evaluations.template.setDefault', 'Activar')}
                 </Button>
@@ -549,7 +549,7 @@ export default function TemplateManagerModal({ open, onClose }) {
               <Button $variant="secondary" onClick={() => setSelectedTemplate(tpl)}>
                 {t('evaluations.template.open', 'Abrir')}
               </Button>
-              {!tpl.isRecommended && (
+              {canMutate && !tpl.isRecommended && (
                 <Button $variant="danger" onClick={() => handleDeleteTemplate(tpl)}>
                   <MdDelete size={16} />
                 </Button>
@@ -563,10 +563,12 @@ export default function TemplateManagerModal({ open, onClose }) {
           </Muted>
         </TemplateCard>
       ))}
-      <DashedBtn type="button" onClick={handleOpenCreateModal}>
-        <MdAdd size={18} />
-        {t('evaluations.template.create', 'Crear Nueva Plantilla Personalizada')}
-      </DashedBtn>
+      {canMutate && (
+        <DashedBtn type="button" onClick={handleOpenCreateModal}>
+          <MdAdd size={18} />
+          {t('evaluations.template.create', 'Crear Nueva Plantilla Personalizada')}
+        </DashedBtn>
+      )}
     </Stack>
   );
 
@@ -584,7 +586,7 @@ export default function TemplateManagerModal({ open, onClose }) {
           </Button>
           <TemplateName>
             {getTemplateDisplayName(tpl, t)}
-            {!tpl.isRecommended && (
+            {canMutate && !tpl.isRecommended && (
               <Button $variant="ghost" onClick={() => handleOpenEditName(tpl)} style={{ padding: 4 }}>
                 <MdEdit size={16} />
               </Button>
@@ -628,7 +630,7 @@ export default function TemplateManagerModal({ open, onClose }) {
                     </ChipRow>
                   )}
                 </div>
-                {!readonly && (
+                {canMutate && !readonly && (
                   <Row $gap={4}>
                     <Button $variant="ghost" onClick={() => openEditQuestion(q)}>
                       <MdEdit size={16} />
@@ -643,7 +645,7 @@ export default function TemplateManagerModal({ open, onClose }) {
           })}
         </Stack>
 
-        {!readonly && (
+        {canMutate && !readonly && (
           <DashedBtn type="button" onClick={openCreateQuestion}>
             <MdAdd size={18} />
             {t('evaluations.template.addQuestion', 'Añadir Pregunta')}

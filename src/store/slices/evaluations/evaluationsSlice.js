@@ -216,6 +216,71 @@ export const DEFAULT_TEMPLATES = [
   },
 ];
 
+export const DEFAULT_EVALUATIONS = [
+  {
+    _id: 'eval_demo_1',
+    templateId: 'tpl_partido_jugador',
+    templateName: 'Evaluación de Partido (Jugador)',
+    scope: 'POR_JUGADOR',
+    playerId: 'p1',
+    playerName: 'Angel Ballona',
+    playerDorsal: '17',
+    playerPhoto: '',
+    date: '2026-08-15',
+    overallScore: 8.5,
+    answers: {
+      q1: 9,
+      q2: 8,
+      q3: 8,
+      q4: 5,
+      q5: true,
+      q6: 'DEL',
+      q7: 'Gran desmarque y excelente presión tras pérdida durante la segunda parte.',
+      q8: 'Mejorar la toma de decisiones en el último tercio.',
+    },
+    generalNotes: 'Excelente actuación en el partido contra el rival directo.',
+    createdAt: '2026-08-15T18:30:00.000Z',
+  },
+  {
+    _id: 'eval_demo_2',
+    templateId: 'tpl_semanal_equipo',
+    templateName: 'Evaluación Semanal de Equipo (General)',
+    scope: 'GENERAL',
+    date: '2026-08-17',
+    overallScore: 7.8,
+    answers: {
+      q10: 8,
+      q11: 4,
+      q12: 'BUENO',
+      q13: ['PRESION', 'TRANSICION'],
+      q14: 'Semana de alta intensidad táctica con foco en transiciones de ataque a defensa.',
+    },
+    generalNotes: 'Buen ritmo de trabajo general en los microciclos.',
+    createdAt: '2026-08-17T12:00:00.000Z',
+  },
+  {
+    _id: 'eval_demo_3',
+    templateId: 'tpl_fisico_rendimiento',
+    templateName: 'Evaluación Física & Rendimiento',
+    scope: 'POR_JUGADOR',
+    playerId: 'p2',
+    playerName: 'Gonzalo Boluda',
+    playerDorsal: '20',
+    playerPhoto: '',
+    date: '2026-08-18',
+    overallScore: 9.0,
+    answers: {
+      q20: 9,
+      q21: 7,
+      q22: 5,
+      q23: false,
+      q24: 'Totalmente recuperado y en nivel óptimo de forma física.',
+    },
+    generalNotes: 'Test de fuerza y resistencia superado con éxito.',
+    createdAt: '2026-08-18T10:15:00.000Z',
+  },
+];
+
 const loadInitialState = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -223,7 +288,7 @@ const loadInitialState = () => {
       const parsed = JSON.parse(raw);
       return {
         templates: parsed.templates || DEFAULT_TEMPLATES,
-        evaluations: parsed.evaluations || [],
+        evaluations: parsed.evaluations && parsed.evaluations.length > 0 ? parsed.evaluations : DEFAULT_EVALUATIONS,
         activeTemplateId: parsed.activeTemplateId || 'tpl_partido_jugador',
       };
     }
@@ -232,7 +297,7 @@ const loadInitialState = () => {
   }
   return {
     templates: DEFAULT_TEMPLATES,
-    evaluations: [],
+    evaluations: DEFAULT_EVALUATIONS,
     activeTemplateId: 'tpl_partido_jugador',
   };
 };

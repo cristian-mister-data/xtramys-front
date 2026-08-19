@@ -16,7 +16,7 @@ const SUBSCRIBE_PATHS = [
   '/es/payment/success',
   '/en/payment/success',
   '/es/payment/paypal/success',
-  '/en/payment/paypal/success'
+  '/en/payment/paypal/success',
 ];
 
 const GuardFallback = () => (
@@ -28,6 +28,7 @@ const DEMO_ALLOWED_PREFIXES = [
   '/season',
   '/tournaments',
   '/players',
+  '/evaluations',
   '/training',
   '/wellness',
   '/rivals',

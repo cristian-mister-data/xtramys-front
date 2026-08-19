@@ -382,7 +382,45 @@ const RankingTable = styled.table`
 export default function Evaluations() {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  const { canMutate } = useSupervision();
+  const { canMutate, isDemo } = useSupervision();
+
+  const handleOpenNew = () => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible con suscripción'));
+      return;
+    }
+    setEvaluationToEdit(null);
+    setShowFormModal(true);
+  };
+
+  const handleOpenEdit = (evaluation) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible con suscripción'));
+      return;
+    }
+    setEvaluationToEdit(evaluation);
+    setShowFormModal(true);
+  };
+
+  const handleOpenDetail = (evaluation) => {
+    setSelectedEvaluation(evaluation);
+    setShowDetailModal(true);
+  };
+
+  const handleDelete = async (evaluation) => {
+    if (!canMutate && isDemo) {
+      toast.error(t('subscription.availableWithSubscription', 'Disponible con suscripción'));
+      return;
+    }
+    const ok = await confirmAction(
+      t('evaluations.deleteConfirm', '¿Deseas eliminar la evaluación del día {{date}}?', {
+        date: evaluation.date,
+      })
+    );
+    if (!ok) return;
+    dispatch(deleteEvaluation(evaluation._id));
+    toast.success(t('evaluations.deleteSuccess', 'Evaluación eliminada correctamente'));
+  };
 
   const evaluations = useSelector((s) => s.evaluations.evaluations || []);
   const players = useSelector((s) => s.player.players || []);
@@ -474,32 +512,6 @@ export default function Evaluations() {
     };
   }, [evaluations]);
 
-  const handleOpenNew = () => {
-    setEvaluationToEdit(null);
-    setShowFormModal(true);
-  };
-
-  const handleOpenEdit = (evaluation) => {
-    setEvaluationToEdit(evaluation);
-    setShowFormModal(true);
-  };
-
-  const handleOpenDetail = (evaluation) => {
-    setSelectedEvaluation(evaluation);
-    setShowDetailModal(true);
-  };
-
-  const handleDelete = async (evaluation) => {
-    const ok = await confirmAction(
-      t('evaluations.deleteConfirm', '¿Deseas eliminar la evaluación del día {{date}}?', {
-        date: evaluation.date,
-      })
-    );
-    if (!ok) return;
-    dispatch(deleteEvaluation(evaluation._id));
-    toast.success(t('evaluations.deleteSuccess', 'Evaluación eliminada correctamente'));
-  };
-
   return (
     <Container>
       {/* Header */}
@@ -519,10 +531,12 @@ export default function Evaluations() {
             <MdSettings size={18} />
             {t('evaluations.templates', 'Plantillas')}
           </Button>
-          <Button $variant="primary" onClick={handleOpenNew}>
-            <MdAdd size={18} />
-            {t('evaluations.newEvaluation', 'Nueva Evaluación')}
-          </Button>
+          <CanMutate>
+            <Button $variant="primary" onClick={handleOpenNew}>
+              <MdAdd size={18} />
+              {t('evaluations.newEvaluation', 'Nueva Evaluación')}
+            </Button>
+          </CanMutate>
         </Row>
       </PageHeader>
 
@@ -650,10 +664,12 @@ export default function Evaluations() {
               <Muted style={{ maxWidth: 400 }}>
                 {t('evaluations.emptySubtitle', 'Comienza registrando la primera evaluación del equipo o individual de un jugador utilizando tus plantillas personalizadas.')}
               </Muted>
-              <Button $variant="primary" onClick={handleOpenNew} style={{ marginTop: 8 }}>
-                <MdAdd size={18} />
-                {t('evaluations.createNow', 'Crear Evaluación Ahora')}
-              </Button>
+              <CanMutate>
+                <Button $variant="primary" onClick={handleOpenNew} style={{ marginTop: 8 }}>
+                  <MdAdd size={18} />
+                  {t('evaluations.createNow', 'Crear Evaluación Ahora')}
+                </Button>
+              </CanMutate>
             </EmptyState>
           ) : (
             <EvaluationGrid>
