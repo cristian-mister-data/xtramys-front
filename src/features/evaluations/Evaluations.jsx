@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   MdAdd,
   MdAssignment,
@@ -15,12 +16,17 @@ import {
   MdDelete,
   MdSettings,
   MdTrendingUp,
+  MdLock,
 } from 'react-icons/md';
 
 import TemplateManagerModal from './TemplateManagerModal';
 import EvaluationFormModal from './EvaluationFormModal';
 import EvaluationDetailModal from './EvaluationDetailModal';
-import { deleteEvaluation } from '@/store/slices/evaluations/evaluationsSlice';
+import {
+  deleteEvaluation,
+  loadEvaluationsState,
+  rehydrateEvaluations,
+} from '@/store/slices/evaluations/evaluationsSlice';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { confirmAction } from '@/ui/confirm';
 import { toast } from '@/ui/toast';
@@ -190,10 +196,25 @@ const FilterGroup = styled.div`
 const TabsNav = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   border-bottom: 2px solid ${({ theme }) => theme.colors.border};
   padding-bottom: 2px;
-  overflow-x: auto;
+
+  @media (max-width: 600px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    border-bottom: none;
+    padding-bottom: 0;
+    overflow-x: auto;
+    width: 100%;
+    box-sizing: border-box;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 `;
 
 const TabBtn = styled.button`
@@ -208,12 +229,27 @@ const TabBtn = styled.button`
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   transition: all 120ms ease;
   white-space: nowrap;
+  flex: 0 0 auto;
 
   &:hover {
     color: ${({ theme }) => theme.colors.primary};
+  }
+
+  @media (max-width: 600px) {
+    flex: 1 1 0px;
+    margin-bottom: 0;
+    padding: 10px 14px;
+    min-height: 42px;
+    height: auto;
+    border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.primary : theme.colors.border)};
+    border-radius: ${({ theme }) => theme.radius.md};
+    background: ${({ $active, theme }) => ($active ? theme.colors.primarySoft : theme.colors.surface)};
+    font-size: 13px;
+    box-sizing: border-box;
   }
 `;
 
@@ -256,8 +292,14 @@ const EvalCardHeader = styled.div`
 
 const PlayerInfo = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
+`;
+
+const PlayerText = styled.div`
+  min-width: 0;
 `;
 
 const Avatar = styled.div`
@@ -286,6 +328,14 @@ const PlayerName = styled.div`
   line-height: 1.2;
 `;
 
+const TemplateName = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+  font-weight: 500;
+  line-height: 1.3;
+`;
+
 const ScoreBadge = styled.span`
   background: ${({ $bg }) => $bg};
   color: ${({ $color }) => $color};
@@ -300,19 +350,91 @@ const ScoreBadge = styled.span`
 const ScopeBadge = styled.span`
   background: ${({ theme }) => theme.colors.backgroundAlt};
   color: ${({ theme }) => theme.colors.textSecondary};
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 11.5px;
-  font-weight: 600;
+  padding: 0 10px;
+  min-height: 32px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
   border: 1px solid ${({ theme }) => theme.colors.border};
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+`;
+
+const CardMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+`;
+
+const DateBadge = styled.span`
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 `;
 
 const CardFooter = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
   padding-top: 10px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const CardActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+
+  @media (max-width: 600px) {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+`;
+
+const LockedCardButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 14px;
+  border-radius: ${({ theme }) => theme.radius.md};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.backgroundAlt};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  white-space: nowrap;
+  margin-left: auto;
+
+  svg {
+    flex: 0 0 auto;
+    color: ${({ theme }) => theme.colors.primary};
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+    margin-left: 0;
+  }
 `;
 
 const ActionIconButton = styled.button`
@@ -381,8 +503,10 @@ const RankingTable = styled.table`
 
 export default function Evaluations() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { canMutate, isDemo } = useSupervision();
+  const user = useSelector((s) => s.usuario?.user);
 
   const handleOpenNew = () => {
     if (!canMutate && isDemo) {
@@ -425,6 +549,10 @@ export default function Evaluations() {
   const evaluations = useSelector((s) => s.evaluations.evaluations || []);
   const players = useSelector((s) => s.player.players || []);
   const equipos = useSelector((s) => s.team.teams || []);
+
+  useEffect(() => {
+    dispatch(rehydrateEvaluations(loadEvaluationsState(user)));
+  }, [dispatch, user?._id, user?.id, user?.correo, user?.email, user?.plan, user?.accessMode]);
 
   const selectedTeam = useMemo(
     () => equipos.find((e) => e.seleccionado === true) || equipos[0],
@@ -686,15 +814,15 @@ export default function Evaluations() {
                         <Avatar src={item.playerPhoto}>
                           {!item.playerPhoto && (item.playerName?.[0] || 'E')}
                         </Avatar>
-                        <div>
+                        <PlayerText>
                           <PlayerName>
                             {item.playerName || (item.scope === 'GENERAL' ? t('evaluations.generalScope', 'General / Equipo') : t('evaluations.player', 'Jugador'))}
                             {item.playerDorsal ? ` (#${item.playerDorsal})` : ''}
                           </PlayerName>
-                          <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, fontWeight: 500 }}>
+                          <TemplateName>
                             {getTemplateDisplayName({ _id: item.templateId, name: item.templateName }, t)}
-                          </div>
-                        </div>
+                          </TemplateName>
+                        </PlayerText>
                       </PlayerInfo>
 
                       {item.overallScore !== null && item.overallScore !== undefined && (
@@ -721,18 +849,33 @@ export default function Evaluations() {
                     )}
 
                     <CardFooter>
-                      <Row $gap={8} style={{ alignItems: 'center' }}>
+                      <CardMeta>
                         <ScopeBadge>
                           {item.scope === 'GENERAL' ? t('evaluations.generalScope', 'General') : t('evaluations.playerScope', 'Por Jugador')}
                         </ScopeBadge>
-                        <span style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>
+                        <DateBadge>
                           <MdCalendarToday size={13} />
                           {item.date}
-                        </span>
-                      </Row>
+                        </DateBadge>
+                      </CardMeta>
 
-                      <CanMutate>
-                        <Row $gap={4}>
+                      <CanMutate
+                        fallback={(
+                          <LockedCardButton
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/subscribe');
+                            }}
+                            aria-label={t('subscription.availableWithSubscription', 'Disponible con suscripción')}
+                            title={t('subscription.availableWithSubscription', 'Disponible con suscripción')}
+                          >
+                            <MdLock size={18} />
+                            <span>{t('subscription.availableWithSubscription', 'Disponible con suscripción')}</span>
+                          </LockedCardButton>
+                        )}
+                      >
+                        <CardActions>
                           <ActionIconButton
                             type="button"
                             title={t('common.edit', 'Editar')}
@@ -754,7 +897,7 @@ export default function Evaluations() {
                           >
                             <MdDelete size={18} />
                           </ActionIconButton>
-                        </Row>
+                        </CardActions>
                       </CanMutate>
                     </CardFooter>
                   </EvalCard>

@@ -1,6 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { loadUser } from '@/auth/storage';
 
-const STORAGE_KEY = 'xtramys_evaluations_v1';
+const LEGACY_STORAGE_KEY = 'xtramys_evaluations_v1';
+const STORAGE_KEY_PREFIX = 'xtramys_evaluations_v2';
+const DEMO_SOURCE_OWNER = 'cristian.misterdata@gmail.com';
+const DEFAULT_ACTIVE_TEMPLATE_ID = 'tpl_partido_jugador';
 
 export const DEFAULT_TEMPLATES = [
   {
@@ -216,7 +220,7 @@ export const DEFAULT_TEMPLATES = [
   },
 ];
 
-export const DEFAULT_EVALUATIONS = [
+const LEGACY_DEFAULT_EVALUATIONS = [
   {
     _id: 'eval_demo_1',
     templateId: 'tpl_partido_jugador',
@@ -281,31 +285,49 @@ export const DEFAULT_EVALUATIONS = [
   },
 ];
 
-const loadInitialState = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        templates: parsed.templates || DEFAULT_TEMPLATES,
-        evaluations: parsed.evaluations && parsed.evaluations.length > 0 ? parsed.evaluations : DEFAULT_EVALUATIONS,
-        activeTemplateId: parsed.activeTemplateId || 'tpl_partido_jugador',
-      };
-    }
-  } catch (err) {
-    console.error('Error loading evaluations from storage:', err);
-  }
-  return {
-    templates: DEFAULT_TEMPLATES,
-    evaluations: DEFAULT_EVALUATIONS,
-    activeTemplateId: 'tpl_partido_jugador',
-  };
+const createEmptyState = () => ({
+  templates: DEFAULT_TEMPLATES,
+  evaluations: [],
+  activeTemplateId: DEFAULT_ACTIVE_TEMPLATE_ID,
+});
+
+const normalizeOwnerKey = (user = loadUser()) => {
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
+  if (isDemo) return DEMO_SOURCE_OWNER;
+
+  const email = String(user?.correo || user?.email || '').trim().toLowerCase();
+  const id = String(user?._id || user?.id || '').trim().toLowerCase();
+  return email || id || 'anonymous';
 };
 
-const saveState = (state) => {
+const getStorageKey = (user = loadUser()) => `${STORAGE_KEY_PREFIX}:${normalizeOwnerKey(user)}`;
+
+const sanitizeState = (parsed = {}) => ({
+  templates: Array.isArray(parsed.templates) && parsed.templates.length > 0
+    ? parsed.templates
+    : DEFAULT_TEMPLATES,
+  evaluations: Array.isArray(parsed.evaluations) ? parsed.evaluations : [],
+  activeTemplateId:
+    parsed.activeTemplateId ||
+    parsed.templates?.find?.((template) => template?.isDefault)?._id ||
+    DEFAULT_ACTIVE_TEMPLATE_ID,
+});
+
+const readState = (key) => {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return sanitizeState(JSON.parse(raw));
+  } catch (err) {
+    console.error('Error loading evaluations from storage:', err);
+    return null;
+  }
+};
+
+const persistState = (state, user = loadUser()) => {
   try {
     localStorage.setItem(
-      STORAGE_KEY,
+      getStorageKey(user),
       JSON.stringify({
         templates: state.templates,
         evaluations: state.evaluations,
@@ -317,12 +339,38 @@ const saveState = (state) => {
   }
 };
 
-const initialState = loadInitialState();
+const isLegacyDefaultSeed = (evaluations = []) =>
+  evaluations.length === LEGACY_DEFAULT_EVALUATIONS.length &&
+  evaluations.every((evaluation) => String(evaluation?._id || '').startsWith('eval_demo_'));
+
+const hasMeaningfulLegacyData = (parsed = {}) => {
+  const templates = Array.isArray(parsed.templates) ? parsed.templates : [];
+  const evaluations = Array.isArray(parsed.evaluations) ? parsed.evaluations : [];
+  return templates.some((template) => !template?.isRecommended) || (evaluations.length > 0 && !isLegacyDefaultSeed(evaluations));
+};
+
+export const loadEvaluationsState = (user = loadUser()) => {
+  const storedState = readState(getStorageKey(user));
+  if (storedState) return storedState;
+
+  if (normalizeOwnerKey(user) === DEMO_SOURCE_OWNER) {
+    const legacyState = readState(LEGACY_STORAGE_KEY);
+    if (legacyState && hasMeaningfulLegacyData(legacyState)) {
+      persistState(legacyState, user);
+      return legacyState;
+    }
+  }
+
+  return createEmptyState();
+};
 
 const evaluationsSlice = createSlice({
   name: 'evaluations',
-  initialState,
+  initialState: createEmptyState(),
   reducers: {
+    rehydrateEvaluations(_state, action) {
+      return sanitizeState(action.payload);
+    },
     // ---------- EVALUATIONS RECORD CRUD ----------
     addEvaluation(state, action) {
       const newEval = {
@@ -331,7 +379,7 @@ const evaluationsSlice = createSlice({
         ...action.payload,
       };
       state.evaluations.unshift(newEval);
-      saveState(state);
+      persistState(state);
     },
     updateEvaluation(state, action) {
       const { id, data } = action.payload;
@@ -342,13 +390,13 @@ const evaluationsSlice = createSlice({
           ...data,
           updatedAt: new Date().toISOString(),
         };
-        saveState(state);
+        persistState(state);
       }
     },
     deleteEvaluation(state, action) {
       const id = action.payload;
       state.evaluations = state.evaluations.filter((e) => e._id !== id);
-      saveState(state);
+      persistState(state);
     },
 
     // ---------- TEMPLATES CRUD ----------
@@ -363,7 +411,7 @@ const evaluationsSlice = createSlice({
         questions,
       };
       state.templates.push(newTpl);
-      saveState(state);
+      persistState(state);
     },
     createTemplateFromRecommended(state, action) {
       const { name, baseTemplateId, scope } = action.payload;
@@ -380,14 +428,14 @@ const evaluationsSlice = createSlice({
         })),
       };
       state.templates.push(newTpl);
-      saveState(state);
+      persistState(state);
     },
     updateTemplate(state, action) {
       const { id, data } = action.payload;
       const index = state.templates.findIndex((t) => t._id === id);
       if (index !== -1) {
         state.templates[index] = { ...state.templates[index], ...data };
-        saveState(state);
+        persistState(state);
       }
     },
     deleteTemplate(state, action) {
@@ -398,7 +446,7 @@ const evaluationsSlice = createSlice({
         if (state.activeTemplateId === id) {
           state.activeTemplateId = state.templates[0]?._id || null;
         }
-        saveState(state);
+        persistState(state);
       }
     },
     setDefaultTemplate(state, action) {
@@ -407,7 +455,7 @@ const evaluationsSlice = createSlice({
         t.isDefault = t._id === id;
       });
       state.activeTemplateId = id;
-      saveState(state);
+      persistState(state);
     },
 
     // ---------- QUESTION CRUD WITHIN TEMPLATE ----------
@@ -422,7 +470,7 @@ const evaluationsSlice = createSlice({
           ...question,
         };
         tpl.questions.push(newQuestion);
-        saveState(state);
+        persistState(state);
       }
     },
     updateQuestionInTemplate(state, action) {
@@ -432,7 +480,7 @@ const evaluationsSlice = createSlice({
         const qIndex = tpl.questions.findIndex((q) => q.id === questionId);
         if (qIndex !== -1) {
           tpl.questions[qIndex] = { ...tpl.questions[qIndex], ...question };
-          saveState(state);
+          persistState(state);
         }
       }
     },
@@ -441,13 +489,14 @@ const evaluationsSlice = createSlice({
       const tpl = state.templates.find((t) => t._id === templateId);
       if (tpl && tpl.questions) {
         tpl.questions = tpl.questions.filter((q) => q.id !== questionId);
-        saveState(state);
+        persistState(state);
       }
     },
   },
 });
 
 export const {
+  rehydrateEvaluations,
   addEvaluation,
   updateEvaluation,
   deleteEvaluation,
@@ -461,4 +510,6 @@ export const {
   removeQuestionFromTemplate,
 } = evaluationsSlice.actions;
 
-export default evaluationsSlice.reducer;
+export default function evaluationsReducer(state, action) {
+  return evaluationsSlice.reducer(state === undefined ? loadEvaluationsState() : state, action);
+}
