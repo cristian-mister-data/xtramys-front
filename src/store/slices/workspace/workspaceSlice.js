@@ -6,9 +6,20 @@ const cachedWorkspace = loadWorkspace();
 
 export const fetchWorkspaces = createAsyncThunk(
   'workspace/list',
-  async () => {
-    const { data } = await api.get('/club/workspaces', { cache: false });
-    return data;
+  async (_, { getState, rejectWithValue }) => {
+    const user = getState().usuario?.user;
+    if (user?.plan === 'demo' || user?.accessMode === 'demo') {
+      return { workspaces: [] };
+    }
+    try {
+      const { data } = await api.get('/club/workspaces', { cache: false });
+      return data;
+    } catch (err) {
+      if (err.response?.status === 403 && (user?.plan === 'demo' || user?.accessMode === 'demo')) {
+        return { workspaces: [] };
+      }
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
   },
   {
     condition: ({ force = false } = {}, { getState }) => {

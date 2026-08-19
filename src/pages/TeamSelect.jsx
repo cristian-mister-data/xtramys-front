@@ -110,10 +110,11 @@ export default function TeamSelect() {
   const supervising = useSelector((state) => state.usuario?.supervising);
 
   useEffect(() => {
+    const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
     const isClubAdminMode = user?.clubRole === 'admin' || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
-    if (supervising) navigate('/app', { replace: true });
+    if (supervising || isDemo) navigate('/app', { replace: true });
     else if (isClubAdminMode) navigate('/club/dashboard', { replace: true });
-  }, [navigate, supervising, user?.clubRole, user?.role]);
+  }, [navigate, supervising, user?.clubRole, user?.role, user?.plan, user?.accessMode]);
 
   useEffect(() => {
     if (!loaded && !loading) dispatch(fetchWorkspaces());
