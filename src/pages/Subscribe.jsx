@@ -7,7 +7,7 @@ import { FiArrowLeft, FiCheck, FiCheckCircle, FiCreditCard, FiHelpCircle, FiLock
 import styled from 'styled-components';
 import SubscribeAccountStep from '@/components/subscription/SubscribeAccountStep';
 import { createCheckoutSession, verifyPayPalSubscription } from '@/api/subscription';
-import { PAYPAL_CLIENT_ID, PAYPAL_PLAN_ID } from '@/config';
+import { PAYPAL_ANNUAL_PLAN_ID, PAYPAL_CLIENT_ID, PAYPAL_MONTHLY_PLAN_ID } from '@/config';
 import xtramysLogo from '@/images/xtramys.webp';
 import xtramysWhiteLogo from '@/images/xtramys_white.webp';
 import { websiteUrl } from '@/platform/externalWeb';
@@ -17,7 +17,11 @@ import { captureAttributionFromLocation, getStoredAttribution } from '@/utils/at
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
 
 const CLUB_MIN_QUANTITY = 5;
-const INDIVIDUAL_PRICE = 59;
+const INDIVIDUAL_MONTHLY_PRICE = 9.99;
+const INDIVIDUAL_ANNUAL_PRICE = 59;
+const MONTHLY_YEAR_TOTAL = INDIVIDUAL_MONTHLY_PRICE * 12;
+const ANNUAL_SAVINGS = Number((MONTHLY_YEAR_TOTAL - INDIVIDUAL_ANNUAL_PRICE).toFixed(2));
+const ANNUAL_SAVINGS_PERCENT = Number(((ANNUAL_SAVINGS / MONTHLY_YEAR_TOTAL) * 100).toFixed(1));
 const CLUB_PRICE_PER_USER = 49;
 
 const Page = styled.div`
@@ -249,6 +253,18 @@ const PriceNote = styled.p`
   margin: 9px 0 0;
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: 12px;
+`;
+
+const Savings = styled.div`
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid ${({ theme }) => theme.colors.success};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.successSoft};
+  color: ${({ theme }) => theme.colors.successSoftText || theme.colors.success};
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
 `;
 
 const Features = styled.div`
@@ -628,7 +644,7 @@ const LogoutButton = styled.button`
   }
 `;
 
-function PayPalButton({ planId, locale, onApprove, onError }) {
+function PayPalButton({ planId, customId, locale, onApprove, onError }) {
   const [{ isPending, isRejected }] = usePayPalScriptReducer();
 
   if (isPending) return <PayPalBox>{locale === 'es_ES' ? 'Cargando PayPal...' : 'Loading PayPal...'}</PayPalBox>;
@@ -637,9 +653,9 @@ function PayPalButton({ planId, locale, onApprove, onError }) {
   return (
     <PayPalBox>
       <PayPalButtons
-        forceReRender={[planId, locale]}
+        forceReRender={[planId, customId, locale]}
         style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 45, color: 'gold' }}
-        createSubscription={(_, actions) => actions.subscription.create({ plan_id: planId })}
+        createSubscription={(_, actions) => actions.subscription.create({ plan_id: planId, custom_id: customId })}
         onApprove={onApprove}
         onError={onError}
       />
@@ -655,11 +671,13 @@ export default function Subscribe() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const isClubPlan = params.get('plan') === 'club';
+  const initialBillingCycle = params.get('billing') === 'monthly' ? 'monthly' : 'annual';
   const initialQuantity = Number.parseInt(params.get('quantity') || String(CLUB_MIN_QUANTITY), 10);
   const user = useSelector((state) => state.usuario.user);
   const authChecked = useSelector((state) => state.usuario.authChecked);
   const subscriptionStatus = useSelector((state) => state.usuario.subscriptionStatus);
   const [quantity, setQuantity] = useState(initialQuantity >= CLUB_MIN_QUANTITY ? initialQuantity : CLUB_MIN_QUANTITY);
+  const [billingCycle, setBillingCycle] = useState(initialBillingCycle);
   const [activeStep, setActiveStep] = useState('account');
   const [accountIntent, setAccountIntent] = useState('payment');
   const [loading, setLoading] = useState(false);
@@ -668,6 +686,7 @@ export default function Subscribe() {
 
   const isEs = i18n.language?.startsWith('es');
   const locale = isEs ? 'es-ES' : 'en-US';
+  const paypalPlanId = billingCycle === 'monthly' ? PAYPAL_MONTHLY_PLAN_ID : PAYPAL_ANNUAL_PLAN_ID;
   const returnPath = `${location.pathname}${location.search}${location.hash}`;
   const hasAccess = hasPaidSubscriptionAccess(user, subscriptionStatus);
   const isCancelling = (
@@ -681,8 +700,10 @@ export default function Subscribe() {
   }, []);
 
   useEffect(() => {
-    const nextQuantity = Number.parseInt(new URLSearchParams(location.search).get('quantity'), 10);
+    const nextParams = new URLSearchParams(location.search);
+    const nextQuantity = Number.parseInt(nextParams.get('quantity'), 10);
     if (nextQuantity >= CLUB_MIN_QUANTITY) setQuantity(nextQuantity);
+    setBillingCycle(nextParams.get('billing') === 'monthly' ? 'monthly' : 'annual');
   }, [location.search]);
 
   useEffect(() => {
@@ -701,7 +722,7 @@ export default function Subscribe() {
       const attribution = getStoredAttribution();
       const data = isClubPlan
         ? await createCheckoutSession(window.location.origin, { priceType: 'club', quantity, attribution })
-        : await createCheckoutSession(window.location.origin, { attribution });
+        : await createCheckoutSession(window.location.origin, { billingCycle, attribution });
       if (data.url) {
         sessionStorage.setItem('xtramys:postCheckoutPath', isClubPlan ? '/club/dashboard' : '/season/create');
         window.location.href = data.url;
@@ -716,11 +737,13 @@ export default function Subscribe() {
   const handlePayPalApprove = async (data) => {
     setError(null);
     try {
-      await verifyPayPalSubscription(data.subscriptionID, getStoredAttribution());
+      await verifyPayPalSubscription(data.subscriptionID, billingCycle, getStoredAttribution());
       await dispatch(checkSubscription()).unwrap();
       navigate('/season/create', { replace: true });
     } catch (err) {
-      setError(err?.message || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
+      console.error('[PayPal Approve Error]', err);
+      const apiMessage = err?.response?.data?.mensaje || err?.message;
+      setError(apiMessage || t('subscription.paypalError', 'Error al verificar el pago con PayPal'));
     }
   };
 
@@ -748,15 +771,36 @@ export default function Subscribe() {
     const nextParams = new URLSearchParams(location.search);
     if (plan === 'club') {
       nextParams.set('plan', 'club');
+      nextParams.delete('billing');
       setAccountIntent('payment');
     }
     else {
       nextParams.delete('plan');
       nextParams.delete('quantity');
+      nextParams.set('billing', billingCycle);
     }
     const query = nextParams.toString();
     navigate(`${location.pathname}${query ? `?${query}` : ''}`);
   };
+
+  const selectBillingCycle = (cycle) => {
+    const nextParams = new URLSearchParams(location.search);
+    nextParams.delete('plan');
+    nextParams.delete('quantity');
+    nextParams.set('billing', cycle);
+    setBillingCycle(cycle);
+    navigate(`${location.pathname}?${nextParams}`);
+  };
+
+  const formatPrice = (price) => new Intl.NumberFormat(isEs ? 'es-ES' : 'en-IE', {
+    minimumFractionDigits: Number.isInteger(price) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(price);
+  const formatPercent = (percent) => new Intl.NumberFormat(isEs ? 'es-ES' : 'en-IE', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(percent);
+  const individualPrice = billingCycle === 'monthly' ? INDIVIDUAL_MONTHLY_PRICE : INDIVIDUAL_ANNUAL_PRICE;
 
   const features = isClubPlan ? [
     t('subscription.clubFeatures.coaches', 'Cuentas de entrenador individuales'),
@@ -798,26 +842,54 @@ export default function Subscribe() {
           </PlanTabs>
           <PlanBox>
             <Badge>{isClubPlan ? t('subscription.clubPlanBadge', 'Club') : t('subscription.planBadge', 'Individual')}</Badge>
-            <PlanTitle>{isClubPlan ? t('subscription.clubTitle', 'Plan Club') : t('subscription.proAnnual', 'Plan PRO Anual')}</PlanTitle>
+            <PlanTitle>{isClubPlan
+              ? t('subscription.clubTitle', 'Plan Club')
+              : billingCycle === 'monthly'
+                ? t('subscription.proMonthly', 'Plan PRO Mensual')
+                : t('subscription.proAnnual', 'Plan PRO Anual')}</PlanTitle>
             <PlanSubtitle>
               {isClubPlan
                 ? t('subscription.clubSubtitle', 'Administra a tus entrenadores bajo una única organización')
                 : t('subscription.subtitle', 'Acceso completo a todas las funcionalidades de Xtramys')}
             </PlanSubtitle>
 
+            {!isClubPlan && (
+              <PlanTabs role="tablist" aria-label={t('subscription.chooseBilling', 'Elige la facturación')}>
+                <PlanTab type="button" role="tab" aria-selected={billingCycle === 'monthly'} $active={billingCycle === 'monthly'} onClick={() => selectBillingCycle('monthly')}>
+                  {t('subscription.monthly', 'Mensual')}
+                </PlanTab>
+                <PlanTab type="button" role="tab" aria-selected={billingCycle === 'annual'} $active={billingCycle === 'annual'} onClick={() => selectBillingCycle('annual')}>
+                  {t('subscription.yearly', 'Anual')} · -{formatPercent(ANNUAL_SAVINGS_PERCENT)}%
+                </PlanTab>
+              </PlanTabs>
+            )}
+
             <PriceRow>
               <Amount>
                 {isClubPlan
                   ? `${CLUB_PRICE_PER_USER}€`
-                  : isEs ? `${INDIVIDUAL_PRICE}€` : `€${INDIVIDUAL_PRICE}`}
+                  : isEs ? `${formatPrice(individualPrice)}€` : `€${formatPrice(individualPrice)}`}
               </Amount>
-              <Period>/{isClubPlan ? t('subscription.userYear', 'usuario/año') : t('subscription.year', 'año')}</Period>
+              <Period>/{isClubPlan
+                ? t('subscription.userYear', 'usuario/año')
+                : billingCycle === 'monthly' ? t('subscription.month', 'mes') : t('subscription.year', 'año')}</Period>
             </PriceRow>
             <PriceNote>
               {isClubPlan
                 ? t('subscription.clubAnnual', 'Facturación anual por usuario')
-                : t('subscription.annual', 'Facturado anualmente · Cancela cuando quieras')}
+                : billingCycle === 'monthly'
+                  ? t('subscription.monthlyNote', '9,99€ cada mes · Cancela cuando quieras')
+                  : t('subscription.annual', '59€ al año · Cancela cuando quieras')}
             </PriceNote>
+
+            {!isClubPlan && billingCycle === 'annual' && (
+              <Savings>
+                {t('subscription.annualSavings', 'Ahorras {{amount}}€ al año ({{percent}}%) frente al plan mensual', {
+                  amount: formatPrice(ANNUAL_SAVINGS),
+                  percent: formatPercent(ANNUAL_SAVINGS_PERCENT),
+                })}
+              </Savings>
+            )}
 
             {isClubPlan && (
               <Quantity>
@@ -919,12 +991,12 @@ export default function Subscribe() {
               <PaymentArea>
                 {error && <Message>{error}</Message>}
 
-                {isClubPlan || !PAYPAL_CLIENT_ID ? (
+                {isClubPlan || !PAYPAL_CLIENT_ID || !paypalPlanId ? (
                   <PrimaryButton type="button" onClick={handleStripeSubscribe} disabled={loading}>
                     {loading ? t('subscription.loading', 'Procesando...') : t('subscription.subscribe', 'Continuar al pago')}
                   </PrimaryButton>
                 ) : (
-                  <PayPalScriptProvider key={`paypal-${locale}-${paypalMountKey}`} options={{
+                  <PayPalScriptProvider key={`paypal-${locale}-${billingCycle}-${paypalMountKey}`} options={{
                     clientId: PAYPAL_CLIENT_ID,
                     vault: true,
                     intent: 'subscription',
@@ -932,10 +1004,14 @@ export default function Subscribe() {
                     components: 'buttons',
                   }}>
                     <PayPalButton
-                      planId={PAYPAL_PLAN_ID}
+                      planId={paypalPlanId}
+                      customId={String(user?._id || user?.id || '')}
                       locale={isEs ? 'es_ES' : 'en_US'}
                       onApprove={handlePayPalApprove}
-                      onError={() => setError(t('subscription.paypalError', 'Error al procesar el pago con PayPal'))}
+                      onError={(err) => {
+                        console.error('[PayPal SDK Error]', err);
+                        setError(t('subscription.paypalError', 'Error al procesar el pago con PayPal'));
+                      }}
                     />
                     <Divider>{t('common.or', 'o')}</Divider>
                     <CardButton type="button" onClick={handleStripeSubscribe} disabled={loading}>

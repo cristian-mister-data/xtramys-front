@@ -59,5 +59,6 @@ export const USE_COOKIE_AUTH = AUTH_MODE === 'cookie';
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 export const APPLE_CLIENT_ID = import.meta.env.VITE_APPLE_CLIENT_ID || 'com.xtramys.web';
 export const APPLE_REDIRECT_URI = import.meta.env.VITE_APPLE_REDIRECT_URI || '';
-export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
-export const PAYPAL_PLAN_ID = import.meta.env.VITE_PAYPAL_PLAN_ID || 'P-5AW56002RB445332ENIKY7PA';
+export const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AVTHAKRvvNTw50DlV-A7WpWtYNfSFPSgOYUVCDR1Qse1ryMHUHdgKAYa7XZDrbNrSKxselTYPiC7E01p';
+export const PAYPAL_ANNUAL_PLAN_ID = import.meta.env.VITE_PAYPAL_ANNUAL_PLAN_ID || import.meta.env.VITE_PAYPAL_PLAN_ID || 'P-6HB19859869285315NIK3D2Q';
+export const PAYPAL_MONTHLY_PLAN_ID = import.meta.env.VITE_PAYPAL_MONTHLY_PLAN_ID || 'P-6GH92098PV942435BNKDRDEQ';

@@ -4,7 +4,7 @@ export function hasDemoAccess(user) {
 
 export function hasFullAccess(user, subscriptionStatus) {
   if (!user) return false;
-  if (hasDemoAccess(user)) return false;
+  if (hasDemoAccess(user) || user.plan === 'demo' || user.plan === 'free') return false;
   if (user.role === 'admin') return true;
   if (user.role === 'club_admin') return true;
   if (user.clubId && user.clubMemberStatus === 'active') return true;

@@ -1468,6 +1468,15 @@ export default function Profile() {
 
                     <SubPlanName $plan="pro">{t('subscription.plan', 'Plan Individual')}</SubPlanName>
 
+                    <SubInfoRow $type="info">
+                      <SubInfoIcon>🗓️</SubInfoIcon>
+                      <SubInfoText $plan="pro">
+                        {user.subscriptionBillingCycle === 'monthly'
+                          ? t('subscription.monthlyPlanSummary', 'Plan mensual · 9,99€ al mes')
+                          : t('subscription.annualPlanSummary', 'Plan anual · 59€ al año')}
+                      </SubInfoText>
+                    </SubInfoRow>
+
                     {user.subscriptionCurrentPeriodEnd && (
                       <SubInfoRow $type={isCancelledActive ? 'cancelled' : 'renew'}>
                         <SubInfoIcon>

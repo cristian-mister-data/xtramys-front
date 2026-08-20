@@ -20,7 +20,27 @@ const SUBSCRIBE_PATHS = [
 ];
 
 const GuardFallback = () => (
-  <div style={{ minHeight: '100dvh', background: '#f0f4f8' }} />
+  <div style={{
+    minHeight: '100dvh',
+    background: '#0b0f19',
+    color: '#ffffff',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16
+  }}>
+    <div style={{
+      width: 44,
+      height: 44,
+      borderRadius: '50%',
+      border: '3px solid rgba(255,255,255,0.1)',
+      borderTopColor: '#ff6b35',
+      animation: 'spin 0.8s linear infinite'
+    }} />
+    <span style={{ fontSize: 14, opacity: 0.7, fontFamily: 'sans-serif' }}>Cargando...</span>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
 );
 
 const DEMO_ALLOWED_PREFIXES = [

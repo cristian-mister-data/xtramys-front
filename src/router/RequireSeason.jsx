@@ -5,7 +5,26 @@ import { fetchTemporada } from '@/store/slices/season/seasonThunks';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
 
 const SetupFallback = () => (
-  <div style={{ minHeight: '100dvh', background: 'var(--color-background, #f0f4f8)' }} />
+  <div style={{
+    minHeight: '100dvh',
+    background: 'var(--color-background, #0b0f19)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  }}>
+    <div style={{
+      width: 44,
+      height: 44,
+      borderRadius: '50%',
+      border: '3px solid rgba(255,255,255,0.1)',
+      borderTopColor: '#ff6b35',
+      animation: 'spin 0.8s linear infinite',
+    }} />
+    <span style={{ fontSize: 14, opacity: 0.7, fontFamily: 'sans-serif', color: '#fff' }}>Cargando...</span>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
 );
 
 const ErrorFallback = ({ onRetry }) => {
@@ -35,7 +54,10 @@ export default function RequireSeason({ children }) {
   const workspaceLoading = useSelector((state) => state.workspace.loading);
   const user = useSelector((state) => state.usuario.user);
   const supervising = useSelector((state) => state.usuario.supervising);
+
+  const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
   const isClubAdmin = user?.role === 'club_admin' || user?.clubRole === 'admin';
+
   const seasonId = workspace?.team?.temporada?._id || workspace?.team?.temporada || null;
   const teamId = workspace?.team?._id || workspace?.teamId || null;
   const [status, setStatus] = useState('idle');
@@ -47,17 +69,17 @@ export default function RequireSeason({ children }) {
       return;
     }
     const key = `${teamId}:${seasonId}`;
-    if (!force && requestRef.current === key) return;
+    if (!force && requestRef.current === key && status === 'ok') return;
     requestRef.current = key;
     setStatus('loading');
     Promise.all([
       dispatch(fetchTemporada({ id: seasonId })).unwrap(),
       dispatch(fetchEquiposTemporada({ season: seasonId })).unwrap(),
     ]).then(() => setStatus('ok')).catch(() => setStatus('error'));
-  }, [dispatch, seasonId, teamId]);
+  }, [dispatch, seasonId, teamId, status]);
 
   useEffect(() => {
-    if (isClubAdmin && !supervising) {
+    if (isDemo || (isClubAdmin && !supervising)) {
       setStatus('ok');
       return;
     }
@@ -69,10 +91,10 @@ export default function RequireSeason({ children }) {
       return;
     }
     load(false);
-  }, [isClubAdmin, load, supervising, workspaceLoaded, workspaceLoading]);
+  }, [isClubAdmin, isDemo, load, supervising, workspaceLoaded, workspaceLoading]);
 
-  // El panel del club no está ligado a una temporada/equipo seleccionado.
-  if (isClubAdmin && !supervising) return children;
+  // Si es usuario demo o administrador de club no supervisando, no requiere cargar temporada previa.
+  if (isDemo || (isClubAdmin && !supervising)) return children;
 
   if (status === 'error') return <ErrorFallback onRetry={() => load(true)} />;
   if (status !== 'ok') return <SetupFallback />;

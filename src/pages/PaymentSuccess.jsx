@@ -6,6 +6,7 @@ import { checkSubscription, fetchMe } from '@/store/slices/user/userThunks';
 import { RESET_WORKSPACE } from '@/store/actionTypes';
 import { clearSeasonCache } from '@/store/slices/season/seasonThunks';
 import { api } from '@/api/client';
+import { saveToken } from '@/auth/storage';
 import styled, { keyframes } from 'styled-components';
 
 const spin = keyframes`to { transform: rotate(360deg); }`;
@@ -165,8 +166,12 @@ export default function PaymentSuccess() {
 
     try {
       const res = await api.post('/stripe/activate-manually', { sessionId });
+      if (res.data?.token) {
+        await saveToken(res.data.token);
+      }
       if (res.data?.subscriptionStatus === 'active') {
-        await dispatch(checkSubscription()).unwrap();
+        await dispatch(fetchMe({ force: true })).unwrap().catch(() => {});
+        await dispatch(checkSubscription()).unwrap().catch(() => {});
         await refreshWorkspace();
         setStep('success');
         return;

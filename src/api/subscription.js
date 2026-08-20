@@ -40,8 +40,8 @@ export const cancelLicenses = (quantity) =>
 export const previewLicenses = (quantity) =>
   api.post('/stripe/preview-licenses', { quantity }).then((res) => res.data);
 
-export const verifyPayPalSubscription = (subscriptionId, attribution = null) =>
-  api.post('/paypal/verify-subscription', { subscriptionId, attribution }).then((res) => {
+export const verifyPayPalSubscription = (subscriptionId, billingCycle, attribution = null) =>
+  api.post('/paypal/verify-subscription', { subscriptionId, billingCycle, attribution }).then((res) => {
     clearSubscriptionCache();
     return res.data;
   });
