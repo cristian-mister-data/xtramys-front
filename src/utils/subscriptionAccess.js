@@ -1,14 +1,18 @@
 export function hasDemoAccess(user) {
-  return user?.plan === 'demo' || user?.accessMode === 'demo';
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'club_admin') return false;
+  if (user.clubId && user.clubMemberStatus === 'active') return false;
+  return user?.accessMode === 'demo' || (user?.plan === 'demo' && !user?.clubId);
 }
 
 export function hasFullAccess(user, subscriptionStatus) {
   if (!user) return false;
-  if (hasDemoAccess(user) || user.plan === 'demo' || user.plan === 'free') return false;
-  if (user.role === 'admin') return true;
-  if (user.role === 'club_admin') return true;
+  if (user.role === 'admin' || user.role === 'club_admin') return true;
   if (user.clubId && user.clubMemberStatus === 'active') return true;
+  if (user.accessMode === 'full') return true;
+  if (hasDemoAccess(user) || user.plan === 'demo' || user.plan === 'free') return false;
   if (user.plan === 'pro' || user.plan === 'club') return true;
+
 
   const status = subscriptionStatus || user.subscriptionStatus;
   const activeStatuses = new Set(['active', 'trialing']);
