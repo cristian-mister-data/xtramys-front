@@ -175,12 +175,13 @@ export const fetchGlobalFolders = createAsyncThunk(
 
 export const fetchExerciseFolderById = createAsyncThunk(
   'ejercicio/fetchExerciseFolderById',
-  async ({ id, lang, user }) => {
-    const cacheKey = exerciseCacheKey('folder-detail', { id, lang, user });
+  async ({ id, lang, user, filterType }) => {
+    const cacheKey = exerciseCacheKey('folder-detail', { id, lang, user, filterType });
     return exerciseReadCache.read(cacheKey, async () => {
       const queryParams = [];
       if (lang) queryParams.push(`lang=${lang}`);
       if (user) queryParams.push(`user=${user}`);
+      if (filterType) queryParams.push(`filterType=${filterType}`);
       const params = queryParams.length ? `?${queryParams.join('&')}` : '';
       const res = await api.get(`/exercise-folder/${id}${params}`);
       const prefs = await readFavoritePrefs('exercise');

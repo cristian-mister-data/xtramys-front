@@ -1543,7 +1543,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       dispatch(fetchGlobalExercises({ lang }));
       dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
     };
     window.addEventListener('xtramys:video-library-changed', refresh);
     return () => window.removeEventListener('xtramys:video-library-changed', refresh);
@@ -1560,13 +1560,13 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
   // Navegar a carpeta: cargar contenido
   useEffect(() => {
     if (currentFolderId) {
-      dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }))
+      dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }))
         .finally(() => setIsNavigatingFolder(false));
     } else {
       setIsNavigatingFolder(false);
       dispatch(clearCurrentFolder());
     }
-  }, [currentFolderId, idUsuario, dispatch, lang]);
+  }, [currentFolderId, idUsuario, dispatch, lang, listFilter]);
 
   // Persistir el modo edición/creación para sobrevivir al desmontaje en web
   // cuando el usuario navega al editor del campo táctico. Persistimos
@@ -1620,7 +1620,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
     dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
     dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
-    if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+    if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
     if (replaceInSession?.session?._id) {
       navigation.navigate('Training', {
         openSessionId: replaceInSession.session._id,
@@ -1686,7 +1686,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       // Recargar datos
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
     } catch (error) {
       Alert.alert(t('message.error'), t('folders.moveError'));
     }
@@ -1724,7 +1724,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     }
     const base = (() => {
       if (listFilter === 'mine') {
-        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => !ex.isGlobal && (sameId(getOwnerId(ex), idUsuario) || !getOwnerId(ex)));
+        return isDemo ? demoOnly(ejercicios) : ejercicios.filter(ex => ex.visibility !== 'CLUB' && !ex.isGlobal && (sameId(getOwnerId(ex), idUsuario) || !getOwnerId(ex)));
       }
       if (listFilter === 'club') {
         return mergeById(
@@ -1771,6 +1771,29 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     if (listFilter === 'club') return sortByLocalizedName(exerciseFolders.filter(f => !f.parentFolder && (f.isClub || f.visibility === 'CLUB')), lang);
     return sortByLocalizedName((isDemo ? exerciseFolders : mergeById(exerciseFolders, globalFolders)).filter(f => !f.parentFolder), lang);
   }, [listFilter, currentFolderId, currentFolderSubfolders, globalFolders, exerciseFolders, idUsuario, filters.titulo, lang, isDemo]);
+
+  const folderExerciseCounts = useMemo(() => {
+    const counts = new Map();
+    [...ejercicios, ...sharedExercises, ...globalExercises].forEach((exercise) => {
+      const folderId = getItemId(exercise?.folder) || exercise?.folder;
+      if (!folderId) return;
+      const key = String(folderId);
+      const current = counts.get(key) || { all: 0, private: 0, club: 0 };
+      current.all += 1;
+      if (exercise.visibility === 'CLUB') current.club += 1;
+      else current.private += 1;
+      counts.set(key, current);
+    });
+    return counts;
+  }, [ejercicios, sharedExercises, globalExercises]);
+
+  const getFolderExerciseCount = useCallback((folder) => {
+    const folderId = getItemId(folder);
+    const computed = folderId ? folderExerciseCounts.get(String(folderId)) : undefined;
+    if (listFilter === 'club') return folder?.clubExerciseCount ?? computed?.club ?? 0;
+    if (listFilter === 'mine') return folder?.privateExerciseCount ?? computed?.private ?? 0;
+    return folder?.exerciseCount ?? computed?.all ?? 0;
+  }, [folderExerciseCounts, listFilter]);
 
   const folderLabels = useMemo(() => {
     const folders = mergeById(exerciseFolders, exerciseFoldersFlat, globalFolders);
@@ -1821,7 +1844,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
             dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
             dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
             dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
-            if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+            if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
           }
         }
       ]
@@ -2008,7 +2031,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
               showNotification(t('exercise.deleteExerciseSuccess') || 'Eliminados', 'success');
               dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
               dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
-              if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+              if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
               handleCancelSelection();
             } catch (err) {
               showNotification(t('message.error'), 'error');
@@ -2028,7 +2051,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       showNotification(t('folders.moveToFolder') || 'Movidos', 'success');
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
       setShowBatchMoveModal(false);
       handleCancelSelection();
     } catch (err) {
@@ -2104,7 +2127,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
       dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       if (folderData.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
     } catch (error) {
       const errorMsg = error?.message || t('folders.createError');
       showNotification(errorMsg, 'error');
@@ -2156,7 +2179,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
       if (folderToDelete.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
 
       setShowDeleteFolderModal(false);
       setShowDeleteConfirmModal(false);
@@ -2201,7 +2224,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       dispatch(fetchExerciseFolders({ user: idUsuario, lang }));
       dispatch(fetchExerciseFoldersFlat({ user: idUsuario, lang }));
       if (menuFolder.isGlobal) dispatch(fetchGlobalFolders({ lang }));
-      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario }));
+      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
     } catch (error) {
       showNotification(t('folders.updateError'), 'error');
     }
@@ -2228,7 +2251,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
         </View>
         <View style={styles.mvFolderStats}>
           <Ionicons name="fitness" size={12} color="#94A3B8" />
-          <Text style={styles.mvFolderStatsText}> {folder.exerciseCount || 0}</Text>
+          <Text style={styles.mvFolderStatsText}> {getFolderExerciseCount(folder)}</Text>
           {folder.subfolderCount > 0 && (
             <>
               <Text style={styles.mvFolderStatsText}>  •  </Text>
@@ -2758,7 +2781,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                       showNotification(t('exercise.copiedToMyExercises'), 'success');
                       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
                       dispatch(fetchGlobalExercises({ lang }));
-                      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+                      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
                     } catch (err) {
                       Alert.alert(t('message.error'), err?.message || 'Error');
                     }
@@ -2852,7 +2875,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                       showNotification(t('exercise.cloneCreated'), 'success');
                       dispatch(fetchEjerciciosUsuario({ user: idUsuario, lang }));
                       dispatch(fetchGlobalExercises({ lang }));
-                      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang }));
+                      if (currentFolderId) dispatch(fetchExerciseFolderById({ id: currentFolderId, lang, user: idUsuario, filterType: listFilter }));
                     } catch (err) {
                       Alert.alert(t('message.error'), err?.message || 'Error');
                     }
