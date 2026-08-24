@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
+import ImageZoom from 'react-native-image-pan-zoom';
 import useMatchSheetPDF from '@/vendor/matchSheet/useMatchSheetPDF';
 import MatchSheetPDFModals, { MatchSheetPDFButtons } from '@/vendor/matchSheet/MatchSheetPDFModals';
 import LineupEditor from '@/vendor/matchSheet/LineupEditor';
@@ -282,6 +283,7 @@ export default function MatchSheetDetailModal({
   const [activeDetailTab, setActiveDetailTab] = useState('data');
   const [statisticsMatchSheet, setStatisticsMatchSheet] = useState(matchSheet);
   const [detailSetPieces, setDetailSetPieces] = useState(() => matchSheet?.setPieces || []);
+  const [fullscreenSetPiece, setFullscreenSetPiece] = useState(null);
   const [availableSetPieces, setAvailableSetPieces] = useState([]);
   const detailSetPiecesRef = useRef(matchSheet?.setPieces || []);
   const detailMatchSheetIdRef = useRef(String(matchSheet?._id || ''));
@@ -289,6 +291,10 @@ export default function MatchSheetDetailModal({
   const setPieceVideoPlayer = useVideoPlayer(setPieceVideoUrl || '', (player) => {
     if (setPieceVideoUrl) player.play();
   });
+
+  useEffect(() => {
+    if (!visible) setFullscreenSetPiece(null);
+  }, [visible]);
 
   useEffect(() => {
     if (!visible || !matchSheet?._id) return;
@@ -971,7 +977,13 @@ export default function MatchSheetDetailModal({
                             </View>
                           )}
                         </View>
-                        <View style={styles.setPiecePreviewWrap}>
+                        <TouchableOpacity
+                          style={styles.setPiecePreviewWrap}
+                          activeOpacity={0.9}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t('common.expand', 'Ampliar')} ${setPiece.nombre || 'ABP'}`}
+                          onPress={() => setFullscreenSetPiece(setPiece)}
+                        >
                           <SetPiecePreview
                             setPiece={setPiece}
                             players={players}
@@ -985,7 +997,10 @@ export default function MatchSheetDetailModal({
                               </View>
                             </View>
                           )}
-                        </View>
+                          <View style={styles.setPiecePreviewExpand} pointerEvents="none">
+                            <Ionicons name="expand-outline" size={18} color="#fff" />
+                          </View>
+                        </TouchableOpacity>
                       </View>
                     ))}
                   </View>
@@ -1418,6 +1433,64 @@ export default function MatchSheetDetailModal({
         </View>
       </Modal>
 
+      <Modal
+        visible={!!fullscreenSetPiece}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+        onRequestClose={() => setFullscreenSetPiece(null)}
+      >
+        <View style={styles.setPieceFullscreenBg}>
+          <Text
+            style={[styles.setPieceFullscreenTitle, { top: Math.max(insets.top + 8, 22) }]}
+            numberOfLines={1}
+          >
+            {fullscreenSetPiece?.nombre || 'ABP'}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.setPieceFullscreenClose,
+              { top: Math.max(insets.top, 14), right: Math.max(insets.right, 14) },
+            ]}
+            onPress={() => setFullscreenSetPiece(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close', 'Cerrar')}
+          >
+            <Ionicons name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          {getContentImage(fullscreenSetPiece) || fullscreenSetPiece?.customImage ? (
+            <ImageZoom
+              cropWidth={screenWidth}
+              cropHeight={screenHeight}
+              imageWidth={screenWidth}
+              imageHeight={screenHeight}
+              minScale={1}
+              maxScale={8}
+              showControls
+              enableSwipeDown
+              onSwipeDown={() => setFullscreenSetPiece(null)}
+            >
+              <Image
+                source={{ uri: normalizeImageSource(usesImportedImage(fullscreenSetPiece)
+                  ? getContentImage(fullscreenSetPiece)
+                  : (fullscreenSetPiece?.customImage || getContentImage(fullscreenSetPiece))) }}
+                style={{ width: screenWidth, height: screenHeight }}
+                resizeMode="contain"
+              />
+            </ImageZoom>
+          ) : fullscreenSetPiece ? (
+            <View style={styles.setPieceFullscreenBoard}>
+              <SetPiecePreview
+                setPiece={fullscreenSetPiece}
+                players={players}
+                height={Math.max(260, screenHeight - 80)}
+                kitContext={getSetPieceKitContext(fullscreenSetPiece)}
+              />
+            </View>
+          ) : null}
+        </View>
+      </Modal>
+
       {/* Modales de PDF - Componentes reutilizables */}
       <MatchSheetPDFModals
         showLineupModal={showLineupModal}
@@ -1840,6 +1913,47 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   setPiecePreviewWrap: {
     position: 'relative',
+  },
+  setPiecePreviewExpand: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+  },
+  setPieceFullscreenBg: {
+    flex: 1,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setPieceFullscreenTitle: {
+    position: 'absolute',
+    zIndex: 10,
+    top: 22,
+    left: 20,
+    right: 84,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  setPieceFullscreenClose: {
+    position: 'absolute',
+    zIndex: 11,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+  },
+  setPieceFullscreenBoard: {
+    width: '100%',
+    paddingHorizontal: 12,
   },
   setPiecePreviewLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
