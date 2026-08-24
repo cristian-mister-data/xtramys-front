@@ -20,22 +20,27 @@ const Content = styled.div`
 
 const Tabs = styled.div`
   display: flex;
-  gap: 6px;
-  padding: 12px 16px 0;
+  gap: 8px;
+  padding: 10px 12px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
   overflow-x: auto;
+
+  @media (max-width: 600px) {
+    padding: 8px;
+  }
 `;
 
 const Tab = styled.button`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 7px;
   min-height: 42px;
   padding: 8px 13px;
-  border: 0;
-  border-bottom: 3px solid ${({ theme, $active }) => $active ? theme.colors.primary : 'transparent'};
-  background: transparent;
+  border: 1px solid ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme, $active }) => $active ? theme.colors.primarySoft : theme.colors.backgroundAlt};
   color: ${({ theme, $active }) => $active ? theme.colors.primary : theme.colors.textSecondary};
   font: inherit;
   font-size: 13px;
@@ -43,12 +48,33 @@ const Tab = styled.button`
   white-space: nowrap;
   cursor: pointer;
 
+  &:hover { border-color: ${({ theme }) => theme.colors.primary}; }
+
   &:focus-visible { outline: none; box-shadow: ${({ theme }) => theme.shadows.focus}; }
+
+  @media (max-width: 600px) {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 8px;
+  }
 `;
 
 const OwnMatchSheets = styled.div`
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const OpponentMatchSheets = styled.div`
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 `;
 
 export default function MatchSheets() {
@@ -98,7 +124,7 @@ export default function MatchSheets() {
           {activeTab === 'own' ? (
             <OwnMatchSheets role="tabpanel"><MatchSheetList canMutate={canMutate} /></OwnMatchSheets>
           ) : (
-            <div role="tabpanel"><OpponentMatchReports selectedTeam={selectedTeam} canMutate={canMutate} /></div>
+            <OpponentMatchSheets role="tabpanel"><OpponentMatchReports selectedTeam={selectedTeam} canMutate={canMutate} /></OpponentMatchSheets>
           )}
         </Content>
       ) : <TeamRequiredCard />}

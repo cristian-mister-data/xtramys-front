@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import ImageZoom from 'react-native-image-pan-zoom';
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -59,6 +60,7 @@ import { duplicateVideoForEdit, getTacticalVideo, getVideoById, getVideoForEdit 
 import { getMatchSheet, updateMatchSheet } from '@/api/matchSheet';
 import LoadingSpinner from '@/vendor/shared/LoadingSpinner';
 import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
+import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
@@ -1058,13 +1060,14 @@ export default function EditMatchSheetModal({
   const { t, i18n } = useTranslation();
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isCreateMode = !matchSheet?._id;
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('data');
   const [availableSetPieces, setAvailableSetPieces] = useState([]);
   const [loadingSetPieces, setLoadingSetPieces] = useState(false);
   const [selectedSetPieces, setSelectedSetPieces] = useState([]);
+  const [fullscreenSetPiece, setFullscreenSetPiece] = useState(null);
   const [activeSetPieceSlot, setActiveSetPieceSlot] = useState(null);
   const [boardParams, setBoardParams] = useState(null);
   const [openingSetPieceBoardIndex, setOpeningSetPieceBoardIndex] = useState(null);
@@ -2607,7 +2610,13 @@ export default function EditMatchSheetModal({
                 <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
               </TouchableOpacity>
             </View>
-            <View style={styles.setPiecePreviewWrap}>
+            <TouchableOpacity
+              style={styles.setPiecePreviewWrap}
+              activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('common.expand', 'Ampliar')} ${sp.nombre || 'ABP'}`}
+              onPress={() => setFullscreenSetPiece(sp)}
+            >
               <SetPiecePreview
                 setPiece={sp}
                 players={players}
@@ -2621,7 +2630,10 @@ export default function EditMatchSheetModal({
                   </View>
                 </View>
               )}
-            </View>
+              <View style={styles.setPiecePreviewExpand} pointerEvents="none">
+                <Ionicons name="expand-outline" size={18} color="#fff" />
+              </View>
+            </TouchableOpacity>
             {!usesImportedImage(sp) && <TouchableOpacity
               style={[
                 styles.setPieceBoardBtn,
@@ -2733,6 +2745,8 @@ export default function EditMatchSheetModal({
             style={styles.modalBody}
             contentContainerStyle={styles.modalBodyContent}
             showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
           >
             {activeTab === 'data' ? (
             <>
@@ -4527,6 +4541,56 @@ export default function EditMatchSheetModal({
       </Modal>
 
       <Modal
+        visible={!!fullscreenSetPiece}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        statusBarTranslucent
+        onRequestClose={() => setFullscreenSetPiece(null)}
+      >
+        <View style={styles.setPieceFullscreenBg}>
+          <Text style={styles.setPieceFullscreenTitle} numberOfLines={1}>
+            {fullscreenSetPiece?.nombre || 'ABP'}
+          </Text>
+          <TouchableOpacity
+            style={styles.setPieceFullscreenClose}
+            onPress={() => setFullscreenSetPiece(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close', 'Cerrar')}
+          >
+            <Ionicons name="close" size={30} color="#fff" />
+          </TouchableOpacity>
+          {getContentImage(fullscreenSetPiece) ? (
+            <ImageZoom
+              cropWidth={windowWidth}
+              cropHeight={windowHeight}
+              imageWidth={windowWidth}
+              imageHeight={windowHeight}
+              minScale={1}
+              maxScale={8}
+              showControls
+              enableSwipeDown
+              onSwipeDown={() => setFullscreenSetPiece(null)}
+            >
+              <Image
+                source={{ uri: normalizeImageSource(getContentImage(fullscreenSetPiece)) }}
+                style={{ width: windowWidth, height: windowHeight }}
+                resizeMode="contain"
+              />
+            </ImageZoom>
+          ) : fullscreenSetPiece ? (
+            <View style={styles.setPieceFullscreenBoard}>
+              <SetPiecePreview
+                setPiece={fullscreenSetPiece}
+                players={players}
+                height={Math.max(260, windowHeight - 80)}
+                kitContext={getMatchSetPieceKitContext(fullscreenSetPiece)}
+              />
+            </View>
+          ) : null}
+        </View>
+      </Modal>
+
+      <Modal
         visible={!!boardParams}
         animationType="fade"
         onRequestClose={() => boardParams?.onCancel?.()}
@@ -4560,8 +4624,9 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 20,
     width: isMobileDevice() ? '98%' : '96%',
     maxWidth: 980,
+    height: isMobileDevice() ? '94%' : '92%',
     maxHeight: isMobileDevice() ? '94%' : '92%',
-    minHeight: isMobileDevice() ? '60%' : '62%',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.2,
@@ -4569,6 +4634,7 @@ const makeStyles = (theme) => StyleSheet.create({
     elevation: 12,
   },
   modalHeader: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -4589,6 +4655,7 @@ const makeStyles = (theme) => StyleSheet.create({
     padding: 4,
   },
   matchSheetTabs: {
+    flexShrink: 0,
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: isMobileDevice() ? 12 : 20,
@@ -4622,6 +4689,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalBody: {
     flex: 1,
+    minHeight: 0,
+    width: '100%',
     padding: isMobileDevice() ? 10 : 16,
   },
   modalBodyContent: {
@@ -4915,6 +4984,49 @@ const makeStyles = (theme) => StyleSheet.create({
   setPiecePreviewWrap: {
     position: 'relative',
   },
+  setPiecePreviewExpand: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+  },
+  setPieceFullscreenBg: {
+    flex: 1,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setPieceFullscreenTitle: {
+    position: 'absolute',
+    zIndex: 10,
+    top: 22,
+    left: 20,
+    right: 84,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  setPieceFullscreenClose: {
+    position: 'absolute',
+    zIndex: 11,
+    top: 14,
+    right: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+  },
+  setPieceFullscreenBoard: {
+    width: '100%',
+    paddingHorizontal: 12,
+  },
   setPiecePreviewLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
@@ -5183,6 +5295,7 @@ const makeStyles = (theme) => StyleSheet.create({
   
   // Buttons
   buttonRow: {
+    flexShrink: 0,
     flexDirection: 'row',
     gap: isMobileDevice() ? 8 : 12,
     paddingHorizontal: isMobileDevice() ? 14 : 20,

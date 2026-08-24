@@ -9,6 +9,7 @@
     "build": "vite build",
     "check:lineup-positions": "node scripts/check-lineup-positions.mjs",
     "check:set-piece-kits": "node scripts/check-set-piece-kits.mjs",
+    "check:set-piece-migration": "node scripts/check-set-piece-migration.mjs",
     "check:mobile-subscriptions": "node scripts/check-mobile-subscriptions.mjs",
     "check:subscription-flow": "node scripts/check-subscription-flow.mjs",
     "check:ios-native-flows": "node scripts/check-ios-native-flows.mjs",

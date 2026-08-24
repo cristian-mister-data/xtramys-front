@@ -22,18 +22,18 @@ export default function AppLayout({ children, scrollEnabled = true, backgroundCo
   const bg = backgroundColor || theme?.colors?.background || '#f2f6fc';
   return (
     <SafeAreaView
-      style={{ flex: 1, minHeight: '100%', backgroundColor: bg, width: '100%' }}
+      style={{ flex: 1, minHeight: 0, backgroundColor: bg, width: '100%' }}
       edges={['left', 'right']}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+        style={{ flex: 1, minHeight: 0 }}
       >
         {useDirectRender ? (
           children
         ) : (
           <ScrollView
-            style={{ flex: 1 }}
+            style={{ flex: 1, minHeight: 0 }}
             contentContainerStyle={{ flexGrow: 1, minWidth: '100%' }}
             scrollEnabled={scrollEnabled}
             keyboardShouldPersistTaps="handled"

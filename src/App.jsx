@@ -5,6 +5,8 @@ import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
 import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
 import { subscriptionRequired, startSupervision } from './store/slices/user/userSlice';
 import { syncEvaluations } from './store/slices/evaluations/evaluationsSlice';
+import { createEstrategia, updateEstrategia } from './store/slices/strategy/strategyThunks';
+import { clearLocalSetPieceMigration, getLocalSetPieceMigration } from './utils/setPieceMigration';
 import { api } from './api/client';
 import Toaster from './ui/Toaster';
 import i18n from './i18n';
@@ -142,6 +144,18 @@ export default function App() {
           dispatch(syncEvaluations(currentUser)).unwrap().catch((error) => {
             console.warn('No se pudieron migrar las evaluaciones locales:', error);
           });
+          const localSetPiece = !sessionReadyRef.current ? getLocalSetPieceMigration() : null;
+          if (localSetPiece) {
+            const migration = localSetPiece._id
+              ? updateEstrategia(localSetPiece)
+              : createEstrategia(localSetPiece);
+            dispatch(migration).unwrap()
+              .then(() => {
+                clearLocalSetPieceMigration();
+                window.dispatchEvent(new CustomEvent('xtramys:set-piece-migrated'));
+              })
+              .catch((error) => console.warn('No se pudo migrar la ABP local:', error));
+          }
           // La supervisión de un club vive en sessionStorage porque Redux se
           // reinicia al recargar. Restauramos el usuario objetivo y el modo
           // antes de que WorkspaceGate vuelva a cargar sus datos.

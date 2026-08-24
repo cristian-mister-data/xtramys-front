@@ -405,7 +405,8 @@ export default function CreateStrategyForm({
     
     try {
       const usuario = await AsyncStorage.getItem('usuario');
-      const idUsuario = JSON.parse(usuario)?._id;
+      const storedUser = JSON.parse(usuario);
+      const idUsuario = storedUser?._id || storedUser?.id;
       if (!idUsuario) {
         Alert.alert(t('message.error'), t('strategy.cannotFindUser'));
         return;
@@ -441,6 +442,29 @@ export default function CreateStrategyForm({
         sourceStrategyIdForVideos: editingStrategy?.sourceStrategyIdForVideos || undefined,
         pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : undefined
       };
+
+      saveFormDraft(STORAGE_KEYS.STRATEGY_FORM_DRAFT, {
+        kind: draftKind,
+        editingId: editingStrategy?._id || editingStrategy?.id || null,
+        name: trimmedName,
+        description,
+        objective,
+        videoUrl,
+        folderId,
+        fieldElements,
+        fieldType,
+        imagen,
+        importedImage,
+        visualSource,
+        pizarraConfig,
+        visibility,
+        isGlobal,
+        nameEn,
+        descriptionEn,
+        objectiveEn,
+        friendSharing,
+        pendingVideoIds: pendingVideoIds.current.length > 0 ? [...pendingVideoIds.current] : [],
+      });
       
       if (onSave) {
         await onSave(newStrategy);

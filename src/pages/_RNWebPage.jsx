@@ -15,7 +15,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import styled, { css } from 'styled-components';
 import SectionHeader from '@/ui/SectionHeader';
 
-const fillStyle = { flex: 1, width: '100%', height: '100%' };
+const fillStyle = { flex: 1, minHeight: 0, width: '100%', height: '100%' };
 
 // Elementos que NO deben invertirse (deben verse con sus colores reales).
 const RAW_MEDIA = `
@@ -106,6 +106,7 @@ const PageStack = styled.div`
 
 const InvertLayer = styled.div`
   flex: 1;
+  min-height: 0;
   width: 100%;
   min-width: 0;
   height: 100%;

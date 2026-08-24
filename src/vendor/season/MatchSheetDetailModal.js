@@ -856,6 +856,8 @@ export default function MatchSheetDetailModal({
             style={styles.modalBodyScroll}
             contentContainerStyle={[styles.modalBody, IS_MOBILE && styles.modalBodyMobile]}
             showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
           >
             {/* Card principal con rival y resultado */}
             <View style={styles.matchSheetDetailCard}>
@@ -1473,6 +1475,7 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 20,
     width: '100%',
     maxWidth: 500,
+    height: '98%',
     maxHeight: '98%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -1492,14 +1495,17 @@ const makeStyles = (theme) => StyleSheet.create({
     borderRadius: 20,
     width: '90%',
     maxWidth: 800,
+    height: '98%',
     maxHeight: '98%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 20,
+    overflow: 'hidden',
   },
   modalHeader: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1544,6 +1550,8 @@ const makeStyles = (theme) => StyleSheet.create({
   },
   modalBodyScroll: {
     flex: 1,
+    minHeight: 0,
+    width: '100%',
   },
   modalBody: {
     paddingHorizontal: 24,

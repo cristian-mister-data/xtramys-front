@@ -70,6 +70,7 @@ const DETAIL_FIELD_WIDTH_MOBILE = 160;
 const DETAIL_FIELD_HEIGHT_MOBILE = 96;
 const DETAIL_FIELD_WIDTH = 220;
 const DETAIL_FIELD_HEIGHT = 132;
+
 const openExternalUrl = (url) => {
   if (!url) return;
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -1467,8 +1468,17 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
       dispatch(fetchGlobalFolders({ lang, kind: strategyKind }));
       if (currentFolderId) dispatch(fetchStrategyFolderById({ id: currentFolderId, lang, kind: strategyKind }));
     };
+    const refreshMigratedSetPiece = () => {
+      setCreating(false);
+      setEditingStrategy(null);
+      refresh();
+    };
     window.addEventListener('xtramys:video-library-changed', refresh);
-    return () => window.removeEventListener('xtramys:video-library-changed', refresh);
+    window.addEventListener('xtramys:set-piece-migrated', refreshMigratedSetPiece);
+    return () => {
+      window.removeEventListener('xtramys:video-library-changed', refresh);
+      window.removeEventListener('xtramys:set-piece-migrated', refreshMigratedSetPiece);
+    };
   }, [currentFolderId, dispatch, idUsuario, lang, strategyKind]);
 
   useEffect(() => {
@@ -1516,10 +1526,10 @@ export default function StrategyList({ navigation: navigationProp, canMutate, ki
     }
     if (!strategy._id) {
       const { _id, ...strategySinId } = strategy;
-      await dispatch(createEstrategia(strategySinId));
+      await dispatch(createEstrategia(strategySinId)).unwrap();
       if (strategySinId.isGlobal) dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
     } else {
-      await dispatch(updateEstrategia(strategy));
+      await dispatch(updateEstrategia(strategy)).unwrap();
       if (strategy.isGlobal) dispatch(fetchGlobalStrategies({ lang, kind: strategyKind }));
     }
     setCreating(false);

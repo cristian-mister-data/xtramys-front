@@ -71,6 +71,7 @@ const Content = styled.div`
 
 const Header = styled.div`
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -132,8 +133,12 @@ const Body = styled.div`
   padding: 22px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   color: ${({ theme }) => theme.colors.text};
   min-width: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 
   @media (max-width: 600px) {
     padding: 16px;
@@ -148,6 +153,7 @@ const Body = styled.div`
 
 const Footer = styled.div`
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
   gap: 8px;
   padding: 14px 20px;
