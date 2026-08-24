@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { loadUser } from '@/auth/storage';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import { listEvaluations, createEvaluation } from '@/api/evaluations';
 
 const LEGACY_STORAGE_KEY = 'xtramys_evaluations_v1';
 const STORAGE_KEY_PREFIX = 'xtramys_evaluations_v2';
@@ -364,6 +366,15 @@ export const loadEvaluationsState = (user = loadUser()) => {
   return createEmptyState();
 };
 
+export const syncEvaluations = createAsyncThunk('evaluations/sync', async (user, { getState }) => {
+  const remote = await listEvaluations();
+  const local = loadEvaluationsState(user).evaluations || getState().evaluations.evaluations || [];
+  const remoteIds = new Set(remote.map((evaluation) => String(evaluation._id)));
+  const pending = local.filter((evaluation) => !remoteIds.has(String(evaluation._id)));
+  if (!pending.length) return remote;
+  return remote.concat(await Promise.all(pending.map((evaluation) => createEvaluation(evaluation))));
+});
+
 const evaluationsSlice = createSlice({
   name: 'evaluations',
   initialState: createEmptyState(),
@@ -492,6 +503,12 @@ const evaluationsSlice = createSlice({
         persistState(state);
       }
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(syncEvaluations.fulfilled, (state, action) => {
+      state.evaluations = action.payload;
+      persistState(state);
+    });
   },
 });
 

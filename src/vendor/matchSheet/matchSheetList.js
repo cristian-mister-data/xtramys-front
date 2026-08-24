@@ -698,7 +698,7 @@ export default function MatchSheetList({ canMutate }) {
 
   return (
     <AppLayout scrollEnabled={false}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
         <View style={styles.topBar}>
           <View style={styles.topBarHeaderRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -735,6 +735,7 @@ export default function MatchSheetList({ canMutate }) {
           </View>
         ) : (
           <FlatList
+            style={{ flex: 1, minHeight: 0, minWidth: 0, width: '100%' }}
             data={filteredMatchSheets}
             keyExtractor={(item) => item._id}
             ListHeaderComponent={filtersVisible && !IS_MOBILE ? (
@@ -1060,7 +1061,9 @@ export default function MatchSheetList({ canMutate }) {
                 />
               </View>
             )}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, flexGrow: filteredMatchSheets.length === 0 ? 1 : 0 }}
+            nestedScrollEnabled
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           />
         )}

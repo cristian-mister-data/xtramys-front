@@ -26,6 +26,7 @@ import {
   deleteEvaluation,
   loadEvaluationsState,
   rehydrateEvaluations,
+  syncEvaluations,
 } from '@/store/slices/evaluations/evaluationsSlice';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
 import { confirmAction } from '@/ui/confirm';
@@ -552,6 +553,9 @@ export default function Evaluations() {
 
   useEffect(() => {
     dispatch(rehydrateEvaluations(loadEvaluationsState(user)));
+    dispatch(syncEvaluations()).catch((error) => {
+      console.warn('No se pudieron sincronizar las evaluaciones:', error);
+    });
   }, [dispatch, user?._id, user?.id, user?.correo, user?.email, user?.plan, user?.accessMode]);
 
   const selectedTeam = useMemo(

@@ -4,6 +4,7 @@ import AppRouter from './router/AppRouter';
 import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
 import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
 import { subscriptionRequired, startSupervision } from './store/slices/user/userSlice';
+import { syncEvaluations } from './store/slices/evaluations/evaluationsSlice';
 import { api } from './api/client';
 import Toaster from './ui/Toaster';
 import i18n from './i18n';
@@ -138,6 +139,9 @@ export default function App() {
       dispatch(fetchMe({ force }))
         .unwrap()
         .then(async (currentUser) => {
+          dispatch(syncEvaluations(currentUser)).catch((error) => {
+            console.warn('No se pudieron migrar las evaluaciones locales:', error);
+          });
           // La supervisión de un club vive en sessionStorage porque Redux se
           // reinicia al recargar. Restauramos el usuario objetivo y el modo
           // antes de que WorkspaceGate vuelva a cargar sus datos.
