@@ -139,7 +139,7 @@ export default function App() {
       dispatch(fetchMe({ force }))
         .unwrap()
         .then(async (currentUser) => {
-          dispatch(syncEvaluations(currentUser)).catch((error) => {
+          dispatch(syncEvaluations(currentUser)).unwrap().catch((error) => {
             console.warn('No se pudieron migrar las evaluaciones locales:', error);
           });
           // La supervisión de un club vive en sessionStorage porque Redux se

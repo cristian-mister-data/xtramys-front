@@ -304,6 +304,17 @@ const normalizeOwnerKey = (user = loadUser()) => {
 
 const getStorageKey = (user = loadUser()) => `${STORAGE_KEY_PREFIX}:${normalizeOwnerKey(user)}`;
 
+const getStorageKeys = (user = loadUser()) => {
+  const email = String(user?.correo || user?.email || '').trim().toLowerCase();
+  const id = String(user?._id || user?.id || '').trim().toLowerCase();
+  return [...new Set([
+    getStorageKey(user),
+    email && `${STORAGE_KEY_PREFIX}:${email}`,
+    id && `${STORAGE_KEY_PREFIX}:${id}`,
+    LEGACY_STORAGE_KEY,
+  ].filter(Boolean))];
+};
+
 const sanitizeState = (parsed = {}) => ({
   templates: Array.isArray(parsed.templates) && parsed.templates.length > 0
     ? parsed.templates
@@ -366,9 +377,24 @@ export const loadEvaluationsState = (user = loadUser()) => {
   return createEmptyState();
 };
 
+const loadLocalEvaluations = (user) => {
+  const byId = new Map();
+  getStorageKeys(user).forEach((key) => {
+    const state = readState(key);
+    (state?.evaluations || []).forEach((evaluation) => {
+      const id = String(evaluation?._id || '');
+      if (id && !id.startsWith('eval_demo_')) byId.set(id, evaluation);
+    });
+  });
+  return [...byId.values()];
+};
+
 export const syncEvaluations = createAsyncThunk('evaluations/sync', async (user, { getState }) => {
   const remote = await listEvaluations();
-  const local = loadEvaluationsState(user).evaluations || getState().evaluations.evaluations || [];
+  const local = loadLocalEvaluations(user);
+  (getState().evaluations.evaluations || []).forEach((evaluation) => {
+    if (!local.some((item) => item._id === evaluation._id)) local.push(evaluation);
+  });
   const remoteIds = new Set(remote.map((evaluation) => String(evaluation._id)));
   const pending = local.filter((evaluation) => !remoteIds.has(String(evaluation._id)));
   if (!pending.length) return remote;
