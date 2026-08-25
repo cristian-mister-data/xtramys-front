@@ -59,15 +59,15 @@ export default function ResetPassword() {
         nuevaContraseña: password,
       });
       setDone(true);
-      const user = res?.data?.usuario;
-      const jwtToken = res?.data?.token;
+      const user = res?.usuario;
+      const jwtToken = res?.token;
       if (jwtToken && user) {
         api.defaults.headers.common['Authorization'] = `Bearer ${jwtToken}`;
         await saveToken(jwtToken);
         saveUser(user);
         dispatch({ type: RESET_STORE });
         dispatch(setUser(user));
-        if (user.clubId && user.nombre === 'Entrenador' && !user.apellido) {
+        if (user.coachSetupCompleted === false) {
           navigate('/coach-setup', { replace: true });
         } else {
           navigate('/app', { replace: true });

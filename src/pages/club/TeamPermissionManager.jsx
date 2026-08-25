@@ -274,7 +274,9 @@ export default function TeamPermissionManager({ data, onRefresh }) {
   // desactivados se conservan para histórico, pero no forman parte de los
   // equipos operativos ni deben duplicar las opciones de permisos.
   const teams = useMemo(
-    () => (data?.teams || []).filter((team) => team.licenseActive !== false),
+    () => [...new Map((data?.teams || [])
+      .filter((team) => team.licenseActive !== false && !team.isHistoricalSnapshot)
+      .map((team) => [String(team._id), team])).values()],
     [data?.teams],
   );
   const members = data?.members || [];
