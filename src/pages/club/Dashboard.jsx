@@ -1359,7 +1359,7 @@ export default function ClubDashboard() {
       setInviteEmail('');
       fetchClubData();
     } catch (error) {
-      toast.error(error.message || t('club.inviteModal.error', 'Error al enviar la invitación'));
+      toast.error(error.message || 'Ha fallado el envío de la invitación. Inténtalo de nuevo.');
     } finally {
       setInviting(false);
     }
@@ -1993,8 +1993,8 @@ export default function ClubDashboard() {
                                 const res = await api.post('/club/resend-invite', { targetUserId: member._id });
                                                                 toast.success(res.data?.mensaje || t('clubDashboard.successInviteResent', 'Invitación reenviada'));
                                 fetchClubData();
-                                                            } catch (err) {
-                                toast.error(err.response?.data?.mensaje || t('clubDashboard.errorInviteResent', 'Error al reenviar invitación'));
+                              } catch (err) {
+                                toast.error(err.message || 'Ha fallado el envío de la invitación. Inténtalo de nuevo.');
                               }
                             }}
                           >
