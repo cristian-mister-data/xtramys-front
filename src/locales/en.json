@@ -5196,6 +5196,7 @@
   },
   "errors": {
     "UNAUTHORIZED": "Unauthorized access",
+    "EMAIL_SEND_FAILED": "The invitation email could not be sent. Try again or check that the email address is correct.",
     "TEAM_ACCESS_REQUIRED": "The sporting director must assign you access to a team.",
     "TEAM_ACCESS_DENIED": "You do not have access to this team.",
     "TEAM_LICENSE_LIMIT_REACHED": "You have reached the club's team licence limit.",

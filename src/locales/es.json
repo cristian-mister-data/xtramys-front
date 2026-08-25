@@ -5202,6 +5202,7 @@
   },
   "errors": {
     "UNAUTHORIZED": "Acceso no autorizado",
+    "EMAIL_SEND_FAILED": "Ha fallado el envío de la invitación. Reinténtalo o revisa si el correo es correcto.",
     "TEAM_ACCESS_REQUIRED": "El director deportivo debe asignarte acceso a un equipo.",
     "TEAM_ACCESS_DENIED": "No tienes acceso a este equipo.",
     "TEAM_LICENSE_LIMIT_REACHED": "Has alcanzado el límite de licencias de equipo del club.",
