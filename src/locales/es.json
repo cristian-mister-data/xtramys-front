@@ -2791,6 +2791,9 @@
       "title": "Estadísticas del partido",
       "add": "Añadir estadísticas",
       "team": "Estadísticas del equipo",
+      "rival": "Estadísticas del rival",
+      "comparison": "Comparativa",
+      "comparisonHint": "Comparación de las estadísticas del partido",
       "players": "Estadísticas por jugador",
       "downloadPdf": "Descargar PDF",
       "fields": {
@@ -3399,6 +3402,7 @@
       "readonlyNotice": "Esta plantilla es de solo lectura. Crea una propia para personalizarla.",
       "types": {
         "select": "Selección",
+        "multiselect": "Selección múltiple",
         "text": "Texto",
         "players": "Jugadores",
         "formation": "Formación",
@@ -5203,6 +5207,7 @@
   "errors": {
     "UNAUTHORIZED": "Acceso no autorizado",
     "EMAIL_SEND_FAILED": "Ha fallado el envío de la invitación. Reinténtalo o revisa si el correo es correcto.",
+    "INVITE_TEAM_REQUIRED": "Debes asignar el usuario al menos a un equipo antes de enviar la invitación.",
     "TEAM_ACCESS_REQUIRED": "El director deportivo debe asignarte acceso a un equipo.",
     "TEAM_ACCESS_DENIED": "No tienes acceso a este equipo.",
     "TEAM_LICENSE_LIMIT_REACHED": "Has alcanzado el límite de licencias de equipo del club.",
@@ -5642,7 +5647,9 @@
     "suspendAndReduceTitle": "Suspender acceso Y reducir 1 licencia de Stripe (ahorra dinero)",
     "cancelLicenseBtn": "Cancelar licencia",
     "removeBtn": "Eliminar",
-    "inviteNoticeText": "El entrenador recibirá un correo con un enlace para establecer su contraseña y activar su cuenta. Si ya tiene cuenta en Xtramys, se vinculará automáticamente."
+    "inviteNoticeText": "El entrenador recibirá un correo con un enlace para establecer su contraseña y activar su cuenta. Si ya tiene cuenta en Xtramys, se vinculará automáticamente.",
+    "inviteTeamsLabel": "Equipos asignados",
+    "noInviteTeamsAvailable": "No hay equipos activos disponibles para asignar."
   },
   "friends": {
     "title": "Amigos",

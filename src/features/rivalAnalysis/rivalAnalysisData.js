@@ -69,6 +69,7 @@ export const KNOWN_FIELDS = [
 // Tipos de pregunta soportados por las plantillas
 export const QUESTION_TYPES = [
   { key: 'select', labelKey: 'rivalAnalysis.template.types.select', fallback: 'Selección', icon: MdList },
+  { key: 'multiselect', labelKey: 'rivalAnalysis.template.types.multiselect', fallback: 'Selección múltiple', icon: MdList },
   { key: 'text', labelKey: 'rivalAnalysis.template.types.text', fallback: 'Texto', icon: MdEdit },
   { key: 'players', labelKey: 'rivalAnalysis.template.types.players', fallback: 'Jugadores', icon: MdGroup },
   { key: 'formation', labelKey: 'rivalAnalysis.template.types.formation', fallback: 'Formación', icon: MdGridOn },

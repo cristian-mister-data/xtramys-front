@@ -442,7 +442,7 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
       setQError(t('rivalAnalysis.template.questionTextRequired', 'El texto es obligatorio'));
       return;
     }
-    if (qType === 'select' && qOptions.length === 0) {
+    if (['select', 'multiselect'].includes(qType) && qOptions.length === 0) {
       setQError(t('rivalAnalysis.template.optionsRequired', 'Añade al menos una opción'));
       return;
     }
@@ -455,7 +455,7 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
       type: qType,
       icon: qIcon,
       iconColor: qIconColor,
-      options: qType === 'select' ? qOptions : [],
+      options: ['select', 'multiselect'].includes(qType) ? qOptions : [],
       category: qType === 'players' ? 'players' : 'tactical',
     };
     try {
@@ -600,9 +600,13 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
                     {idx + 1}. {getQuestionText(q, t)}
                   </div>
                   <div style={{ marginTop: 4 }}>
-                    <TypeBadge>{q.type}</TypeBadge>
+                    <TypeBadge>
+                      {q.type === 'multiselect'
+                        ? t('rivalAnalysis.template.types.multiselect', 'Selección múltiple')
+                        : q.type}
+                    </TypeBadge>
                   </div>
-                  {q.type === 'select' && q.options?.length > 0 && (
+                  {['select', 'multiselect'].includes(q.type) && q.options?.length > 0 && (
                     <ChipRow>
                       {q.options.map((opt, i) => (
                         <Chip key={i}>{resolveOptionLabel(opt, t)}</Chip>
@@ -809,7 +813,7 @@ export default function TemplateManagerModal({ open, onClose, userId }) {
             </TypeGrid>
           </Field>
 
-          {qType === 'select' && (
+          {['select', 'multiselect'].includes(qType) && (
             <Field>
               <Label>{t('rivalAnalysis.template.options', 'Opciones')}</Label>
               <Row $gap={6}>

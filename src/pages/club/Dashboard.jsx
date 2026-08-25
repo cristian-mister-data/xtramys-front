@@ -667,6 +667,7 @@ export default function ClubDashboard() {
   // Invite modal
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteTeamIds, setInviteTeamIds] = useState([]);
   const [inviting, setInviting] = useState(false);
 
   // Deactivate/Remove confirm modal
@@ -1347,16 +1348,21 @@ export default function ClubDashboard() {
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail) return;
+    if (!inviteTeamIds.length) {
+      toast.error(t('errors.INVITE_TEAM_REQUIRED'));
+      return;
+    }
     if (subStatus?.cancelAtPeriodEnd) {
             toast.error(t('clubDashboard.errorSubscriptionCancelledForPeriodEndInvite', 'La suscripción está cancelada para final de período. Reactívala antes de invitar entrenadores.'));
       return;
     }
     setInviting(true);
     try {
-      await api.post('/club/invite', { email: inviteEmail });
+      await api.post('/club/invite', { email: inviteEmail, teamIds: inviteTeamIds });
       toast.success(t('club.inviteModal.success', 'Invitación enviada correctamente'));
       setIsInviteOpen(false);
       setInviteEmail('');
+      setInviteTeamIds([]);
       fetchClubData();
     } catch (error) {
       toast.error(error.message || t('errors.EMAIL_SEND_FAILED'));
@@ -1409,6 +1415,9 @@ export default function ClubDashboard() {
   }
 
   const { club, members, stats } = data;
+  const inviteTeams = (data.teams || []).filter((team) => (
+    team.licenseActive !== false && !team.isHistoricalSnapshot && !team.isClubTemplate
+  ));
   const initials = (name) => {
     if (!name) return 'U';
     const parts = name.trim().split(/\s+/);
@@ -2168,7 +2177,7 @@ export default function ClubDashboard() {
       {/* INVITE MODAL */}
       <Modal
         open={isInviteOpen}
-        onClose={() => { setIsInviteOpen(false); setInviteEmail(''); }}
+        onClose={() => { setIsInviteOpen(false); setInviteEmail(''); setInviteTeamIds([]); }}
         title={t('club.inviteModal.title', 'Invitar entrenador')}
       >
         <form onSubmit={handleInvite}>
@@ -2187,18 +2196,41 @@ export default function ClubDashboard() {
                 autoFocus
               />
             </Field>
+            <Field>
+              <Label>{t('clubDashboard.inviteTeamsLabel', 'Equipos asignados')}</Label>
+              <InfoNotice style={{ marginBottom: 10 }}>
+                {t('errors.INVITE_TEAM_REQUIRED')}
+              </InfoNotice>
+              {inviteTeams.length ? inviteTeams.map((team) => (
+                <label key={team._id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 0', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={inviteTeamIds.includes(String(team._id))}
+                    onChange={(event) => setInviteTeamIds((current) => (
+                      event.target.checked
+                        ? [...new Set([...current, String(team._id)])]
+                        : current.filter((id) => id !== String(team._id))
+                    ))}
+                    disabled={inviting}
+                  />
+                  <span>{team.nombre}</span>
+                </label>
+              )) : (
+                <Muted>{t('clubDashboard.noInviteTeamsAvailable', 'No hay equipos activos disponibles para asignar.')}</Muted>
+              )}
+            </Field>
             <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
               <Button
                 type="button"
                 $variant="secondary"
-                onClick={() => { setIsInviteOpen(false); setInviteEmail(''); }}
+                onClick={() => { setIsInviteOpen(false); setInviteEmail(''); setInviteTeamIds([]); }}
               >
                 {t('message.cancel', 'Cancelar')}
               </Button>
               <Button
                 type="submit"
                 $variant="primary"
-                disabled={inviting || !inviteEmail}
+                disabled={inviting || !inviteEmail || !inviteTeamIds.length || !inviteTeams.length}
               >
                 {inviting ? t('message.loading', 'Enviando...') : t('club.inviteModal.send', 'Enviar invitación')}
               </Button>

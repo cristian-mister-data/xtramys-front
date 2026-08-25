@@ -788,15 +788,24 @@ export default function AnalysisFormModal({
     const value = dynamicAnswers[q.id];
 
     let body = null;
-    if (q.type === 'select') {
+    if (q.type === 'select' || q.type === 'multiselect') {
+      const selectedValues = Array.isArray(value) ? value : value ? [value] : [];
       body = (
         <PillRow>
           {(q.options || []).map((opt) => (
             <Pill
               key={opt.key}
               type="button"
-              $active={value === opt.key}
-              onClick={() => setAnswer(q.id, value === opt.key ? '' : opt.key)}
+              $active={selectedValues.includes(opt.key)}
+              onClick={() => {
+                if (q.type === 'select') {
+                  setAnswer(q.id, value === opt.key ? '' : opt.key);
+                  return;
+                }
+                setAnswer(q.id, selectedValues.includes(opt.key)
+                  ? selectedValues.filter((key) => key !== opt.key)
+                  : [...selectedValues, opt.key]);
+              }}
             >
               {resolveOptionLabel(opt, t)}
             </Pill>

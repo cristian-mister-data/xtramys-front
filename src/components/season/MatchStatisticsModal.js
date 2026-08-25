@@ -12,6 +12,7 @@ const TEAM_FIELDS = ['posesion', 'tiros', 'tirosAPuerta', 'corners', 'faltas', '
 const PLAYER_FIELDS = ['tiros', 'tirosAPuerta', 'pasesCompletados', 'recuperaciones', 'perdidas', 'duelosGanados', 'valoracion'];
 const idOf = (value) => String(value?._id || value?.player?._id || value?.player || value || '');
 const valueOf = (value) => value == null ? '' : String(value);
+const numericValue = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 
 export default function MatchStatisticsModal({ visible, matchSheet, players = [], onClose, onSaved }) {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(theme, width, insets.top, insets.bottom), [theme, width, insets.top, insets.bottom]);
   const [teamStats, setTeamStats] = useState({});
+  const [rivalStats, setRivalStats] = useState({});
   const [events, setEvents] = useState([]);
   const [saving, setSaving] = useState(false);
   const roster = useMemo(() => {
@@ -31,18 +33,29 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
   useEffect(() => {
     if (!visible) return;
     setTeamStats({ ...(matchSheet?.estadisticas || {}) });
+    setRivalStats({ ...(matchSheet?.estadisticasRival || {}) });
     const old = new Map((matchSheet?.eventos || []).map((item) => [idOf(item.player), { ...item }]));
     setEvents(roster.map((player) => ({ ...(old.get(String(player._id)) || {}), player: player._id })));
   }, [visible, matchSheet, roster]);
 
   const setNumber = (setter, key, raw) => setter((prev) => ({ ...prev, [key]: raw === '' ? '' : Number(raw) }));
+  const setPossession = (setter, otherSetter, raw) => {
+    if (raw === '') {
+      setter((prev) => ({ ...prev, posesion: '' }));
+      otherSetter((prev) => ({ ...prev, posesion: '' }));
+      return;
+    }
+    const value = Math.min(100, Math.max(0, Number(raw) || 0));
+    setter((prev) => ({ ...prev, posesion: value }));
+    otherSetter((prev) => ({ ...prev, posesion: 100 - value }));
+  };
   const save = async () => {
     setSaving(true);
     try {
       const normalizedEvents = events.map((event) => ({ ...event, player: idOf(event.player) }));
       const updatedMatchSheet = await dispatch(updateMatchSheet({
         id: matchSheet._id,
-        data: { estadisticas: teamStats, eventos: normalizedEvents },
+        data: { estadisticas: teamStats, estadisticasRival: rivalStats, eventos: normalizedEvents },
       })).unwrap();
       onSaved?.(updatedMatchSheet);
       onClose?.();
@@ -55,84 +68,180 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
   };
   const downloadPdf = async () => {
     const { jsPDF } = await import('jspdf');
-    const pdf = new jsPDF({ orientation: 'landscape' });
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 12;
+    const margin = 16;
     const title = t('matchSheet.statistics.title', 'Estadísticas del partido');
     const fieldLabel = (key) => t(`matchSheet.statistics.fields.${key}`, key);
+    const ownTeamName = matchSheet?.equipo?.nombre || t('matchSheet.statistics.team', 'Equipo');
+    const rivalName = matchSheet?.rival || t('matchSheet.statistics.rival', 'Rival');
+    const statValue = (value) => value === '' || value == null || Number.isNaN(Number(value)) ? null : Number(value);
     const colors = {
       ink: [15, 23, 42],
-      muted: [71, 85, 105],
-      border: [203, 213, 225],
-      header: [30, 64, 120],
+      muted: [100, 116, 139],
+      border: [226, 232, 240],
+      header: [15, 23, 42],
+      blue: [59, 130, 246],
+      green: [16, 185, 129],
+      red: [239, 68, 68],
       soft: [248, 250, 252],
-      alt: [241, 245, 249],
+      track: [226, 232, 240],
+      white: [255, 255, 255],
     };
     const setRgb = (method, color) => pdf[method](color[0], color[1], color[2]);
+    const drawPageHeader = (section = '') => {
+      setRgb('setFillColor', colors.header);
+      pdf.rect(0, 0, pageWidth, 18, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      setRgb('setTextColor', colors.white);
+      pdf.text('XTRAMYS', margin, 11);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text(section || title, pageWidth - margin, 11, { align: 'right' });
+    };
+    const drawFooter = (pageNumber) => {
+      setRgb('setDrawColor', colors.border);
+      pdf.setLineWidth(0.25);
+      pdf.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      setRgb('setTextColor', colors.muted);
+      pdf.text(`${title} - ${rivalName}`, margin, pageHeight - 5);
+      pdf.text(`${pageNumber}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+    };
+    const drawSectionTitle = (text, y) => {
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      setRgb('setTextColor', colors.ink);
+      pdf.text(text, margin, y);
+      setRgb('setDrawColor', colors.blue);
+      pdf.setLineWidth(0.8);
+      pdf.line(margin, y + 3, margin + 25, y + 3);
+    };
     const drawCell = (x, y, width, height, text, options = {}) => {
       const { header = false, shaded = false, bold = false, center = false } = options;
-      setRgb('setFillColor', header ? colors.header : shaded ? colors.alt : colors.soft);
+      setRgb('setFillColor', header ? colors.header : shaded ? colors.soft : colors.white);
       setRgb('setDrawColor', colors.border);
       pdf.rect(x, y, width, height, 'FD');
       pdf.setFont('helvetica', bold ? 'bold' : 'normal');
-      pdf.setFontSize(header ? 7.2 : 8);
-      setRgb('setTextColor', header ? [255, 255, 255] : colors.ink);
+      pdf.setFontSize(header ? 7 : 7.5);
+      setRgb('setTextColor', header ? colors.white : colors.ink);
       pdf.text(String(text ?? '-'), center ? x + width / 2 : x + 2.5, y + height / 2 + 1.4, {
         align: center ? 'center' : 'left',
         maxWidth: width - 5,
       });
     };
-    const drawMetric = (x, y, width, label, value) => {
-      setRgb('setFillColor', colors.soft);
-      setRgb('setDrawColor', colors.border);
-      pdf.roundedRect(x, y, width, 17, 2, 2, 'FD');
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(6.8);
-      setRgb('setTextColor', colors.muted);
-      pdf.text(String(label).toUpperCase(), x + 3, y + 5, { maxWidth: width - 6 });
-      pdf.setFontSize(10);
-      setRgb('setTextColor', colors.ink);
-      pdf.text(String(value ?? '-'), x + 3, y + 13, { maxWidth: width - 6 });
-    };
+    drawPageHeader(title);
+    setRgb('setFillColor', colors.soft);
+    setRgb('setDrawColor', colors.border);
+    pdf.roundedRect(margin, 25, pageWidth - margin * 2, 26, 4, 4, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(13);
+    setRgb('setTextColor', colors.ink);
+    pdf.text(ownTeamName, margin + 8, 36, { maxWidth: 76 });
+    pdf.text(rivalName, pageWidth - margin - 8, 36, { align: 'right', maxWidth: 76 });
+    pdf.setFontSize(19);
+    setRgb('setTextColor', colors.blue);
+    pdf.text(`${matchSheet?.golesFavor ?? 0} - ${matchSheet?.golesContra ?? 0}`, pageWidth / 2, 37, { align: 'center' });
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    setRgb('setTextColor', colors.muted);
+    const matchDetails = [
+      matchSheet?.fechaHora ? new Date(matchSheet.fechaHora).toLocaleDateString() : null,
+      matchSheet?.ubicacion || null,
+      matchSheet?.competicion || null,
+    ].filter(Boolean).join(' - ');
+    pdf.text(matchDetails || title, pageWidth / 2, 45, { align: 'center' });
+
+    const chartX = margin;
+    const chartY = 57;
+    const chartWidth = pageWidth - margin * 2;
+    const chartHeight = 139;
+    const chartBg = [20, 31, 58];
+    const chartTrack = [43, 56, 88];
+    setRgb('setFillColor', chartBg);
+    pdf.roundedRect(chartX, chartY, chartWidth, chartHeight, 4, 4, 'F');
+
+    // Icono sencillo de estadísticas para mantener el PDF independiente de fuentes externas.
+    setRgb('setFillColor', colors.blue);
+    pdf.roundedRect(chartX + 7, chartY + 7, 18, 18, 3, 3, 'F');
+    setRgb('setFillColor', colors.white);
+    pdf.rect(chartX + 11, chartY + 17, 2, 4, 'F');
+    pdf.rect(chartX + 15, chartY + 14, 2, 7, 'F');
+    pdf.rect(chartX + 19, chartY + 11, 2, 10, 'F');
 
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(18);
-    setRgb('setTextColor', colors.ink);
-    pdf.text(`${title} - ${matchSheet?.rival || ''}`, margin, 17);
-    pdf.setFontSize(9);
-    setRgb('setTextColor', colors.muted);
-    pdf.text(matchSheet?.fechaHora ? new Date(matchSheet.fechaHora).toLocaleDateString() : '', margin, 24);
+    pdf.setFontSize(12);
+    setRgb('setTextColor', colors.white);
+    pdf.text(t('matchSheet.statistics.comparison', 'Comparativa'), chartX + 31, chartY + 14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7.5);
+    setRgb('setTextColor', [148, 163, 184]);
+    pdf.text(t('matchSheet.statistics.comparisonHint', 'Comparación de las estadísticas del partido'), chartX + 31, chartY + 21);
 
-    let y = 34;
-    pdf.setFontSize(11);
-    setRgb('setTextColor', colors.ink);
-    pdf.text(t('matchSheet.statistics.team', 'Estadísticas del equipo'), margin, y);
-    y += 6;
-    const teamColumns = 4;
-    const teamGap = 4;
-    const teamWidth = (pageWidth - margin * 2 - teamGap * (teamColumns - 1)) / teamColumns;
-    const teamRows = Math.ceil(TEAM_FIELDS.length / teamColumns);
-    for (let row = 0; row < teamRows; row += 1) {
-      for (let col = 0; col < teamColumns; col += 1) {
-        const key = TEAM_FIELDS[row * teamColumns + col];
-        if (!key) continue;
-        const x = margin + col * (teamWidth + teamGap);
-        drawMetric(x, y, teamWidth, fieldLabel(key), teamStats[key]);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(7.5);
+    setRgb('setTextColor', colors.blue);
+    pdf.text(ownTeamName, chartX + 7, chartY + 31, { maxWidth: 95 });
+    setRgb('setTextColor', [248, 113, 113]);
+    pdf.text(rivalName, chartX + chartWidth - 7, chartY + 31, { align: 'right', maxWidth: 95 });
+
+    const leftValueX = chartX + 2;
+    const leftTrackX = chartX + 7;
+    const trackWidth = 96;
+    const labelCenterX = pageWidth / 2;
+    const labelWidth = 58;
+    const rightTrackX = chartX + chartWidth - 103;
+    const rightValueX = chartX + chartWidth - 2;
+    const comparisonRowHeight = 8.7;
+    const trackHeight = 3.2;
+    let y = chartY + 38;
+    TEAM_FIELDS.forEach((key) => {
+      const own = statValue(teamStats[key]);
+      const rival = statValue(rivalStats[key]);
+      const max = Math.max(own || 0, rival || 0, 1);
+      const ownWidth = (own || 0) / max * trackWidth;
+      const rivalWidth = (rival || 0) / max * trackWidth;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8.5);
+      setRgb('setTextColor', colors.white);
+      pdf.text(own == null ? '-' : String(own), leftValueX, y + 3.5);
+      pdf.text(rival == null ? '-' : String(rival), rightValueX, y + 3.5, { align: 'right' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.2);
+      setRgb('setTextColor', [226, 232, 240]);
+      pdf.text(fieldLabel(key), labelCenterX, y + 3.5, { align: 'center', maxWidth: labelWidth });
+      setRgb('setFillColor', chartTrack);
+      pdf.roundedRect(leftTrackX, y + 1, trackWidth, trackHeight, 1.7, 1.7, 'F');
+      pdf.roundedRect(rightTrackX, y + 1, trackWidth, trackHeight, 1.7, 1.7, 'F');
+      if (ownWidth > 0) {
+        setRgb('setFillColor', colors.blue);
+        pdf.roundedRect(leftTrackX + trackWidth - ownWidth, y + 1, ownWidth, trackHeight, 1.7, 1.7, 'F');
       }
-      y += 20;
-    }
-    y += 5;
-    pdf.setFontSize(11);
-    setRgb('setTextColor', colors.ink);
-    pdf.text(t('matchSheet.statistics.players', 'Estadísticas por jugador'), margin, y);
-    y += 6;
+      if (rivalWidth > 0) {
+        setRgb('setFillColor', colors.red);
+        pdf.roundedRect(rightTrackX, y + 1, rivalWidth, trackHeight, 1.7, 1.7, 'F');
+      }
+      y += comparisonRowHeight;
+    });
+    drawFooter(1);
+
+    pdf.addPage();
+    drawPageHeader(t('matchSheet.statistics.players', 'Estadísticas por jugador'));
+    drawSectionTitle(t('matchSheet.statistics.players', 'Estadísticas por jugador'), 30);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    setRgb('setTextColor', colors.muted);
+    pdf.text(t('matchSheet.statistics.playersHint', 'Rendimiento individual de los jugadores convocados'), margin, 37);
+    y = 43;
 
     const columns = [
       t('player.player', 'Jugador'),
       ...PLAYER_FIELDS.map(fieldLabel),
     ];
-    const widths = [50, 27, 32, 32, 32, 27, 34, 29];
+    const widths = [53, 28, 31, 29, 31, 29, 32, 32];
     const rowHeight = 12;
     const drawHeader = () => {
       let x = margin;
@@ -144,13 +253,11 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
     };
     drawHeader();
     events.forEach((event, rowIndex) => {
-      if (y + rowHeight > pageHeight - 12) {
+      if (y + rowHeight > pageHeight - 15) {
+        drawFooter(pdf.internal.getNumberOfPages());
         pdf.addPage();
-        y = 14;
-        pdf.setFontSize(11);
-        setRgb('setTextColor', colors.ink);
-        pdf.text(`${title} - ${matchSheet?.rival || ''}`, margin, y);
-        y += 6;
+        drawPageHeader(t('matchSheet.statistics.players', 'Estadísticas por jugador'));
+        y = 28;
         drawHeader();
       }
       const player = players.find((p) => String(p._id) === String(event.player));
@@ -162,6 +269,7 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
       });
       y += rowHeight;
     });
+    drawFooter(pdf.internal.getNumberOfPages());
     const fileName = `estadisticas-${String(matchSheet?.rival || 'partido').replace(/\s+/g, '-')}.pdf`;
     if (Platform.OS === 'web') {
       pdf.save(fileName);
@@ -228,10 +336,77 @@ export default function MatchStatisticsModal({ visible, matchSheet, players = []
                     theme={theme}
                     label={t(`matchSheet.statistics.fields.${key}`, key)}
                     value={valueOf(teamStats[key])}
-                    onChange={(raw) => setNumber(setTeamStats, key, raw)}
+                    onChange={(raw) => key === 'posesion'
+                      ? setPossession(setTeamStats, setRivalStats, raw)
+                      : setNumber(setTeamStats, key, raw)}
                   />
                 ))}
               </View>
+            </View>
+
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIcon, styles.rivalSectionIcon]}>
+                  <Ionicons name="shield-outline" size={18} color={theme.colors.error || '#ef4444'} />
+                </View>
+                <View style={styles.sectionCopy}>
+                  <Text style={styles.sectionTitle}>{t('matchSheet.statistics.rival', 'Estadísticas del rival')}</Text>
+                  <Text style={styles.sectionHint}>{t('matchSheet.statistics.teamHint', 'Resumen global del rendimiento del equipo')}</Text>
+                </View>
+                <View style={styles.countBadge}><Text style={styles.countBadgeText}>{TEAM_FIELDS.length}</Text></View>
+              </View>
+              <View style={styles.grid}>
+                {TEAM_FIELDS.map((key) => (
+                  <StatField
+                    key={key}
+                    styles={styles}
+                    theme={theme}
+                    label={t(`matchSheet.statistics.fields.${key}`, key)}
+                    value={valueOf(rivalStats[key])}
+                    onChange={(raw) => key === 'posesion'
+                      ? setPossession(setRivalStats, setTeamStats, raw)
+                      : setNumber(setRivalStats, key, raw)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.comparisonCard}>
+              <View style={styles.playersSectionHeader}>
+                <View style={styles.sectionIcon}>
+                  <Ionicons name="bar-chart-outline" size={18} color={theme.colors.primary} />
+                </View>
+                <View style={styles.sectionCopy}>
+                  <Text style={styles.sectionTitle}>{t('matchSheet.statistics.comparison', 'Comparativa')}</Text>
+                  <Text style={styles.sectionHint}>{t('matchSheet.statistics.comparisonHint', 'Comparación de las estadísticas del partido')}</Text>
+                </View>
+              </View>
+              <View style={styles.comparisonNames}>
+                <Text style={styles.comparisonName} numberOfLines={1}>{matchSheet?.equipo?.nombre || t('matchSheet.statistics.team', 'Equipo')}</Text>
+                <Text style={styles.comparisonName} numberOfLines={1}>{matchSheet?.rival || t('matchSheet.statistics.rival', 'Rival')}</Text>
+              </View>
+              {TEAM_FIELDS.map((key) => {
+                const own = numericValue(teamStats[key]);
+                const rival = numericValue(rivalStats[key]);
+                const max = Math.max(own, rival, 1);
+                return (
+                  <View key={key} style={styles.comparisonRow}>
+                    <View style={styles.comparisonLabels}>
+                      <Text style={styles.comparisonValue}>{valueOf(teamStats[key]) || '—'}</Text>
+                      <Text style={styles.comparisonLabel} numberOfLines={1}>{t(`matchSheet.statistics.fields.${key}`, key)}</Text>
+                      <Text style={styles.comparisonValue}>{valueOf(rivalStats[key]) || '—'}</Text>
+                    </View>
+                    <View style={styles.comparisonTracks}>
+                      <View style={styles.comparisonTrack}>
+                        <View style={[styles.comparisonFill, styles.teamFill, { width: `${(own / max) * 100}%` }]} />
+                      </View>
+                      <View style={styles.comparisonTrack}>
+                        <View style={[styles.comparisonFill, styles.rivalFill, { width: `${(rival / max) * 100}%` }]} />
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
 
             <View style={styles.playersSectionHeader}>
@@ -409,6 +584,7 @@ const makeStyles = (theme, width, insetTop, insetBottom) => {
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.backgroundAlt,
     },
+    rivalSectionIcon: { backgroundColor: `${theme.colors.error || '#ef4444'}18` },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
     playersSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 2 },
     sectionIcon: {
@@ -436,6 +612,35 @@ const makeStyles = (theme, width, insetTop, insetBottom) => {
       fontSize: 11,
       fontWeight: '800',
     },
+    comparisonCard: {
+      padding: isMobile ? 14 : 18,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    comparisonRow: { marginTop: 16 },
+    comparisonNames: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginTop: 4 },
+    comparisonName: { flex: 1, color: theme.colors.text, fontSize: 12, fontWeight: '800' },
+    comparisonLabels: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    comparisonValue: { width: 34, color: theme.colors.text, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+    comparisonLabel: { flex: 1, color: theme.colors.textSecondary, fontSize: 12, textAlign: 'center' },
+    comparisonTracks: { flexDirection: 'row', gap: 8, marginTop: 7 },
+    comparisonTrack: {
+      flex: 1,
+      height: 8,
+      borderRadius: 6,
+      overflow: 'hidden',
+      backgroundColor: theme.colors.border,
+    },
+    comparisonFill: { height: '100%', borderRadius: 6 },
+    teamFill: { backgroundColor: theme.colors.primary },
+    rivalFill: { backgroundColor: theme.colors.error || '#ef4444' },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: isMobile ? 10 : 12 },
     field: {
       flexGrow: 1,

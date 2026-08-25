@@ -2786,6 +2786,9 @@
       "title": "Match statistics",
       "add": "Add statistics",
       "team": "Team statistics",
+      "rival": "Opponent statistics",
+      "comparison": "Comparison",
+      "comparisonHint": "Match statistics comparison",
       "players": "Player statistics",
       "downloadPdf": "Download PDF",
       "fields": {
@@ -3393,6 +3396,7 @@
       "readonlyNotice": "This template is read-only. Create your own to customize it.",
       "types": {
         "select": "Selection",
+        "multiselect": "Multiple selection",
         "text": "Text",
         "players": "Players",
         "formation": "Formation",
@@ -5197,6 +5201,7 @@
   "errors": {
     "UNAUTHORIZED": "Unauthorized access",
     "EMAIL_SEND_FAILED": "The invitation email could not be sent. Try again or check that the email address is correct.",
+    "INVITE_TEAM_REQUIRED": "You must assign the user to at least one team before sending the invitation.",
     "TEAM_ACCESS_REQUIRED": "The sporting director must assign you access to a team.",
     "TEAM_ACCESS_DENIED": "You do not have access to this team.",
     "TEAM_LICENSE_LIMIT_REACHED": "You have reached the club's team licence limit.",
@@ -5635,7 +5640,9 @@
     "suspendAndReduceTitle": "Suspend access AND reduce 1 Stripe license (saves money)",
     "cancelLicenseBtn": "Cancel license",
     "removeBtn": "Remove",
-    "inviteNoticeText": "The coach will receive an email with a link to set their password and activate their account. If they already have an account in Xtramys, it will link automatically."
+    "inviteNoticeText": "The coach will receive an email with a link to set their password and activate their account. If they already have an account in Xtramys, it will link automatically.",
+    "inviteTeamsLabel": "Assigned teams",
+    "noInviteTeamsAvailable": "There are no active teams available to assign."
   },
   "friends": {
     "title": "Friends",

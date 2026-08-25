@@ -693,13 +693,16 @@ export default function AnalysisDetailModal({
       }
 
       // select
-      if (q.type === 'select') {
+      if (q.type === 'select' || q.type === 'multiselect') {
         if (isEmptyAnswer(answer)) {
           return renderQuestionAnswer(qText, null, Icon, color);
         }
-        const opt = q.options?.find((o) => o.key === answer);
-        const label = opt ? resolveOptionLabel(opt, t) : translateEnum(answer, t) || answer;
-        return renderQuestionAnswer(qText, label, Icon, color);
+        const values = q.type === 'multiselect' ? (Array.isArray(answer) ? answer : [answer]) : [answer];
+        const labels = values.map((value) => {
+          const opt = q.options?.find((o) => o.key === value);
+          return opt ? resolveOptionLabel(opt, t) : translateEnum(value, t) || value;
+        });
+        return renderQuestionAnswer(qText, labels.join(', '), Icon, color);
       }
 
       // graphic

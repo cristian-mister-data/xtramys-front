@@ -107,12 +107,13 @@ const RivalAnalysisDocument = ({ rivalAnalysis, t, userTemplates }) => {
 
   const formatAnswerValue = (question, answer) => {
     if (!answer) return t('rivalAnalysis.pdf.noInfo');
-    if (question.type === 'select') {
-      const opt = question.options?.find((o) => o.key === answer);
-      if (opt) {
-        return opt.label.startsWith('rivalAnalysis.') ? t(opt.label) : opt.label;
-      }
-      return translateValue(answer) || answer;
+    if (question.type === 'select' || question.type === 'multiselect') {
+      const values = question.type === 'multiselect' ? (Array.isArray(answer) ? answer : [answer]) : [answer];
+      return values.map((value) => {
+        const opt = question.options?.find((o) => o.key === value);
+        if (opt) return opt.label.startsWith('rivalAnalysis.') ? t(opt.label) : opt.label;
+        return translateValue(value) || value;
+      }).join(', ');
     }
     if (question.type === 'formation') return normalizeFormation(answer);
     return translateValue(answer) || answer;
