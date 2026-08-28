@@ -73,6 +73,11 @@ assert.match(field, /if \(!isNative\) return undefined;[\s\S]*?ScreenOrientation
 const nativeFrame = read('src/pages/_RNWebPage.jsx');
 assert.match(nativeFrame, /html\[data-native='true'\][\s\S]*?width: calc\(100% \+ 48px\)/);
 
+const imagePreview = read('src/vendor/tacticalBoard/imagePreview.js');
+assert.match(imagePreview, /isNative && \/\^https\?:\\\/\\\//);
+assert.match(imagePreview, /loading="lazy"/);
+assert.match(imagePreview, /decoding="async"/);
+
 const rivals = read('src/features/rivals/Rivals.jsx');
 assert.match(rivals, /html\[data-platform='ios'\][\s\S]*?flex-basis: 32px/);
 

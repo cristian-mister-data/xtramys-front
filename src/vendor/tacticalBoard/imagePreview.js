@@ -162,11 +162,23 @@ export default function Base64ImagePreview({
   return (
     <View style={[computedStyle, ...baseStyle]}>
       {displayUri ? (
-        <Image
-          source={{ uri: displayUri }}
-          style={imageStyle}
-          onError={() => setFailed(true)}
-        />
+        isNative && /^https?:\/\//.test(displayUri) ? (
+          <img
+            src={displayUri}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            style={{ ...imageStyle, objectFit: 'contain' }}
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <Image
+            source={{ uri: displayUri }}
+            style={imageStyle}
+            onError={() => setFailed(true)}
+          />
+        )
       ) : null}
 
       {loading && (
