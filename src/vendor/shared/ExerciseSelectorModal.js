@@ -51,6 +51,7 @@ import {
 } from '@/utils/favoritePersistence';
 import { getContentImage } from '@/utils/contentVisual';
 import { getSharedWithMe } from '@/api/sharedContent';
+import { isNative } from '@/platform/capacitor';
 
 const THEME_DEFAULT = {
   primary: '#2474E5',
@@ -926,7 +927,7 @@ export default function ExerciseSelectorModal({
                           <View style={[s.exCheck, sel && s.exCheckSel]}>
                             {sel && <Ionicons name="checkmark" size={14} color="#fff" />}
                           </View>
-                          {getContentImage(e) ? (
+                          {getContentImage(e) && !isNative ? (
                             <View style={s.exThumb}>
                               <Base64ImagePreview
                                 imageUrl={getContentImage(e)}
@@ -1027,7 +1028,7 @@ export default function ExerciseSelectorModal({
                         <TouchableOpacity onPress={() => deselect(e._id)} style={s.selItemRemove}>
                           <Ionicons name="close" size={12} color="#fff" />
                         </TouchableOpacity>
-                        {getContentImage(e) ? (
+                        {getContentImage(e) && !isNative ? (
                           <Base64ImagePreview
                             imageUrl={getContentImage(e)}
                             forceWidth={36}
@@ -1129,7 +1130,7 @@ export default function ExerciseSelectorModal({
                                   <Ionicons name="checkmark" size={12} color="#fff" />
                                 </View>
                               )}
-                              {getContentImage(e) ? (
+                              {getContentImage(e) && !isNative ? (
                                 <View style={s.exCardImgWrap}>
                                   <Base64ImagePreview
                                     imageUrl={getContentImage(e)}

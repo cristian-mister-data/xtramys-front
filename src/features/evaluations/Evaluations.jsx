@@ -819,6 +819,11 @@ export default function Evaluations() {
                           {!item.playerPhoto && (item.playerName?.[0] || 'E')}
                         </Avatar>
                         <PlayerText>
+                          {item.title && (
+                            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.2, marginBottom: 3 }}>
+                              {item.title}
+                            </div>
+                          )}
                           <PlayerName>
                             {item.playerName || (item.scope === 'GENERAL' ? t('evaluations.generalScope', 'General / Equipo') : t('evaluations.player', 'Jugador'))}
                             {item.playerDorsal ? ` (#${item.playerDorsal})` : ''}

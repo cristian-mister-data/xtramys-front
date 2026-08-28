@@ -65,7 +65,7 @@ import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
 // Modal para eventos (goles, tarjetas, cambios)
-function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
+function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], allowReentry = false, tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const modalStyles = useMemo(() => makeModalStyles(theme), [theme]);
@@ -138,6 +138,14 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
 
   // Obtener jugadores disponibles para "entra" (suplentes que no han entrado, o que salieron del campo después de entrar)
   const getJugadoresQuePuedenEntrar = () => {
+    const enCampo = jugadoresEnCampo.length > 0 ? jugadoresEnCampo : titulares;
+    if (allowReentry) {
+      const rosterIds = [...new Set([...titulares, ...suplentes])];
+      return rosterIds
+        .filter(playerId => !enCampo.includes(playerId) && !jugadoresExpulsados.includes(playerId))
+        .map(playerId => players.find(p => p._id === playerId))
+        .filter(p => p);
+    }
     const yaEntraron = cambiosRealizados.map(c => typeof c.entra === 'object' ? c.entra._id : c.entra).filter(Boolean);
     const yaSalieron = cambiosRealizados.map(c => typeof c.sale === 'object' ? c.sale._id : c.sale).filter(Boolean);
     // Suplentes que nunca entraron
@@ -4353,6 +4361,7 @@ export default function EditMatchSheetModal({
             players={players}
             titulares={alineacionTitulares}
             suplentes={alineacionSuplentes}
+            allowReentry={competicion === 'amistoso'}
             tiempoPorParte={team?.tiempoPorParte || 45}
             descuentoPT={Number(descuentoPrimerTiempo) || 0}
             descuentoST={Number(descuentoSegundoTiempo) || 0}

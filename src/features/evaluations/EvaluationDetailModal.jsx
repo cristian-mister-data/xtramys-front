@@ -209,6 +209,11 @@ export default function EvaluationDetailModal({
               {!evaluation.playerPhoto && (evaluation.playerName?.[0] || 'E')}
             </Avatar>
             <div>
+              {evaluation.title && (
+                <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4 }}>
+                  {evaluation.title}
+                </div>
+              )}
               <div style={{ fontWeight: 700, fontSize: 16 }}>
                 {evaluation.playerName || (evaluation.scope === 'GENERAL' ? t('evaluations.generalScope', 'General / Equipo') : t('evaluations.player', 'Jugador'))}
                 {evaluation.playerDorsal ? ` (#${evaluation.playerDorsal})` : ''}

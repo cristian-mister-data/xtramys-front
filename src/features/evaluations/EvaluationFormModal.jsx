@@ -318,6 +318,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
   );
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [title, setTitle] = useState('');
   const [scope, setScope] = useState('POR_JUGADOR');
   const [playerId, setPlayerId] = useState('');
   const [templateId, setTemplateId] = useState('');
@@ -337,6 +338,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
   useEffect(() => {
     if (open) {
       if (evaluationToEdit) {
+        setTitle(evaluationToEdit.title || '');
         setDate(evaluationToEdit.date || new Date().toISOString().split('T')[0]);
         setScope(evaluationToEdit.scope || 'POR_JUGADOR');
         setPlayerId(evaluationToEdit.playerId || '');
@@ -344,6 +346,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
         setAnswers(evaluationToEdit.answers || {});
         setGeneralNotes(evaluationToEdit.generalNotes || '');
       } else {
+        setTitle('');
         const today = new Date().toISOString().split('T')[0];
         setDate(today);
         setScope('POR_JUGADOR');
@@ -422,6 +425,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
       : '';
 
     const payload = {
+      title: title.trim(),
       date,
       scope,
       playerId: scope === 'POR_JUGADOR' ? playerId : null,
@@ -481,6 +485,16 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
 
         {/* 1. Date & Scope Section */}
         <SectionBox>
+          <Field style={{ margin: 0 }}>
+            <Label>{t('evaluations.form.title', 'Título de la Evaluación')}</Label>
+            <Input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t('evaluations.form.titlePlaceholder', 'Ej: Evaluación mensual de rendimiento')}
+              maxLength={120}
+            />
+          </Field>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             <Field style={{ margin: 0 }}>
               <Label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

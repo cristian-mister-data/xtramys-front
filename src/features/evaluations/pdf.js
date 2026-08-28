@@ -55,15 +55,16 @@ export async function generateEvaluationPdf(evaluation, template, t, teamName = 
   const tr = (key, fallback, opts) => (t ? t(key, opts) || fallback : fallback);
 
   const isGeneral = evaluation.scope === 'GENERAL';
-  const title = isGeneral
+  const reportTitle = isGeneral
     ? tr('evaluations.pdf.generalTitle', 'EVALUACIÓN GENERAL DE EQUIPO')
     : `${tr('evaluations.pdf.playerTitlePrefix', 'INFORME DE EVALUACIÓN')}: ${evaluation.playerName || tr('evaluations.pdf.playerDefault', 'JUGADOR')}`;
+  const evaluationTitle = String(evaluation.title || '').trim();
 
   const tplName = template
     ? getTemplateDisplayName(template, t)
     : getTemplateDisplayName({ _id: evaluation.templateId, name: evaluation.templateName }, t) || tr('evaluations.pdf.templateDefault', 'Plantilla de Evaluación');
 
-  const subtitle = `${tplName} · ${teamName}`;
+  const subtitle = `${evaluationTitle ? `${reportTitle} · ` : ''}${tplName} · ${teamName}`;
   const dateStr = evaluation.date || new Date().toISOString().split('T')[0];
 
   const questions = template?.questions || [];
@@ -73,10 +74,10 @@ export async function generateEvaluationPdf(evaluation, template, t, teamName = 
       : tr('evaluations.pdf.noScore', 'Sin Nota');
 
   const doc = (
-    <Document title={`Evaluación - ${evaluation.playerName || 'General'} - ${dateStr}`}>
+    <Document title={`${evaluationTitle || reportTitle} - ${evaluation.playerName || 'General'} - ${dateStr}`}>
       <Page size="A4" style={baseStyles.page}>
         <PdfHeader
-          title={title}
+          title={evaluationTitle || reportTitle}
           subtitle={subtitle}
           date={`${tr('evaluations.pdf.date', 'Fecha')}: ${dateStr}`}
           right={scoreVal}
@@ -165,7 +166,7 @@ export async function generateEvaluationPdf(evaluation, template, t, teamName = 
     </Document>
   );
 
-  const safeFileName = `evaluacion_${evaluation.playerName || 'general'}_${dateStr}`
+  const safeFileName = `evaluacion_${evaluationTitle ? `${evaluationTitle}_` : ''}${evaluation.playerName || 'general'}_${dateStr}`
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, '_');
 

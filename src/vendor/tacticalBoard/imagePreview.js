@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, useWindowDimensions, Text, ActivityIndicator } from 'react-native';
 import { prefetchAndCacheImage, getVersionedUrl } from '@/utils/imageCache';
+import { isNative } from '@/platform/capacitor';
 
 function normalizeHttpUrl(url) {
   try {
@@ -79,6 +80,13 @@ export default function Base64ImagePreview({
       const normalized = normalizeImageSource(imageSource);
       // Si ya es base64 o local, renderizar directo
       if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+        setDisplayUri(normalized);
+        setLoading(false);
+        return;
+      }
+
+      // Evita duplicar imágenes remotas como base64 en la memoria limitada del WebView nativo.
+      if (isNative) {
         setDisplayUri(normalized);
         setLoading(false);
         return;
