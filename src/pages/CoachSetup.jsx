@@ -175,6 +175,7 @@ export default function CoachSetup() {
   const [jugadoresPorEquipo, setJugadoresPorEquipo] = useState(11);
   const [equipaciones, setEquipaciones] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [hasAssignedTeam, setHasAssignedTeam] = useState(null);
 
   const setupStepKey = user?._id ? `xtramys:coach-setup-step:${user._id}` : null;
 
@@ -188,22 +189,42 @@ export default function CoachSetup() {
       navigate('/app', { replace: true });
       return;
     }
-    if (setupStepKey) {
-      const savedStep = Number(sessionStorage.getItem(setupStepKey));
-      if (savedStep >= 1 && savedStep <= 3) setStep(savedStep);
-    }
+
+    let isMounted = true;
+    api.get('/club/workspaces')
+      .then((res) => {
+        if (!isMounted) return;
+        const workspaces = res.data?.workspaces || [];
+        const activeWorkspaces = workspaces.filter((w) => w.canWrite || w.permission);
+        if (activeWorkspaces.length > 0) {
+          setHasAssignedTeam(true);
+        } else {
+          setHasAssignedTeam(false);
+          if (setupStepKey) {
+            const savedStep = Number(sessionStorage.getItem(setupStepKey));
+            if (savedStep >= 1 && savedStep <= 3) setStep(savedStep);
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) setHasAssignedTeam(false);
+      });
+
+    return () => { isMounted = false; };
   }, [user, navigate, setupStepKey]);
 
   useEffect(() => {
-    if (setupStepKey) sessionStorage.setItem(setupStepKey, String(step));
-  }, [setupStepKey, step]);
+    if (setupStepKey && hasAssignedTeam === false) {
+      sessionStorage.setItem(setupStepKey, String(step));
+    }
+  }, [setupStepKey, step, hasAssignedTeam]);
 
   const handleSubmit = async () => {
     if (!nombre.trim()) {
       toast.error(t('coachSetup.nameRequired', 'El nombre es obligatorio'));
       return;
     }
-    if (!categoriaKey) {
+    if (!hasAssignedTeam && !categoriaKey) {
       toast.error(t('coachSetup.categoryRequired', 'Selecciona una categoría'));
       return;
     }
@@ -230,15 +251,20 @@ export default function CoachSetup() {
         return;
       }
 
-      await api.post('/team/coach-setup', {
+      const payload = {
         seasonId,
-        categoriaKey,
         nombre: nombre.trim(),
         apellido: apellido.trim(),
-        tiempoPorParte,
-        jugadoresPorEquipo,
-        equipaciones,
-      });
+      };
+
+      if (!hasAssignedTeam) {
+        payload.categoriaKey = categoriaKey;
+        payload.tiempoPorParte = tiempoPorParte;
+        payload.jugadoresPorEquipo = jugadoresPorEquipo;
+        payload.equipaciones = equipaciones;
+      }
+
+      await api.post('/team/coach-setup', payload);
 
       const updatedUser = {
         ...user,
@@ -259,16 +285,28 @@ export default function CoachSetup() {
     }
   };
 
+  if (hasAssignedTeam === null) {
+    return (
+      <Page>
+        <SetupCard style={{ textAlign: 'center', padding: '48px 24px' }}>
+          <Muted>{t('message.loading', 'Cargando...')}</Muted>
+        </SetupCard>
+      </Page>
+    );
+  }
+
   return (
     <Page>
       <SetupCard>
-        <StepIndicator>
-          <StepDot $active={step >= 1} />
-          <StepDot $active={step >= 2} />
-          <StepDot $active={step >= 3} />
-        </StepIndicator>
+        {!hasAssignedTeam && (
+          <StepIndicator>
+            <StepDot $active={step >= 1} />
+            <StepDot $active={step >= 2} />
+            <StepDot $active={step >= 3} />
+          </StepIndicator>
+        )}
 
-        {step === 1 && (
+        {(step === 1 || hasAssignedTeam) && (
           <>
             <IconWrap><MdPerson size={28} /></IconWrap>
             <PageTitle style={{ textAlign: 'center', marginBottom: 8 }}>
@@ -295,15 +333,21 @@ export default function CoachSetup() {
                 />
               </Field>
               <Row style={{ justifyContent: 'flex-end', marginTop: 8 }}>
-                <Button onClick={() => setStep(2)} disabled={!nombre.trim()}>
-{t('common.continue', 'Continue')}
-              </Button>
-            </Row>
+                {hasAssignedTeam ? (
+                  <Button onClick={handleSubmit} disabled={loading || !nombre.trim()}>
+                    {loading ? '...' : t('coachSetup.start', 'Start')}
+                  </Button>
+                ) : (
+                  <Button onClick={() => setStep(2)} disabled={!nombre.trim()}>
+                    {t('common.continue', 'Continue')}
+                  </Button>
+                )}
+              </Row>
             </Stack>
           </>
         )}
 
-        {step === 2 && (
+        {!hasAssignedTeam && step === 2 && (
           <>
             <IconWrap><MdSportsSoccer size={28} /></IconWrap>
             <PageTitle style={{ textAlign: 'center', marginBottom: 8 }}>
@@ -337,7 +381,7 @@ export default function CoachSetup() {
           </>
         )}
 
-        {step === 3 && (
+        {!hasAssignedTeam && step === 3 && (
           <>
             <IconWrap><MdTimer size={28} /></IconWrap>
             <PageTitle style={{ textAlign: 'center', marginBottom: 8 }}>

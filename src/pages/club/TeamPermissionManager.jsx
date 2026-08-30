@@ -6,6 +6,7 @@ import api from '@/api/client';
 import Modal from '@/ui/Modal';
 import { Button, Card, Field, Input, Label, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
+import { getTeamCategoryLabel } from '@/components/season/seasonHelpers';
 
 const Header = styled.div`
   display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap;
@@ -281,10 +282,11 @@ export default function TeamPermissionManager({ data, onRefresh }) {
   );
   const members = data?.members || [];
   const accesses = data?.accesses || [];
+  const legacy = data?.club?.permissionsModel === 'legacy';
   const maxTeams = data?.club?.maxTeams ?? data?.club?.maxUsers ?? 0;
   const activeTeams = teams.filter((team) => team.licenseActive !== false).length;
   const activeTeamIds = useMemo(() => new Set(teams.map((team) => String(team._id))), [teams]);
-  const atLimit = maxTeams > 0 && activeTeams >= maxTeams;
+  const atLimit = !legacy && maxTeams > 0 && activeTeams >= maxTeams;
   const seasons = useMemo(() => [...new Map(
     (data?.seasons?.length ? data.seasons : teams.map((team) => team.temporada))
       .filter(Boolean).map((season) => [String(season._id || season), season]),
@@ -380,7 +382,7 @@ export default function TeamPermissionManager({ data, onRefresh }) {
           <HeaderSubtitle>{t('clubTeamManager.userSubtitle')}</HeaderSubtitle>
         </HeaderCopy>
         <HeaderControls>
-          <LicensePill>{t('clubTeamManager.licenseCount', { used: activeTeams, total: maxTeams })}</LicensePill>
+          <LicensePill>{t('clubTeamManager.licenseCount', { used: legacy ? data?.club?.activeUsers || 0 : activeTeams, total: maxTeams })}</LicensePill>
           <TopNav>
             <TopNavButton type="button" $active={activeView === 'accounts'} onClick={() => setActiveView('accounts')}>{t('clubTeamManager.accountsTitle')}</TopNavButton>
             <TopNavButton type="button" $active={activeView === 'teams'} onClick={() => setActiveView('teams')}>{t('clubTeamManager.teamsTitle')}</TopNavButton>
@@ -437,11 +439,17 @@ export default function TeamPermissionManager({ data, onRefresh }) {
                         {teams.map((team) => {
                           const permission = accessFor(team._id, member._id)?.permission || 'none';
                           const key = `${team._id}:${member._id}`;
+                          const catLabel = getTeamCategoryLabel(team, t);
                           return (
                             <TeamRow key={team._id}>
                               <input type="checkbox" checked={permission !== 'none'} onChange={(event) => changeAccess(team, member, event.target.checked ? 'view' : 'none')} disabled={busyKey === key || team.licenseActive === false} aria-label={team.nombre} />
                               <TeamRowBody>
                                 <TeamRowName title={team.nombre}>{team.nombre}</TeamRowName>
+                                {catLabel ? (
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary-color, #3b82f6)' }}>
+                                    {catLabel}
+                                  </span>
+                                ) : null}
                                 <Muted style={{ fontSize: 11 }}>{team.temporada?.año || ''}</Muted>
                               </TeamRowBody>
                               <PermissionField>
@@ -470,6 +478,7 @@ export default function TeamPermissionManager({ data, onRefresh }) {
               const isOpen = openTeamId === String(team._id);
               const isEditing = editingTeamId === String(team._id);
               const assignedUsers = accesses.filter((access) => String(access.teamId) === String(team._id)).length;
+              const catLabel = getTeamCategoryLabel(team, t);
               return (
                 <TeamCard key={team._id} $open={isOpen}>
                   <TeamSummary>
@@ -477,6 +486,7 @@ export default function TeamPermissionManager({ data, onRefresh }) {
                       <TeamName title={team.nombre}>{team.nombre}</TeamName>
                       <TeamMeta>
                         <MetaChip><MdOutlineShield size={14} />{team.temporada?.año || '—'}</MetaChip>
+                        {catLabel ? <MetaChip><MdSportsSoccer size={14} />{catLabel}</MetaChip> : null}
                         <MetaChip><MdGroups size={14} />{t('clubTeamManager.teamUsersCount', { count: assignedUsers })}</MetaChip>
                       </TeamMeta>
                     </TeamIdentity>

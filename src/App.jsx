@@ -4,7 +4,6 @@ import AppRouter from './router/AppRouter';
 import { fetchMe, logoutThunk } from './store/slices/user/userThunks';
 import { setNetworkErrorHandler, setUnauthorizedHandler, setSubscriptionRequiredHandler } from './api/client';
 import { subscriptionRequired, startSupervision } from './store/slices/user/userSlice';
-import { syncEvaluations } from './store/slices/evaluations/evaluationsSlice';
 import { createEstrategia, updateEstrategia } from './store/slices/strategy/strategyThunks';
 import { clearLocalSetPieceMigration, getLocalSetPieceMigration } from './utils/setPieceMigration';
 import { api } from './api/client';
@@ -141,9 +140,6 @@ export default function App() {
       dispatch(fetchMe({ force }))
         .unwrap()
         .then(async (currentUser) => {
-          dispatch(syncEvaluations(currentUser)).unwrap().catch((error) => {
-            console.warn('No se pudieron migrar las evaluaciones locales:', error);
-          });
           const localSetPiece = !sessionReadyRef.current ? getLocalSetPieceMigration() : null;
           if (localSetPiece) {
             const migration = localSetPiece._id

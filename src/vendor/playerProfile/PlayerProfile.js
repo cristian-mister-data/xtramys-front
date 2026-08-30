@@ -41,6 +41,7 @@ import { translatePosition } from '@/components/player/playerHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import { useTheme } from 'styled-components';
+import { getPlayerMatchStats, idOf } from '@/utils/matchPlayerStats';
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -50,6 +51,13 @@ const isMobileDevice = () => {
 
 // Helper para obtener locale basado en i18n
 const getLocale = () => (i18n.language === 'en' ? 'en-US' : 'es-ES');
+
+const filterMatches = (matches, filter) => (matches || []).filter((match) => {
+  if (filter === 'total') return true;
+  const tournamentId = idOf(match.torneoId);
+  const isFriendly = !tournamentId || match.competicion === 'amistoso';
+  return filter === 'friendlies' ? isFriendly : tournamentId === filter;
+});
 
 // Helper para color según nivel de wellness
 const getWellnessColor = (value, isDark = false) => {
@@ -145,11 +153,33 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
 
   // Estado para detalle de asistencia
   const [showAttendanceDetail, setShowAttendanceDetail] = useState(false);
+  const [matchFilter, setMatchFilter] = useState('total');
 
   // Obtener datos del Redux (igual que en statistics.js)
   const matchSheets = useSelector((state) => state.matchSheet.matchSheets) || [];
   const injuries = useSelector((state) => state.injury.injuries) || [];
   const trainingSessions = useSelector((state) => state.session.session) || [];
+  const tournamentTabs = useMemo(() => {
+    const tournaments = new Map();
+    matchSheets.forEach((match) => {
+      const id = idOf(match.torneoId);
+      if (id && match.competicion !== 'amistoso') {
+        tournaments.set(id, match.torneoId?.nombre || match.torneoNombre || t('matchSheet.tournament', 'Torneo'));
+      }
+    });
+    return [
+      { key: 'total', label: t('home.total', 'Total') },
+      ...[...tournaments].map(([key, label]) => ({ key, label })),
+      { key: 'friendlies', label: t('matchSheet.friendlies', 'Amistosos') },
+    ];
+  }, [matchSheets, t]);
+  const filteredMatchSheets = useMemo(
+    () => filterMatches(matchSheets, matchFilter),
+    [matchSheets, matchFilter],
+  );
+  useEffect(() => {
+    if (!tournamentTabs.some((tab) => tab.key === matchFilter)) setMatchFilter('total');
+  }, [matchFilter, tournamentTabs]);
 
   // Cargar historial de wellness del jugador
   useEffect(() => {
@@ -217,20 +247,12 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
   const stats = useMemo(() => {
     if (!player || !visible) return null;
 
-    const playerId = player._id;
+    const playerId = idOf(player);
+    const matchStats = getPlayerMatchStats(filteredMatchSheets, player, team);
 
     // Inicializar estadísticas del jugador
     const playerStats = {
-      matches: {
-        total: 0,
-        starter: 0,
-        substitute: 0,
-        notCalled: 0,
-        bench: 0,
-        minutesPlayed: 0,
-      },
-      goals: { total: 0, assists: 0 },
-      cards: { yellow: 0, red: 0 },
+      ...matchStats,
       trainings: {
         attended: 0,
         total: 0,
@@ -248,164 +270,6 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
         daysMissed: 0,
       },
     };
-
-    // Helper para parsear minuto que puede ser string como "45+2", "90+3" o número
-    const parseMinuto = (minuto, defaultValue = 90) => {
-      if (typeof minuto === 'number') return minuto;
-      if (typeof minuto === 'string') {
-        if (minuto.includes('+')) {
-          const parts = minuto.split('+');
-          const baseMinuto = parseInt(parts[0]);
-          const addedTime = parseInt(parts[1]) || 0;
-          if (!isNaN(baseMinuto)) {
-            return baseMinuto + addedTime;
-          }
-        }
-        const parsed = parseInt(minuto);
-        return isNaN(parsed) ? defaultValue : parsed;
-      }
-      return defaultValue;
-    };
-
-    // Helper para verificar si un partido ya se ha jugado
-    const isMatchPlayed = (match) => {
-      // Un partido se considera jugado si la fecha del partido es anterior a hoy a la hora actual
-      if (match.fechaHora && new Date(match.fechaHora) < new Date()) return true;
-      return false;
-    };
-
-    // Procesar partidos jugados
-    matchSheets
-      .filter((match) => isMatchPlayed(match))
-      .forEach((match) => {
-        const tiempoPorParte = 45;
-        const descuentoPrimerTiempo = match.descuentoPrimerTiempo || 0;
-        const descuentoSegundoTiempo = match.descuentoSegundoTiempo || 0;
-        const tiempoPrimeraParte = tiempoPorParte + descuentoPrimerTiempo;
-        const tiempoSegundaParte = tiempoPorParte + descuentoSegundoTiempo;
-        const tiempoTotal = tiempoPrimeraParte + tiempoSegundaParte;
-
-        const starters = (match.alineacionTitulares || []).map((p) =>
-          typeof p === 'object' ? p._id : p,
-        );
-        const subs = (match.alineacionSuplentes || []).map((p) =>
-          typeof p === 'object' ? p._id : p,
-        );
-        const notCalled = (match.noConvocados || []).map((p) =>
-          typeof p === 'object' ? p._id : p,
-        );
-
-        const calcularMinutosJugador = (minutoSalida) => {
-          const minuto = parseMinuto(minutoSalida, tiempoTotal);
-          if (minuto <= tiempoPorParte) {
-            return minuto;
-          } else {
-            return tiempoPrimeraParte + (minuto - tiempoPorParte);
-          }
-        };
-
-        const calcularMinutosDesdeEntrada = (minutoEntrada) => {
-          const minuto = parseMinuto(minutoEntrada, tiempoTotal);
-          if (minuto <= tiempoPorParte) {
-            return tiempoPorParte - minuto + descuentoPrimerTiempo + tiempoSegundaParte;
-          } else {
-            return tiempoSegundaParte - (minuto - tiempoPorParte);
-          }
-        };
-
-        const playedIds = new Set([...starters]);
-        let wasSubbedOut = false;
-
-        // Procesar cambios
-        (match.cambios || []).forEach((cambio) => {
-          const saleId = typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale;
-          const entraId = typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra;
-
-          playedIds.add(entraId);
-
-          if (saleId === playerId) {
-            wasSubbedOut = true;
-            if (starters.includes(playerId)) {
-              playerStats.matches.minutesPlayed += calcularMinutosJugador(cambio.minuto);
-            }
-          }
-
-          if (entraId === playerId) {
-            playerStats.matches.substitute++;
-            playerStats.matches.total++;
-            playerStats.matches.minutesPlayed += calcularMinutosDesdeEntrada(cambio.minuto);
-          }
-        });
-
-        // Si fue titular
-        if (starters.includes(playerId)) {
-          playerStats.matches.starter++;
-          playerStats.matches.total++;
-          if (!wasSubbedOut) {
-            playerStats.matches.minutesPlayed += tiempoTotal;
-          }
-        }
-
-        // Si fue suplente pero no entró
-        if (subs.includes(playerId) && !playedIds.has(playerId)) {
-          playerStats.matches.bench++;
-        }
-
-        // Si no fue convocado
-        if (notCalled.includes(playerId)) {
-          playerStats.matches.notCalled++;
-        }
-
-        // No convocado implícito
-        const allInMatch = new Set([...starters, ...subs, ...notCalled]);
-        if (!allInMatch.has(playerId)) {
-          playerStats.matches.notCalled++;
-        }
-
-        // Goles y tarjetas desde eventos
-        if (match.eventos && match.eventos.length > 0) {
-          match.eventos.forEach((evento) => {
-            const pid = typeof evento.player === 'object' ? evento.player._id : evento.player;
-            if (pid === playerId) {
-              playerStats.goals.total += evento.goles || 0;
-              if (evento.tarjetaAmarilla) playerStats.cards.yellow++;
-              if (evento.tarjetaRoja) playerStats.cards.red++;
-            }
-          });
-        } else {
-          // Fallback para partidos sin eventos
-          (match.goles || []).forEach((gol) => {
-            const pid = typeof gol.jugador === 'object' ? gol.jugador._id : gol.jugador;
-            if (pid === playerId) playerStats.goals.total++;
-
-            if (gol.asistente) {
-              const assistId =
-                typeof gol.asistente === 'object' ? gol.asistente._id : gol.asistente;
-              if (assistId === playerId) playerStats.goals.assists++;
-            }
-          });
-
-          (match.tarjetasAmarillas || []).forEach((card) => {
-            const pid = typeof card.jugador === 'object' ? card.jugador._id : card.jugador;
-            if (pid === playerId) playerStats.cards.yellow++;
-          });
-
-          (match.tarjetasRojas || []).forEach((card) => {
-            const pid = typeof card.jugador === 'object' ? card.jugador._id : card.jugador;
-            if (pid === playerId) playerStats.cards.red++;
-          });
-        }
-
-        // Asistencias de match.goles (siempre)
-        (match.goles || []).forEach((gol) => {
-          if (gol.asistente) {
-            const assistId = typeof gol.asistente === 'object' ? gol.asistente._id : gol.asistente;
-            if (assistId === playerId && match.eventos && match.eventos.length > 0) {
-              playerStats.goals.assists++;
-            }
-          }
-        });
-      });
 
     // Entrenamientos
     const today = new Date();
@@ -528,14 +392,23 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
     });
 
     return playerStats;
-  }, [player, visible, matchSheets, injuries, trainingSessions]);
+  }, [player, visible, filteredMatchSheets, injuries, trainingSessions, team?.tiempoPorParte]);
+
+  const matchStatsBreakdown = useMemo(() => {
+    if (!player) return [];
+    return tournamentTabs.map((tab) => ({
+      key: tab.key,
+      label: tab.label,
+      stats: getPlayerMatchStats(filterMatches(matchSheets, tab.key), player, team),
+    }));
+  }, [matchSheets, player, team, tournamentTabs]);
 
   const playerMatches = useMemo(() => {
     if (!player?._id) return [];
     const playerId = String(player._id);
     const hasPlayer = (values = []) => values.some((value) => String(value?._id || value) === playerId);
 
-    return matchSheets
+    return filteredMatchSheets
       .filter((match) => match.fechaHora && new Date(match.fechaHora) < new Date())
       .map((match) => {
         const starter = hasPlayer(match.alineacionTitulares);
@@ -546,7 +419,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
       })
       .filter(Boolean)
       .sort((a, b) => new Date(b.match.fechaHora || 0) - new Date(a.match.fechaHora || 0));
-  }, [matchSheets, player?._id]);
+  }, [filteredMatchSheets, player?._id]);
 
   const latestAntro = anthropometryData && anthropometryData.length > 0 ? anthropometryData[0] : null;
   const displayWeight = latestAntro?.peso || player?.peso;
@@ -561,7 +434,17 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
       if (player?.foto) {
         fotoBase64 = await imageToBase64(player.foto);
       }
-      await generateProfilePdf({ player, team, fotoBase64, stats, anthropometryData, injuries, t });
+      const totalMatchStats = matchStatsBreakdown.find((item) => item.key === 'total')?.stats;
+      await generateProfilePdf({
+        player,
+        team,
+        fotoBase64,
+        stats: totalMatchStats ? { ...stats, ...totalMatchStats } : stats,
+        matchStatsBreakdown,
+        anthropometryData,
+        injuries,
+        t,
+      });
     } catch (error) {
       console.error('Error exporting PDF:', error);
       Alert.alert(t('message.error'), t('player.profile.exportError'));
@@ -770,6 +653,27 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
               <MaterialIcons name="sports-soccer" size={20} color="#00521493" />
               <Text style={styles.sectionTitle}>{t('player.profile.matchStats')}</Text>
             </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.matchFilterTabs}
+              contentContainerStyle={styles.matchFilterTabsContent}
+            >
+              {tournamentTabs.map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={[styles.matchFilterTab, matchFilter === filter.key && styles.matchFilterTabActive]}
+                  onPress={() => setMatchFilter(filter.key)}
+                >
+                  <Text style={[
+                    styles.matchFilterTabText,
+                    matchFilter === filter.key && styles.matchFilterTabTextActive,
+                  ]}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <View style={styles.statsContainer}>
               <View style={styles.statRow}>
                 <Text style={styles.statLabel}>{t('player.profile.matchesPlayed')}</Text>
@@ -2404,6 +2308,35 @@ const makeStyles = (theme) =>
     },
     statsContainer: {
       gap: 2,
+    },
+    matchFilterTabs: {
+      marginBottom: 12,
+    },
+    matchFilterTabsContent: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    matchFilterTab: {
+      minWidth: 100,
+      alignItems: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.backgroundAlt,
+    },
+    matchFilterTabActive: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primarySoft || theme.colors.backgroundAlt,
+    },
+    matchFilterTabText: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    matchFilterTabTextActive: {
+      color: theme.colors.primary,
     },
     statRow: {
       flexDirection: 'row',

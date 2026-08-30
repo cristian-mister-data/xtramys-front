@@ -25,6 +25,27 @@ export const categoryOptions = (t) => [
   { value: 'otro', label: t('team.categories.otro', 'Otro') },
 ];
 
+export const getTeamCategoryLabel = (team, t = (key, fallback) => fallback) => {
+  if (!team) return '';
+  const key = team.categoriaKey || (team.categoria === 'otro' ? 'otro' : team.categoria);
+  const custom = team.categoriaCustom || (team.categoriaKey === 'otro' ? team.categoria : '');
+  if (key === 'otro' || (custom && key !== custom)) {
+    return custom || t('team.categories.otro', 'Otro');
+  }
+  if (!key) return custom || '';
+  const map = {
+    prebenjamin: 'Prebenjamín',
+    benjamin: 'Benjamín',
+    alevin: 'Alevín',
+    infantil: 'Infantil',
+    cadete: 'Cadete',
+    juvenil: 'Juvenil',
+    senior: 'Sénior',
+    otro: 'Otro',
+  };
+  return t(`team.categories.${key}`, map[key] || key);
+};
+
 export const timePerHalfOptions = [10, 15, 20, 25, 30, 35, 40, 45];
 export const playersPerTeamOptions = [7, 8, 11];
 

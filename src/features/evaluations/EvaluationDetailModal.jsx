@@ -145,9 +145,13 @@ export default function EvaluationDetailModal({
       t('evaluations.detail.deleteConfirm', '¿Eliminar esta evaluación?')
     );
     if (!ok) return;
-    dispatch(deleteEvaluation(evaluation._id));
-    toast.success(t('evaluations.detail.deleteSuccess', 'Evaluación eliminada'));
-    onClose?.();
+    try {
+      await dispatch(deleteEvaluation(evaluation._id)).unwrap();
+      toast.success(t('evaluations.detail.deleteSuccess', 'Evaluación eliminada'));
+      onClose?.();
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const handlePdf = async () => {

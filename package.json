@@ -17,6 +17,7 @@
     "check:app-version": "node scripts/check-app-version.mjs",
     "check:tactical-board-performance": "node scripts/check-tactical-board-performance.mjs",
     "check:content-visuals": "node scripts/check-content-visuals.mjs",
+    "check:match-player-stats": "node scripts/check-match-player-stats.mjs",
     "check:image-zoom": "node scripts/check-image-zoom.mjs",
     "preview": "vite preview --port 4173",
     "mobile": "npm run build && npx cap sync",

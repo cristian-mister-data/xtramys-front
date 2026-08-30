@@ -41,6 +41,7 @@ import InjuryStatistics from '@/vendor/injuries/injuryStatistics';
 // PlayerProfile RN aún no portado a vendor; stub para no crashear el modal.
 const PlayerProfile = () => null;
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import { getMatchPlayerContributions, idOf } from '@/utils/matchPlayerStats';
 
 // Helper para obtener locale basado en i18n
 const getLocale = () => (i18n.language === 'en' ? 'en-US' : 'es-ES');
@@ -119,13 +120,6 @@ export default function Statistics({ navigation: navigationProp }) {
     }, [selectedTeam, dispatch]),
   );
 
-  // Crear una key para forzar recalculo cuando los datos cambian
-  const matchSheetsKey = useMemo(() => {
-    return matchSheets
-      .map((m) => `${m._id}-${m.golesFavor}-${m.golesContra}-${m.resultado}`)
-      .join(',');
-  }, [matchSheets]);
-
   // Filter matchSheets by selected tournament or amistosos
   const filteredMatchSheets = useMemo(() => {
     if (competitionFilter === 'total') return matchSheets;
@@ -196,8 +190,8 @@ export default function Statistics({ navigation: navigationProp }) {
         return jugadoresIds.includes(p._id);
       }).length;
 
-      playerStatsMap[p._id] = {
-        id: p._id,
+      playerStatsMap[idOf(p)] = {
+        id: idOf(p),
         name: getPlayerFullName(p),
         position: p.posicion || t('statistics.players.noPosition'),
         number: p.dorsal || '-',
@@ -214,7 +208,7 @@ export default function Statistics({ navigation: navigationProp }) {
         notCalled: 0,
         bench: 0, // Called but didn't play
         injuries: injuries.filter(
-          (i) => (typeof i.jugador === 'object' ? i.jugador._id : i.jugador) === p._id,
+          (i) => idOf(i.jugador) === idOf(p),
         ).length,
         totalTrainingSessions: pastTrainingSessions.length,
         trainingsAttended: trainingsAttended,
@@ -274,13 +268,9 @@ export default function Statistics({ navigation: navigationProp }) {
       }
 
       // Player Participation
-      const starters = (match.alineacionTitulares || []).map((p) =>
-        typeof p === 'object' ? p._id : p,
-      );
-      const subs = (match.alineacionSuplentes || []).map((p) =>
-        typeof p === 'object' ? p._id : p,
-      );
-      const notCalled = (match.noConvocados || []).map((p) => (typeof p === 'object' ? p._id : p));
+      const starters = (match.alineacionTitulares || []).map(idOf);
+      const subs = (match.alineacionSuplentes || []).map(idOf);
+      const notCalled = (match.noConvocados || []).map(idOf);
 
       // Helper para parsear minuto que puede ser string como "45+2", "90+3" o número
       const parseMinuto = (minuto, defaultValue = 90) => {
@@ -344,8 +334,8 @@ export default function Statistics({ navigation: navigationProp }) {
 
       // Process Changes to track sub ins/outs
       (match.cambios || []).forEach((cambio) => {
-        const saleId = typeof cambio.sale === 'object' ? cambio.sale._id : cambio.sale;
-        const entraId = typeof cambio.entra === 'object' ? cambio.entra._id : cambio.entra;
+        const saleId = idOf(cambio.sale);
+        const entraId = idOf(cambio.entra);
 
         playedIds.add(entraId);
 
@@ -370,7 +360,7 @@ export default function Statistics({ navigation: navigationProp }) {
           playerStatsMap[pid].matches++;
 
           const wasSubbedOut = (match.cambios || []).some((c) => {
-            const sId = typeof c.sale === 'object' ? c.sale._id : c.sale;
+            const sId = idOf(c.sale);
             return sId === pid;
           });
 
@@ -404,80 +394,18 @@ export default function Statistics({ navigation: navigationProp }) {
       // Implicit not called
       const allInMatch = new Set([...starters, ...subs, ...notCalled]);
       players.forEach((p) => {
-        if (!allInMatch.has(p._id)) {
-          playerStatsMap[p._id].notCalled++;
+        if (!allInMatch.has(idOf(p))) {
+          playerStatsMap[idOf(p)].notCalled++;
         }
       });
 
-      // Goals & Cards & Minutes Override from Eventos if available
-      if (match.eventos && match.eventos.length > 0) {
-        match.eventos.forEach((evento) => {
-          const pid = typeof evento.player === 'object' ? evento.player._id : evento.player;
-          if (playerStatsMap[pid]) {
-            // Override minutes with precise data from backend if needed, or just accumulate?
-            // The logic above calculates minutes based on changes.
-            // If 'eventos' has minutes, it might be safer to use it if we trust it more.
-            // But 'eventos' is newly added. Let's stick to the calculated minutes for now unless we want to fully switch.
-            // Actually, let's use 'eventos' for Goals and Cards as they are definitive there.
-            // And let's ADD goals from events (since we don't accumulate them above).
-
-            // Wait, if we iterate events, we might double count if we also iterate match.goles?
-            // No, we removed the match.goles iteration in this block.
-
-            playerStatsMap[pid].goals += evento.goles || 0;
-            if (evento.tarjetaAmarilla) playerStatsMap[pid].yellowCards++;
-            if (evento.tarjetaRoja) playerStatsMap[pid].redCards++;
-          }
-        });
-      } else {
-        // Fallback for old match sheets without 'eventos'
-        (match.goles || []).forEach((gol) => {
-          const pid = typeof gol.jugador === 'object' ? gol.jugador._id : gol.jugador;
-          if (playerStatsMap[pid]) playerStatsMap[pid].goals++;
-
-          // Contar asistencias
-          if (gol.asistente) {
-            const assistId = typeof gol.asistente === 'object' ? gol.asistente._id : gol.asistente;
-            if (playerStatsMap[assistId]) playerStatsMap[assistId].assists++;
-          }
-        });
-
-        // Detect double yellow red cards
-        const doubleYellowRedIds = new Set();
-        (match.tarjetasRojas || []).forEach((card) => {
-          if (card.motivo === 'Doble amarilla') {
-            const pid = typeof card.jugador === 'object' ? card.jugador._id : card.jugador;
-            if (pid) doubleYellowRedIds.add(pid);
-          }
-        });
-
-        (match.tarjetasAmarillas || []).forEach((card) => {
-          const pid = typeof card.jugador === 'object' ? card.jugador._id : card.jugador;
-          if (playerStatsMap[pid]) {
-            playerStatsMap[pid].yellowCards++;
-            if (doubleYellowRedIds.has(pid)) {
-              playerStatsMap[pid].doubleYellowCards++;
-            }
-          }
-        });
-
-        (match.tarjetasRojas || []).forEach((card) => {
-          const pid = typeof card.jugador === 'object' ? card.jugador._id : card.jugador;
-          if (playerStatsMap[pid]) playerStatsMap[pid].redCards++;
-        });
-      }
-
-      // También contar asistencias de match.goles incluso si hay eventos (los eventos no tienen asistencias)
-      (match.goles || []).forEach((gol) => {
-        if (gol.asistente) {
-          const assistId = typeof gol.asistente === 'object' ? gol.asistente._id : gol.asistente;
-          if (playerStatsMap[assistId]) {
-            // Solo contar si no lo hemos contado ya en el bloque else
-            if (match.eventos && match.eventos.length > 0) {
-              playerStatsMap[assistId].assists++;
-            }
-          }
-        }
+      getMatchPlayerContributions(match).forEach((contribution, pid) => {
+        if (!playerStatsMap[pid]) return;
+        playerStatsMap[pid].goals += contribution.goals;
+        playerStatsMap[pid].assists += contribution.assists;
+        playerStatsMap[pid].yellowCards += contribution.yellowCards;
+        playerStatsMap[pid].redCards += contribution.redCards;
+        playerStatsMap[pid].doubleYellowCards += contribution.doubleYellowCards;
       });
     });
 
@@ -648,7 +576,6 @@ export default function Statistics({ navigation: navigationProp }) {
     };
   }, [
     filteredMatchSheets,
-    matchSheetsKey,
     players,
     injuries,
     trainingSessions,

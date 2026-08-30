@@ -378,6 +378,7 @@ const ProfileGeneralPage = ({
   team,
   fotoBase64,
   stats,
+  matchStatsBreakdown,
   anthropometryData,
   injuries,
   t,
@@ -521,6 +522,35 @@ const ProfileGeneralPage = ({
                   <Text style={s.statLabel}>{t('player.profile.redCardsAbbr', 'T. Rojas')}</Text>
                 </View>
               </View>
+              {matchStatsBreakdown?.length > 0 ? (
+                <View style={s.table} wrap={false}>
+                  <View style={s.tableHeader}>
+                    <Text style={[s.th, { flex: 2 }]}>{t('matchSheet.competition', 'Competición')}</Text>
+                    {['PJ', 'TIT', 'SUP', 'MIN', 'G', 'A', 'TA', 'TR'].map((label) => (
+                      <Text key={label} style={[s.th, { fontSize: 7, textAlign: 'center' }]}>{label}</Text>
+                    ))}
+                  </View>
+                  {matchStatsBreakdown.map((item) => (
+                    <View key={item.key} style={s.tableRow}>
+                      <Text style={[s.td, { flex: 2, fontFamily: item.key === 'total' ? 'Helvetica-Bold' : 'Helvetica' }]}>
+                        {item.label}
+                      </Text>
+                      {[
+                        item.stats.matches.total,
+                        item.stats.matches.starter,
+                        item.stats.matches.substitute,
+                        item.stats.matches.minutesPlayed,
+                        item.stats.goals.total,
+                        item.stats.goals.assists,
+                        item.stats.cards.yellow,
+                        item.stats.cards.red,
+                      ].map((value, index) => (
+                        <Text key={index} style={[s.td, { fontSize: 7, textAlign: 'center' }]}>{value || 0}</Text>
+                      ))}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
             </PdfSection>
           </View>
         )}
@@ -1072,6 +1102,7 @@ export const generateProfilePdf = async ({
   team,
   fotoBase64,
   stats,
+  matchStatsBreakdown,
   anthropometryData,
   injuries,
   t,
@@ -1084,6 +1115,7 @@ export const generateProfilePdf = async ({
         team={team}
         fotoBase64={fotoBase64}
         stats={stats}
+        matchStatsBreakdown={matchStatsBreakdown}
         anthropometryData={anthropometryData}
         injuries={injuries}
         t={t}

@@ -24,8 +24,6 @@ import EvaluationFormModal from './EvaluationFormModal';
 import EvaluationDetailModal from './EvaluationDetailModal';
 import {
   deleteEvaluation,
-  loadEvaluationsState,
-  rehydrateEvaluations,
   syncEvaluations,
 } from '@/store/slices/evaluations/evaluationsSlice';
 import { fetchJugadoresEquipo } from '@/store/slices/player/playerThunks';
@@ -543,8 +541,12 @@ export default function Evaluations() {
       })
     );
     if (!ok) return;
-    dispatch(deleteEvaluation(evaluation._id));
-    toast.success(t('evaluations.deleteSuccess', 'Evaluación eliminada correctamente'));
+    try {
+      await dispatch(deleteEvaluation(evaluation._id)).unwrap();
+      toast.success(t('evaluations.deleteSuccess', 'Evaluación eliminada correctamente'));
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const evaluations = useSelector((s) => s.evaluations.evaluations || []);
@@ -552,8 +554,7 @@ export default function Evaluations() {
   const equipos = useSelector((s) => s.team.teams || []);
 
   useEffect(() => {
-    dispatch(rehydrateEvaluations(loadEvaluationsState(user)));
-    dispatch(syncEvaluations()).catch((error) => {
+    dispatch(syncEvaluations()).unwrap().catch((error) => {
       console.warn('No se pudieron sincronizar las evaluaciones:', error);
     });
   }, [dispatch, user?._id, user?.id, user?.correo, user?.email, user?.plan, user?.accessMode]);

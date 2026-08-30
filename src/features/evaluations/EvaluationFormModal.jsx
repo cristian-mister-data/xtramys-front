@@ -405,7 +405,7 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
 
   const { canMutate, isDemo } = useSupervision();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!canMutate && isDemo) {
       toast.error(t('subscription.availableWithSubscription', 'Disponible solo con suscripción'));
       return;
@@ -439,15 +439,18 @@ export default function EvaluationFormModal({ open, onClose, evaluationToEdit = 
       generalNotes: generalNotes.trim(),
     };
 
-    if (evaluationToEdit) {
-      dispatch(updateEvaluation({ id: evaluationToEdit._id, data: payload }));
-      toast.success(t('evaluations.form.updateSuccess', 'Evaluación actualizada correctamente'));
-    } else {
-      dispatch(addEvaluation(payload));
-      toast.success(t('evaluations.form.saveSuccess', 'Evaluación guardada correctamente'));
+    try {
+      if (evaluationToEdit) {
+        await dispatch(updateEvaluation({ id: evaluationToEdit._id, data: payload })).unwrap();
+        toast.success(t('evaluations.form.updateSuccess', 'Evaluación actualizada correctamente'));
+      } else {
+        await dispatch(addEvaluation(payload)).unwrap();
+        toast.success(t('evaluations.form.saveSuccess', 'Evaluación guardada correctamente'));
+      }
+      onClose?.();
+    } catch (error) {
+      setError(error.message);
     }
-
-    onClose?.();
   };
 
   const getRatingColor = (val) => {

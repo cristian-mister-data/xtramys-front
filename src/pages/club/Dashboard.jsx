@@ -14,6 +14,7 @@ import { RESET_WORKSPACE } from '@/store/actionTypes';
 import Modal from '@/ui/Modal';
 import { isNative } from '@/platform/capacitor';
 import TeamPermissionManager from './TeamPermissionManager';
+import { getTeamCategoryLabel } from '@/components/season/seasonHelpers';
 
 const isDuplicateSeasonError = (error) => {
   const message = `${error?.message || ''} ${error?.response?.data?.mensaje || ''} ${error?.response?.data?.message || ''}`.toLowerCase();
@@ -1348,7 +1349,8 @@ export default function ClubDashboard() {
   const handleInvite = async (e) => {
     e.preventDefault();
     if (!inviteEmail) return;
-    if (!inviteTeamIds.length) {
+    const requiresTeamAssignment = data?.club?.permissionsModel === 'teams';
+    if (requiresTeamAssignment && !inviteTeamIds.length) {
       toast.error(t('errors.INVITE_TEAM_REQUIRED'));
       return;
     }
@@ -1415,8 +1417,10 @@ export default function ClubDashboard() {
   }
 
   const { club, members, stats } = data;
+  const assignedInviteTeamIds = new Set((data.accesses || []).map((access) => String(access.teamId)));
   const inviteTeams = (data.teams || []).filter((team) => (
     team.licenseActive !== false && !team.isHistoricalSnapshot && !team.isClubTemplate
+    && (club.permissionsModel === 'teams' || !assignedInviteTeamIds.has(String(team._id)))
   ));
   const initials = (name) => {
     if (!name) return 'U';
@@ -1551,9 +1555,7 @@ export default function ClubDashboard() {
         </StatCard>
       </StatsGrid>
 
-      {club.permissionsModel === 'teams' ? (
-        <TeamPermissionManager data={data} onRefresh={fetchClubData} />
-      ) : null}
+      <TeamPermissionManager data={data} onRefresh={fetchClubData} />
 
       {/* Recursos Compartidos del Club */}
       <h2 style={{ margin: '0 0 16px', fontSize: 17, fontWeight: 700 }}>
@@ -2197,27 +2199,50 @@ export default function ClubDashboard() {
               />
             </Field>
             <Field>
-              <Label>{t('clubDashboard.inviteTeamsLabel', 'Equipos asignados')}</Label>
+              <Label>
+                {t('clubDashboard.inviteTeamsLabel', 'Equipos asignados')}
+                {club.permissionsModel === 'legacy' ? ' (opcional)' : ''}
+              </Label>
               <InfoNotice style={{ marginBottom: 10 }}>
-                {t('errors.INVITE_TEAM_REQUIRED')}
+                {club.permissionsModel === 'teams'
+                  ? t('errors.INVITE_TEAM_REQUIRED')
+                  : 'Selecciona un equipo que haya quedado libre o deja la opción vacía para crear uno nuevo automáticamente.'}
               </InfoNotice>
-              {inviteTeams.length ? inviteTeams.map((team) => (
-                <label key={team._id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 0', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={inviteTeamIds.includes(String(team._id))}
-                    onChange={(event) => setInviteTeamIds((current) => (
-                      event.target.checked
-                        ? [...new Set([...current, String(team._id)])]
-                        : current.filter((id) => id !== String(team._id))
-                    ))}
-                    disabled={inviting}
-                  />
-                  <span>{team.nombre}</span>
-                </label>
-              )) : (
-                <Muted>{t('clubDashboard.noInviteTeamsAvailable', 'No hay equipos activos disponibles para asignar.')}</Muted>
+              {inviteTeams.length ? inviteTeams.map((team) => {
+                const catLabel = getTeamCategoryLabel(team, t);
+                return (
+                  <label key={team._id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 0', cursor: 'pointer' }}>
+                    <input
+                      type={club.permissionsModel === 'legacy' ? 'radio' : 'checkbox'}
+                      name={club.permissionsModel === 'legacy' ? 'legacy-invite-team' : undefined}
+                      checked={inviteTeamIds.includes(String(team._id))}
+                      onChange={(event) => setInviteTeamIds((current) => (
+                        club.permissionsModel === 'legacy'
+                          ? (event.target.checked ? [String(team._id)] : [])
+                          : event.target.checked
+                            ? [...new Set([...current, String(team._id)])]
+                            : current.filter((id) => id !== String(team._id))
+                      ))}
+                      disabled={inviting}
+                    />
+                    <span>
+                      <strong>{team.nombre}</strong>
+                      {catLabel ? <span style={{ opacity: 0.75, marginLeft: 6, fontSize: 13 }}>({catLabel})</span> : null}
+                    </span>
+                  </label>
+                );
+              }) : (
+                <Muted>
+                  {club.permissionsModel === 'legacy'
+                    ? 'No hay equipos libres. Se creará uno nuevo al aceptar la invitación.'
+                    : t('clubDashboard.noInviteTeamsAvailable', 'No hay equipos activos disponibles para asignar.')}
+                </Muted>
               )}
+              {club.permissionsModel === 'legacy' && inviteTeamIds.length ? (
+                <Button type="button" $variant="secondary" onClick={() => setInviteTeamIds([])} disabled={inviting}>
+                  Crear un equipo nuevo
+                </Button>
+              ) : null}
             </Field>
             <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
               <Button
@@ -2230,7 +2255,7 @@ export default function ClubDashboard() {
               <Button
                 type="submit"
                 $variant="primary"
-                disabled={inviting || !inviteEmail || !inviteTeamIds.length || !inviteTeams.length}
+                disabled={inviting || !inviteEmail || (club.permissionsModel === 'teams' && (!inviteTeamIds.length || !inviteTeams.length))}
               >
                 {inviting ? t('message.loading', 'Enviando...') : t('club.inviteModal.send', 'Enviar invitación')}
               </Button>
@@ -2515,6 +2540,9 @@ export default function ClubDashboard() {
                             <div>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
                                 {team.nombre}
+                                {getTeamCategoryLabel(team, t) && (
+                                  <span style={{ opacity: 0.75, marginLeft: 6, fontSize: 12 }}>({getTeamCategoryLabel(team, t)})</span>
+                                )}
                                 {isChecked && (
                                   <span style={{ color: '#ef4444', fontSize: 11, fontWeight: 600, marginLeft: 8 }}>
                                     {t('clubDashboard.atExpirationLabel')}
@@ -2835,6 +2863,9 @@ export default function ClubDashboard() {
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontWeight: 600, fontSize: 13 }}>
                                 {team.nombre}
+                                {getTeamCategoryLabel(team, t) && (
+                                  <span style={{ opacity: 0.75, marginLeft: 6, fontSize: 12 }}>({getTeamCategoryLabel(team, t)})</span>
+                                )}
                                 {isChecked && (
                                   <span style={{ color: '#ef4444', fontSize: 11, fontWeight: 600, marginLeft: 8 }}>{t('clubDashboard.atExpirationLabel')}</span>
                                 )}
