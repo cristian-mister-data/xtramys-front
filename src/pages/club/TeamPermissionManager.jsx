@@ -299,8 +299,10 @@ export default function TeamPermissionManager({ data, onRefresh }) {
     }
   }, [seasonId, seasons]);
 
+  const getIdStr = (val) => String(val?._id || val || '');
+
   const accessFor = (teamId, userId) => accesses.find((access) =>
-    String(access.teamId) === String(teamId) && String(access.userId) === String(userId));
+    getIdStr(access.teamId) === getIdStr(teamId) && getIdStr(access.userId) === getIdStr(userId));
 
   const createTeam = async (event) => {
     event.preventDefault();
@@ -414,7 +416,7 @@ export default function TeamPermissionManager({ data, onRefresh }) {
             {members.map((member) => {
               const isOpen = openMemberId === String(member._id);
               const teamCount = accesses.filter((access) =>
-                String(access.userId) === String(member._id) && activeTeamIds.has(String(access.teamId))
+                getIdStr(access.userId) === getIdStr(member._id) && activeTeamIds.has(getIdStr(access.teamId))
               ).length;
               const displayName = `${member.nombre || ''} ${member.apellido || ''}`.trim() || member.correo;
               const initials = displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
@@ -477,7 +479,7 @@ export default function TeamPermissionManager({ data, onRefresh }) {
             {teams.map((team) => {
               const isOpen = openTeamId === String(team._id);
               const isEditing = editingTeamId === String(team._id);
-              const assignedUsers = accesses.filter((access) => String(access.teamId) === String(team._id)).length;
+              const assignedUsers = accesses.filter((access) => getIdStr(access.teamId) === getIdStr(team._id)).length;
               const catLabel = getTeamCategoryLabel(team, t);
               return (
                 <TeamCard key={team._id} $open={isOpen}>
