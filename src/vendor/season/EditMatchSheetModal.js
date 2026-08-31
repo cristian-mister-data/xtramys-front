@@ -2165,7 +2165,11 @@ export default function EditMatchSheetModal({
   const filterNumeric = (text) => text.replace(/[^0-9]/g, '');
 
   const getSetPieceSlots = (setPiece) => {
-    const elements = Array.isArray(setPiece?.elementosCampo) ? setPiece.elementosCampo : [];
+    // Las ABP nuevas guardan las fichas en customElements; usar la misma
+    // fuente que SetPiecePreview para que las asignaciones coincidan al hacer zoom.
+    const elements = Array.isArray(setPiece?.customElements) && setPiece.customElements.length
+      ? setPiece.customElements
+      : (Array.isArray(setPiece?.elementosCampo) ? setPiece.elementosCampo : []);
     return elements
       .filter((element) => element?.type === 'player')
       .map((element, index) => ({
@@ -4568,7 +4572,9 @@ export default function EditMatchSheetModal({
           >
             <Ionicons name="close" size={30} color="#fff" />
           </TouchableOpacity>
-          {getContentImage(fullscreenSetPiece) ? (
+          {usesImportedImage(fullscreenSetPiece) || !(
+            fullscreenSetPiece?.customElements?.length || fullscreenSetPiece?.elementosCampo?.length
+          ) ? (
             <ImageZoom
               cropWidth={windowWidth}
               cropHeight={windowHeight}

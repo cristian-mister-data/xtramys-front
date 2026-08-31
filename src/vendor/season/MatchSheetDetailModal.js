@@ -584,6 +584,7 @@ export default function MatchSheetDetailModal({
         ...setPiece,
         kind: 'setPiece',
         imagen: normalizeImageSource(usesImportedImage(setPiece) ? getContentImage(setPiece) : (setPiece.customImage || getContentImage(setPiece))),
+        pdfPlayerOverlays: usesImportedImage(setPiece) ? [] : buildSetPiecePlayerOverlays(setPiece),
       })),
       t,
       `${matchSheet.rival || 'Ficha'} ABP`,
@@ -1458,7 +1459,9 @@ export default function MatchSheetDetailModal({
           >
             <Ionicons name="close" size={30} color="#fff" />
           </TouchableOpacity>
-          {getContentImage(fullscreenSetPiece) || fullscreenSetPiece?.customImage ? (
+          {usesImportedImage(fullscreenSetPiece) || !(
+            fullscreenSetPiece?.customElements?.length || fullscreenSetPiece?.elementosCampo?.length
+          ) ? (
             <ImageZoom
               cropWidth={screenWidth}
               cropHeight={screenHeight}

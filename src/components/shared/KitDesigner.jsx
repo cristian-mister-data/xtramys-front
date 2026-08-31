@@ -406,7 +406,14 @@ function ColorInputRow({ label, value, onChange }) {
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          style={{ display: 'none' }}
+          // iOS no abre de forma fiable los inputs de color con display:none.
+          style={{
+            position: 'absolute',
+            width: 28,
+            height: 28,
+            opacity: 0,
+            cursor: 'pointer',
+          }}
         />
       </ColorPickerContainer>
     </ColorRow>

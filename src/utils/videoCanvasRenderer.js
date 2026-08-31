@@ -498,7 +498,7 @@ function paintPlayerAt(ctx, p, elem, scale, options = {}) {
 
   if (elem.playerData && (elem.playerData.nombre || elem.playerData.name)) {
     const name = elem.playerData.nombre || elem.playerData.name;
-    const fs = nameFontSize;
+    const fs = elem.pdfNameLabel ? 12 * scale / 2.2 : nameFontSize;
     ctx.font = `${fs}px ${FONT_STACK}`;
     const tw = ctx.measureText(name).width;
     const pad = 1;

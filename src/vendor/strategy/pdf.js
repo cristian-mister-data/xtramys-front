@@ -5,6 +5,12 @@ import {
   baseStyles, COLORS, SPACING, FONT_SIZE, PdfHeader, PdfFooter, renderPdf
 } from '@/utils/pdfDesign';
 import { getContentImage } from '@/utils/contentVisual';
+import { applySetPiecePlayerOverlays } from '@/utils/kits';
+import { loadVideoPlayerPhotos } from '@/utils/videoPlayerPhotos';
+import { renderFrameToCanvas } from '@/utils/videoCanvasRenderer';
+import { renderVideoFieldImage } from '@/utils/videoFieldImage';
+import { normalizeElementsForCanvas } from '@/vendor/tacticalBoard/field/primitives';
+import { decomposeFieldId, getAspectForView } from '@/vendor/tacticalBoard/fields';
 
 const s = StyleSheet.create({
   mainContainer: {
@@ -200,5 +206,47 @@ export async function generateStrategyPdf(strategy, folderName, imageBase64, t) 
 }
 
 export async function generateSetPiecesPdf(setPieces, t, fileName = 'ABP') {
-  await renderPdf(<SetPiecesDocument setPieces={setPieces} t={t} />, fileName.replace(/[/\?%*:|"<>]/g, '-'));
+  const renderedSetPieces = await Promise.all(setPieces.map(async (setPiece) => {
+    const overlays = Array.isArray(setPiece.pdfPlayerOverlays) ? setPiece.pdfPlayerOverlays : [];
+    const source = setPiece.customElements?.length ? setPiece.customElements : (setPiece.elementosCampo || []);
+    if (!overlays.length || !source.length || typeof document === 'undefined') return setPiece;
+
+    const fieldType = setPiece.customFieldType || setPiece.tipoCampo || 'full';
+    const { viewMode } = decomposeFieldId(fieldType);
+    const aspect = getAspectForView(viewMode);
+    const width = 1600;
+    const height = Math.round(width * aspect);
+    const merged = applySetPiecePlayerOverlays(source, overlays).map((element) => ({
+      ...element,
+      xRatio: element.xRatio ?? (Number(element.x) / 1280),
+      yRatio: element.yRatio ?? (Number(element.y) / (1280 * aspect)),
+      pdfNameLabel: element.type === 'player' && Boolean(element.playerData),
+    }));
+    const elements = normalizeElementsForCanvas(merged);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) return setPiece;
+
+    try {
+      const fieldImage = await renderVideoFieldImage(fieldType, width, height);
+      const loadedPhotos = await loadVideoPlayerPhotos([{ elements }]);
+      try {
+        renderFrameToCanvas(context, width, height, elements, setPiece.pizarraConfig?.connectors || [], fieldImage, {
+          playersWithNumber: setPiece.pizarraConfig?.playersWithNumber ?? true,
+          showPhotos: setPiece.pizarraConfig?.showPhotos === true,
+          playerPhotos: loadedPhotos.playerPhotos,
+          viewMode,
+        });
+        return { ...setPiece, imagen: canvas.toDataURL('image/png'), pdfPlayerOverlays: [] };
+      } finally {
+        loadedPhotos.release();
+      }
+    } catch (error) {
+      console.warn('[ABP PDF] No se pudo generar la imagen integrada:', error);
+      return setPiece;
+    }
+  }));
+  await renderPdf(<SetPiecesDocument setPieces={renderedSetPieces} t={t} />, fileName.replace(/[/\?%*:|"<>]/g, '-'));
 }

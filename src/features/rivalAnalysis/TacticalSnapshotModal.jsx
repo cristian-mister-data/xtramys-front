@@ -18,7 +18,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { useTheme } from 'styled-components';
-import { MdClose } from 'react-icons/md';
 import {
   UNSAFE_NavigationContext as NavigationContext,
   UNSAFE_LocationContext as LocationContext,
@@ -36,41 +35,6 @@ const Overlay = styled.div`
   display: flex;
   flex-direction: column;
   pointer-events: auto;
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  background: ${({ theme }) => theme.colors.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.text};
-  flex-shrink: 0;
-`;
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-`;
-
-const Close = styled.button`
-  background: transparent;
-  border: 0;
-  width: 36px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  cursor: pointer;
-  border-radius: ${({ theme }) => theme.radius.sm};
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.backgroundAlt};
-    color: ${({ theme }) => theme.colors.text};
-  }
 `;
 
 const Stage = styled.div`
@@ -99,7 +63,6 @@ export default function TacticalSnapshotModal({
   onSave,
   initialPlayers,
   initialFieldType = 'full',
-  title = 'Pizarra táctica',
 }) {
   const theme = useTheme();
   const onSaveRef = useRef(onSave);
@@ -196,19 +159,17 @@ export default function TacticalSnapshotModal({
 
   return createPortal(
     <Overlay theme={theme} data-theme-aware="true">
-      <Header theme={theme}>
-        <Title theme={theme}>{title}</Title>
-        <Close theme={theme} onClick={onClose} aria-label="Cerrar pizarra">
-          <MdClose size={22} />
-        </Close>
-      </Header>
       <Stage theme={theme}>
         <NavigationContext.Provider value={navigationContextValue}>
           <LocationContext.Provider value={locationContextValue}>
             <SafeAreaProvider style={fillStyle}>
               <GestureHandlerRootView style={fillStyle}>
                 {/* sandbox=false (default) muestra Guardar y Cancelar. */}
-                <Field onSave={handleFieldSave} onCancel={handleFieldCancel} />
+                <Field
+                  onSave={handleFieldSave}
+                  onCancel={handleFieldCancel}
+                  skipCancelConfirmation
+                />
               </GestureHandlerRootView>
             </SafeAreaProvider>
           </LocationContext.Provider>

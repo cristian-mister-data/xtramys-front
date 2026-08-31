@@ -148,9 +148,10 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
               imageHeight={fieldLayout.height}
               viewMode={field.viewMode}
             />
-            {pointElements.map((element) => {
-              const point = ratioToDisplay(element.xRatio, element.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
+            {pointElements.map((sourceElement) => {
+              const point = ratioToDisplay(sourceElement.xRatio, sourceElement.yRatio, field.viewMode, fieldLayout.width, fieldLayout.height);
               const scale = Math.min(fieldLayout.width, fieldLayout.height) / 500;
+              const element = { ...sourceElement, nameLabelScale: scale };
               const { size } = getPlayerRenderMetrics(element, scale);
               return (
                 <View
@@ -172,7 +173,10 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
                     element.rotation || 0,
                     element.number,
                     setPiece?.pizarraConfig?.playersWithNumber ?? true,
-                    element.displayLabel,
+                    // En la ficha previa el nombre va siempre en la etiqueta
+                    // inferior, igual que en la vista ampliada; no usar el
+                    // displayLabel de la ABP (se pinta como caja grande).
+                    undefined,
                     element.numberColor,
                     element.isGoalkeeper === true,
                     element.differentiateGoalkeeper !== false,

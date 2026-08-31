@@ -52,32 +52,41 @@ import {
   isBoardCloneOutsideForDelete,
 } from './geometry';
 
-export function renderPlayerNameLabel(icon, isMobile = false) {
+export function renderPlayerNameLabel(icon, isMobile = false, compact = false) {
   if (!icon.playerData) return null;
+  // fontSize: isMobile ? 8 : 10 (valor histórico de la vista compacta)
+  const boardScale = Number.isFinite(icon.nameLabelScale) ? icon.nameLabelScale / 2.2 : 1;
+  const labelFontSize = (compact || icon.compactNameLabel ? 8 : (isMobile ? 12 : 10)) * boardScale;
+  const name = getPlayerFullName(icon.playerData) || icon.playerData.name || '';
+  // El ancho fijo hacía que las previsualizaciones pequeñas partiesen el
+  // nombre en dos líneas; la vista ampliada lo muestra en una sola pastilla.
+  const labelWidth = Math.max(40, Math.min(150, name.length * (isMobile ? 12 : 10) * 0.56 + 8)) * boardScale;
   return (
     <Text
       selectable={false}
       style={{
         position: 'absolute',
-        bottom: -22,
-        left: -20,
-        right: -20,
+        bottom: -22 * boardScale,
+        left: '50%',
+        marginLeft: -(labelWidth / 2),
+        width: labelWidth,
         textAlign: 'center',
-        fontSize: isMobile ? 8 : 10,
+        fontSize: labelFontSize,
         color: icon.textColor || '#000',
         backgroundColor:
           icon.textBackgroundColor === 'transparent'
             ? 'transparent'
             : icon.textBackgroundColor || '#fff',
-        paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2,
-        paddingVertical: icon.textBackgroundColor === 'transparent' ? 0 : 1,
-        borderRadius: 4,
-        borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : 1,
+        paddingHorizontal: icon.textBackgroundColor === 'transparent' ? 0 : 2 * boardScale,
+        paddingVertical: icon.textBackgroundColor === 'transparent' ? 0 : boardScale,
+        borderRadius: 4 * boardScale,
+        borderWidth: icon.textBackgroundColor === 'transparent' ? 0 : boardScale,
         borderColor: '#ccc',
+        transform: (compact || icon.compactNameLabel) ? [{ scale: 0.75 }] : undefined,
         ...noTextSelectionStyle,
       }}
     >
-      {getPlayerFullName(icon.playerData) || icon.playerData.name}
+      {name}
     </Text>
   );
 }

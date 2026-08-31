@@ -92,6 +92,9 @@ export function applySetPieceKitsToElements(elements = [], kitContext, showPhoto
     return {
       ...element,
       ...style,
+      // La ABP guarda la forma de cada ficha; el kit del partido solo cambia
+      // colores y detalles visuales, nunca convierte un círculo en camiseta.
+      shape: element.shape || style.shape,
       kitRole: role,
       isGoalkeeper: role.endsWith('Goalkeeper'),
       isNeutral: false,
@@ -103,11 +106,8 @@ export function applySetPieceKitsToElements(elements = [], kitContext, showPhoto
 }
 
 export function applySetPieceKitsToPalette(elements = [], kitContext) {
-  return applySetPieceKitsToElements(elements, kitContext, false).map((element) =>
-    element?.type === 'player' && getSetPieceIconRole(element)
-      ? { ...element, shape: 'jersey' }
-      : element,
-  );
+  // Mantener la forma configurada (círculo o camiseta) también en la paleta.
+  return applySetPieceKitsToElements(elements, kitContext, false);
 }
 
 export function applySetPiecePlayerOverlays(elements = [], overlays = []) {

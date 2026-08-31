@@ -271,4 +271,10 @@ const publicShareSource = readFileSync(new URL('../src/pages/public/SetPieceShar
 assert.match(publicShareSource, /<SetPiecePreview/);
 assert.match(publicShareSource, /kitContext=\{getKitContext\(setPiece\)\}/);
 
+const setPiecePdfSource = readFileSync(new URL('../src/vendor/strategy/pdf.js', import.meta.url), 'utf8');
+assert.match(setPiecePdfSource, /applySetPiecePlayerOverlays/);
+assert.match(setPiecePdfSource, /renderFrameToCanvas/);
+assert.match(setPiecePdfSource, /canvas\.toDataURL\('image\/png'\)/);
+assert.doesNotMatch(setPiecePdfSource, /SetPieceDiagram/);
+
 console.log('set-piece kit check ok');

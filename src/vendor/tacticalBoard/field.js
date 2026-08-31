@@ -324,6 +324,7 @@ export default function Field(props = {}) {
     isGlobalStrategy = false, // Si la estrategia es global (admin)
     matchSheetPlayers = null,
     embeddedBoard = false,
+    skipCancelConfirmation = false,
     isMatchSheetVideo = false,
     onSave: onSaveProp = null,
     onCancel: onCancelProp = null,
@@ -3639,6 +3640,12 @@ export default function Field(props = {}) {
     setPendingLineAction(null);
     setPendingPlacementAction(null);
 
+    // En ABP de fichas de partido la equipación del contexto manda sobre la
+    // preferencia global de la pizarra (incluida la forma círculo/camiseta).
+    const setPiecePlayerShape = setPieceKitContext?.own
+      ? kitToBoardStyle(setPieceKitContext.own, setPieceKitContext.ownGoalkeeper).shape
+      : teamPlayerStyle.shape;
+
     finishPlacementAction(
       {
         kind: 'team-player',
@@ -3658,7 +3665,7 @@ export default function Field(props = {}) {
           numberColor: teamPlayerStyle.numberColor || '#ffffff',
           textColor: teamPlayerStyle.textColor || '#000000',
           textBackgroundColor: teamPlayerStyle.textBackgroundColor || '#ffffff',
-          shape: teamPlayerStyle.shape || 'circle',
+          shape: setPiecePlayerShape || 'circle',
           hasStripes: teamPlayerStyle.hasStripes === true,
           hasBib: teamPlayerStyle.hasBib === true,
           bibColor: teamPlayerStyle.bibColor || NEUTRAL_PLAYER_COLORS.bib,
@@ -4236,6 +4243,12 @@ export default function Field(props = {}) {
   const handleFloatingSave = useCallback((...args) => handleGuardarGraficoRef.current(...args), []);
 
   const handleCancelar = useCallback(async () => {
+    if (skipCancelConfirmation) {
+      cancelCallback?.();
+      clearBoardState();
+      await unlockOrientationAndGoBack();
+      return;
+    }
     // Verificar si hay cambios sin guardar
     const hasUnsavedChanges = actualClonesRef.current.length > 0 || videoKeyframes.length > 0;
 
@@ -4276,6 +4289,7 @@ export default function Field(props = {}) {
     clearBoardState,
     unlockOrientationAndGoBack,
     sandbox,
+    skipCancelConfirmation,
     t,
   ]);
   // Efecto para actualizar la imagen del campo cuando cambia selectedField (SVG → base64 via ViewShot)
@@ -5062,6 +5076,7 @@ export default function Field(props = {}) {
   const elementDragState = useRef(null);
   // Ref para detectar taps (toque corto sin movimiento) en el campo
   const fieldTouchStartRef = useRef(null);
+  const placementGestureHandledRef = useRef(false);
   const elementDragFrameRef = useRef(null);
   const pendingElementDragUpdateRef = useRef(null);
 
@@ -7217,6 +7232,8 @@ export default function Field(props = {}) {
                           timestamp: Date.now(),
                         };
                         if (pendingPlacementAction) {
+                          if (placementGestureHandledRef.current) return;
+                          placementGestureHandledRef.current = true;
                           handlePendingPlacementOnField(e);
                           fieldTouchStartRef.current = null;
                           return;
@@ -7264,6 +7281,7 @@ export default function Field(props = {}) {
                         }
                       }}
                       onResponderRelease={(e) => {
+                        placementGestureHandledRef.current = false;
                         if (pendingPlacementAction) {
                           fieldTouchStartRef.current = null;
                           return;
@@ -7316,6 +7334,7 @@ export default function Field(props = {}) {
                         fieldTouchStartRef.current = null;
                       }}
                       onResponderTerminate={() => {
+                        placementGestureHandledRef.current = false;
                         if (eraserMode) handleEraserEnd();
                         releaseElementDragLock();
                         elementDragState.current = null;
