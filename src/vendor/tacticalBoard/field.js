@@ -3153,9 +3153,40 @@ export default function Field(props = {}) {
     [clearMultiSelect, exitDrawingMode],
   );
 
+  // iOS/WKWebView puede convertir un mismo toque en dos ciclos responder
+  // consecutivos (touch + click sintético). La creación se deduplica aquí,
+  // en el único punto común a jugadores, balones y materiales.
+  const lastPlacementCommitRef = useRef(null);
+
   const finishPlacementAction = useCallback(
     (placementAction, ratioPoint) => {
       if (!placementAction) return;
+      const now = Date.now();
+      const placementKey = [
+        placementAction.kind,
+        placementAction.paletteIndex,
+        placementAction.paletteIconId,
+        placementAction.materialType,
+        placementAction.playerId,
+        placementAction.staffRoleId,
+        placementAction.clone?.idBase,
+        placementAction.clone?.type,
+      ].join(':');
+      const previous = lastPlacementCommitRef.current;
+      if (
+        previous &&
+        previous.key === placementKey &&
+        now - previous.timestamp < 650 &&
+        Math.hypot(previous.x - ratioPoint.x, previous.y - ratioPoint.y) < 0.012
+      ) {
+        return;
+      }
+      lastPlacementCommitRef.current = {
+        key: placementKey,
+        x: ratioPoint.x,
+        y: ratioPoint.y,
+        timestamp: now,
+      };
       const shouldAutoNumber =
         placementAction.kind === 'palette-player' &&
         placementAction.paletteIconId &&

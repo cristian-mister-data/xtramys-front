@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useId, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { MdColorize } from 'react-icons/md';
@@ -248,13 +248,24 @@ const ColorPickerContainer = styled.div`
   flex: 1 1 auto;
 `;
 
-const ColorPreviewBox = styled.div`
+const ColorPreviewBox = styled.input.attrs({ type: 'color' })`
   width: 28px;
   height: 28px;
+  padding: 0;
   border-radius: 6px;
   border: 1.5px solid rgba(0,0,0,0.15);
+  background: transparent;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  &::-webkit-color-swatch {
+    border: 0;
+    border-radius: 5px;
+  }
 `;
 
 const ColorTextInput = styled.input`
@@ -383,10 +394,7 @@ export function KitPreview({ kit = DEFAULT_KITS.first, size = 68 }) {
 
 // Color picker row helper
 function ColorInputRow({ label, value, onChange }) {
-  const inputRef = useRef(null);
-  const handleOpenPicker = () => {
-    inputRef.current?.click();
-  };
+  const inputId = useId();
   const handleTextChange = (e) => {
     let val = e.target.value;
     if (val.length > 7) val = val.substring(0, 7);
@@ -396,25 +404,11 @@ function ColorInputRow({ label, value, onChange }) {
     <ColorRow>
       <ColorLabel>{label}</ColorLabel>
       <ColorPickerContainer>
-        <ColorPreviewBox style={{ backgroundColor: value }} onClick={handleOpenPicker} />
+        <ColorPreviewBox id={inputId} value={value} onChange={(e) => onChange(e.target.value)} />
         <ColorTextInput type="text" value={value} onChange={handleTextChange} placeholder="#FFFFFF" maxLength={7} />
-        <ActionIconButton type="button" onClick={handleOpenPicker}>
+        <ActionIconButton as="label" htmlFor={inputId}>
           <MdColorize size={14} />
         </ActionIconButton>
-        <input
-          ref={inputRef}
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          // iOS no abre de forma fiable los inputs de color con display:none.
-          style={{
-            position: 'absolute',
-            width: 28,
-            height: 28,
-            opacity: 0,
-            cursor: 'pointer',
-          }}
-        />
       </ColorPickerContainer>
     </ColorRow>
   );

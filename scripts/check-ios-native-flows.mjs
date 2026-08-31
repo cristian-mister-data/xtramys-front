@@ -64,11 +64,19 @@ assert.match(plist, /LSSupportsOpeningDocumentsInPlace[\s\S]*?<true\/>/);
 assert.match(plist, /UIFileSharingEnabled[\s\S]*?<true\/>/);
 
 const snapshot = read('src/features/rivalAnalysis/TacticalSnapshotModal.jsx');
-assert.match(snapshot, /<Field onSave=\{handleFieldSave\} onCancel=\{handleFieldCancel\}/);
+assert.match(snapshot, /<Field[\s\S]*?onSave=\{handleFieldSave\}[\s\S]*?onCancel=\{handleFieldCancel\}/);
 assert.doesNotMatch(snapshot, /global\.fieldCallbacks\s*=/);
 
 const field = read('src/vendor/tacticalBoard/field.js');
 assert.match(field, /if \(!isNative\) return undefined;[\s\S]*?ScreenOrientation\.lock/);
+assert.match(field, /lastPlacementCommitRef/);
+assert.match(field, /now - previous\.timestamp < 650/);
+assert.match(field, /Math\.hypot\(previous\.x - ratioPoint\.x, previous\.y - ratioPoint\.y\) < 0\.012/);
+
+const kitDesigner = read('src/components/shared/KitDesigner.jsx');
+assert.match(kitDesigner, /styled\.input\.attrs\(\{ type: 'color' \}\)/);
+assert.match(kitDesigner, /htmlFor=\{inputId\}/);
+assert.doesNotMatch(kitDesigner, /inputRef\.current\?\.click/);
 
 const nativeFrame = read('src/pages/_RNWebPage.jsx');
 assert.match(nativeFrame, /html\[data-native='true'\][\s\S]*?width: calc\(100% \+ 48px\)/);
