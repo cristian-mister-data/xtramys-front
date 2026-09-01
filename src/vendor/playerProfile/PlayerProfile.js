@@ -42,6 +42,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEME } from '@/vendor/shared/ProfessionalHeader';
 import { useTheme } from 'styled-components';
 import { getPlayerMatchStats, idOf } from '@/utils/matchPlayerStats';
+import { didPlayerAttendTraining } from '@/utils/trainingAttendance';
 
 // Detectar si es móvil
 const isMobileDevice = () => {
@@ -285,13 +286,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
     const missedSessions = [];
 
     pastTrainingSessions.forEach((session) => {
-      const jugadoresIds = (session.jugadores || []).map((j) =>
-        typeof j === 'object' ? j._id : j,
-      );
-      const jugadoresExtrasIds = (session.jugadoresExtras || []).map((j) =>
-        typeof j === 'object' ? j._id : j,
-      );
-      const wasPresent = jugadoresIds.includes(playerId) || jugadoresExtrasIds.includes(playerId);
+      const wasPresent = didPlayerAttendTraining(session, playerId);
 
       if (wasPresent) {
         attendedSessions.push(session);
@@ -310,13 +305,7 @@ const PlayerProfile = ({ visible, player, team, onClose }) => {
 
     // Recorrer sesiones ordenadas cronológicamente
     pastTrainingSessions.forEach((session) => {
-      const jugadoresIds = (session.jugadores || []).map((j) =>
-        typeof j === 'object' ? j._id : j,
-      );
-      const jugadoresExtrasIds = (session.jugadoresExtras || []).map((j) =>
-        typeof j === 'object' ? j._id : j,
-      );
-      const wasPresent = jugadoresIds.includes(playerId) || jugadoresExtrasIds.includes(playerId);
+      const wasPresent = didPlayerAttendTraining(session, playerId);
 
       if (wasPresent) {
         tempStreak++;

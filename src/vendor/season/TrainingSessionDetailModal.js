@@ -69,6 +69,7 @@ export default function TrainingSessionDetailModal({
   onDelete,
   onRepeat,
   onWellnessUpdate, // Callback para cuando se actualice el wellness
+  onAttendanceUpdate,
   onViewPdf,
   onUploadPdf,
   canMutate = true,
@@ -113,6 +114,9 @@ export default function TrainingSessionDetailModal({
   const [showPreWellnessDetail, setShowPreWellnessDetail] = useState(false);
   const [preWellnessStats, setPreWellnessStats] = useState(null);
   const [loadingPreWellness, setLoadingPreWellness] = useState(false);
+  const [attendanceEditing, setAttendanceEditing] = useState(false);
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [absentPlayerIds, setAbsentPlayerIds] = useState(new Set());
   
   // Video player para el modal
   const videoPlayer = useVideoPlayer(videoUrl, player => {
@@ -251,6 +255,49 @@ export default function TrainingSessionDetailModal({
       playerIds.has(getEntityId(p))
     );
   }, [session?.jugadores, players]);
+
+  const attendancePlayers = useMemo(
+    () => [...sessionPlayers, ...sessionExtraPlayers],
+    [sessionPlayers, sessionExtraPlayers],
+  );
+  const presentPlayers = useMemo(
+    () => attendancePlayers.filter((player) => !absentPlayerIds.has(getEntityId(player))),
+    [attendancePlayers, absentPlayerIds],
+  );
+  const absentPlayers = useMemo(
+    () => attendancePlayers.filter((player) => absentPlayerIds.has(getEntityId(player))),
+    [attendancePlayers, absentPlayerIds],
+  );
+
+  useEffect(() => {
+    const rosterIds = new Set(attendancePlayers.map(getEntityId));
+    setAbsentPlayerIds(new Set(
+      (session?.jugadoresAusentes || []).map(getEntityId).filter((id) => rosterIds.has(id)),
+    ));
+    setAttendanceEditing(false);
+  }, [visible, session?._id, session?.jugadoresAusentes, attendancePlayers]);
+
+  const toggleAttendance = (playerId) => {
+    setAbsentPlayerIds((current) => {
+      const next = new Set(current);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      return next;
+    });
+  };
+
+  const saveAttendance = async () => {
+    if (!onAttendanceUpdate || attendanceSaving) return;
+    try {
+      setAttendanceSaving(true);
+      await onAttendanceUpdate(session, [...absentPlayerIds]);
+      setAttendanceEditing(false);
+    } catch {
+      Alert.alert(t('message.error'), t('session.attendanceSaveError'));
+    } finally {
+      setAttendanceSaving(false);
+    }
+  };
 
   // Early return DESPUÉS de todos los hooks
   if (!session) return null;
@@ -590,6 +637,149 @@ export default function TrainingSessionDetailModal({
                 </View>
               )}
             </View>
+
+            {attendancePlayers.length > 0 && (
+              <View style={styles.detailSection}>
+                <View style={styles.attendanceHeader}>
+                  <View style={styles.attendanceTitleRow}>
+                    <Ionicons name="checkbox-outline" size={20} color={theme.colors.primary} />
+                    <Text style={styles.attendanceTitle}>{t('session.rollCall')}</Text>
+                  </View>
+                  <View style={styles.attendanceCountBadge}>
+                    <Text style={styles.attendanceCountText}>
+                      {presentPlayers.length}/{attendancePlayers.length}
+                    </Text>
+                  </View>
+                </View>
+
+                {!attendanceEditing ? (
+                  <>
+                    <Text style={styles.attendanceHint}>
+                      {session.asistenciaRegistrada
+                        ? t('session.attendanceRecorded', { count: absentPlayerIds.size })
+                        : t('session.attendanceDefault')}
+                    </Text>
+                    <View style={styles.attendanceSummaryGrid}>
+                      <View
+                        style={[styles.attendanceSummaryCard, styles.attendancePresentCard]}
+                        accessible
+                        accessibilityLabel={`${t('session.presentPlayers')}: ${presentPlayers.map(getPlayerFullName).join(', ') || t('session.none')}`}
+                      >
+                        <View style={styles.attendanceSummaryHeader}>
+                          <Ionicons name="checkmark-circle" size={19} color={theme.colors.success} />
+                          <Text style={[styles.attendanceSummaryTitle, { color: theme.colors.success }]}>
+                            {t('session.presentPlayers')} ({presentPlayers.length})
+                          </Text>
+                        </View>
+                        {presentPlayers.length > 0 ? presentPlayers.map((player) => (
+                          <View key={getEntityId(player)} style={styles.attendanceNameRow}>
+                            <View style={[styles.attendanceDot, { backgroundColor: theme.colors.success }]} />
+                            <Text style={styles.attendanceSummaryName}>{getPlayerFullName(player)}</Text>
+                          </View>
+                        )) : <Text style={styles.attendanceEmptyText}>{t('session.noPresentPlayers')}</Text>}
+                      </View>
+
+                      <View
+                        style={[styles.attendanceSummaryCard, styles.attendanceAbsentCard]}
+                        accessible
+                        accessibilityLabel={`${t('session.absentPlayers')}: ${absentPlayers.map(getPlayerFullName).join(', ') || t('session.none')}`}
+                      >
+                        <View style={styles.attendanceSummaryHeader}>
+                          <Ionicons name="close-circle" size={19} color={theme.colors.error} />
+                          <Text style={[styles.attendanceSummaryTitle, { color: theme.colors.error }]}>
+                            {t('session.absentPlayers')} ({absentPlayers.length})
+                          </Text>
+                        </View>
+                        {absentPlayers.length > 0 ? absentPlayers.map((player) => (
+                          <View key={getEntityId(player)} style={styles.attendanceNameRow}>
+                            <View style={[styles.attendanceDot, { backgroundColor: theme.colors.error }]} />
+                            <Text style={styles.attendanceSummaryName}>{getPlayerFullName(player)}</Text>
+                          </View>
+                        )) : <Text style={styles.attendanceEmptyText}>{t('session.noAbsentPlayers')}</Text>}
+                      </View>
+                    </View>
+                    {canMutate && onAttendanceUpdate && (
+                      <TouchableOpacity
+                        style={styles.attendancePrimaryButton}
+                        onPress={() => setAttendanceEditing(true)}
+                        accessibilityRole="button"
+                        accessibilityLabel={session.asistenciaRegistrada ? t('session.editRollCall') : t('session.takeRollCall')}
+                      >
+                        <Ionicons name="checkmark-done" size={18} color={theme.colors.onPrimary} />
+                        <Text style={styles.attendancePrimaryButtonText}>
+                          {session.asistenciaRegistrada ? t('session.editRollCall') : t('session.takeRollCall')}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.attendanceActionsRow}>
+                      <TouchableOpacity
+                        onPress={() => setAbsentPlayerIds(new Set())}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('session.markAllPresent')}
+                      >
+                        <Text style={styles.attendanceQuickAction}>{t('session.markAllPresent')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {attendancePlayers.map((player) => {
+                      const playerId = getEntityId(player);
+                      const present = !absentPlayerIds.has(playerId);
+                      return (
+                        <TouchableOpacity
+                          key={playerId}
+                          style={[styles.attendancePlayerRow, present && styles.attendancePlayerRowPresent]}
+                          onPress={() => toggleAttendance(playerId)}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: present }}
+                          accessibilityLabel={`${getPlayerFullName(player)}: ${present ? t('session.present') : t('session.absent')}`}
+                        >
+                          <Ionicons
+                            name={present ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={24}
+                            color={present ? theme.colors.success : theme.colors.textMuted}
+                          />
+                          <Text style={styles.attendancePlayerName}>{getPlayerFullName(player)}</Text>
+                          <Text style={[styles.attendanceState, present && styles.attendanceStatePresent]}>
+                            {present ? t('session.present') : t('session.absent')}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                    <View style={styles.attendanceFooter}>
+                      <TouchableOpacity
+                        style={styles.attendanceCancelButton}
+                        onPress={() => {
+                          const rosterIds = new Set(attendancePlayers.map(getEntityId));
+                          setAbsentPlayerIds(new Set(
+                            (session.jugadoresAusentes || []).map(getEntityId).filter((id) => rosterIds.has(id)),
+                          ));
+                          setAttendanceEditing(false);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('message.cancel')}
+                      >
+                        <Text style={styles.attendanceCancelText}>{t('message.cancel')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.attendancePrimaryButton}
+                        onPress={saveAttendance}
+                        disabled={attendanceSaving}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('session.saveRollCall')}
+                        accessibilityState={{ disabled: attendanceSaving }}
+                      >
+                        {attendanceSaving
+                          ? <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                          : <Ionicons name="save-outline" size={18} color={theme.colors.onPrimary} />}
+                        <Text style={styles.attendancePrimaryButtonText}>{t('session.saveRollCall')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
 
             {/* Sección de Pre-Wellness */}
             <View style={styles.detailSection}>
@@ -1420,6 +1610,163 @@ const makeStyles = (theme) => StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textSecondary,
     lineHeight: 20,
+  },
+  attendanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  attendanceTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  attendanceTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.colors.text,
+  },
+  attendanceCountBadge: {
+    backgroundColor: theme.colors.primarySoft,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  attendanceCountText: {
+    color: theme.colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  attendanceHint: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  attendanceSummaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 14,
+  },
+  attendanceSummaryCard: {
+    flex: 1,
+    minWidth: 210,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  attendancePresentCard: {
+    backgroundColor: theme.colors.successSoft,
+    borderColor: theme.colors.success,
+  },
+  attendanceAbsentCard: {
+    backgroundColor: theme.colors.errorSoft,
+    borderColor: theme.colors.error,
+  },
+  attendanceSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginBottom: 8,
+  },
+  attendanceSummaryTitle: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  attendanceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    minHeight: 25,
+  },
+  attendanceDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  attendanceSummaryName: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  attendanceEmptyText: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontStyle: 'italic',
+  },
+  attendanceActionsRow: {
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  attendanceQuickAction: {
+    color: theme.colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  attendancePlayerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    marginBottom: 7,
+  },
+  attendancePlayerRowPresent: {
+    borderColor: theme.colors.success,
+    backgroundColor: theme.colors.successSoft,
+  },
+  attendancePlayerName: {
+    flex: 1,
+    color: theme.colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  attendanceState: {
+    color: theme.colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  attendanceStatePresent: {
+    color: theme.colors.success,
+  },
+  attendanceFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+  },
+  attendancePrimaryButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: theme.colors.primary,
+  },
+  attendancePrimaryButtonText: {
+    color: theme.colors.onPrimary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  attendanceCancelButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  attendanceCancelText: {
+    color: theme.colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
   },
   
   // Session Info Card

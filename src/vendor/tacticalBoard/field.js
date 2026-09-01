@@ -728,17 +728,17 @@ export default function Field(props = {}) {
     appliedKitContextRef.current = signature;
     const ownStyle = kitToBoardStyle(context.own, context.ownGoalkeeper);
     const rivalStyle = kitToBoardStyle(context.rival, context.rivalGoalkeeper);
-    setTeamPlayerStyle((prev) => ({ ...prev, ...ownStyle }));
+    setTeamPlayerStyle((prev) => ({ ...prev, ...ownStyle, shape: prev.shape }));
     setPaletteIcons((prev) => applySetPieceKitsToPalette(prev, context));
     setBoardSettings((prev) => ({
       ...prev,
-      teamPlayers: { ...prev.teamPlayers, ...ownStyle },
-      playerIcon1: { ...prev.playerIcon1, ...ownStyle },
-      playerIcon2: { ...prev.playerIcon2, ...rivalStyle },
+      teamPlayers: { ...prev.teamPlayers, ...ownStyle, shape: prev.teamPlayers.shape },
+      playerIcon1: { ...prev.playerIcon1, ...ownStyle, shape: prev.playerIcon1.shape },
+      playerIcon2: { ...prev.playerIcon2, ...rivalStyle, shape: prev.playerIcon2.shape },
       goalkeeperIcon1: {
         ...prev.goalkeeperIcon1,
         color: ownStyle.goalkeeperColor,
-        shape: ownStyle.shape,
+        shape: prev.goalkeeperIcon1.shape,
         hasStripes: context.ownGoalkeeper?.pattern !== 'solid',
         stripeColor: ownStyle.goalkeeperStripeColor,
         kitPattern: context.ownGoalkeeper?.pattern || 'solid',
@@ -747,7 +747,7 @@ export default function Field(props = {}) {
       goalkeeperIcon2: {
         ...prev.goalkeeperIcon2,
         color: rivalStyle.goalkeeperColor,
-        shape: rivalStyle.shape,
+        shape: prev.goalkeeperIcon2.shape,
         hasStripes: context.rivalGoalkeeper?.pattern !== 'solid',
         stripeColor: rivalStyle.goalkeeperStripeColor,
         kitPattern: context.rivalGoalkeeper?.pattern || 'solid',
@@ -3671,12 +3671,6 @@ export default function Field(props = {}) {
     setPendingLineAction(null);
     setPendingPlacementAction(null);
 
-    // En ABP de fichas de partido la equipación del contexto manda sobre la
-    // preferencia global de la pizarra (incluida la forma círculo/camiseta).
-    const setPiecePlayerShape = setPieceKitContext?.own
-      ? kitToBoardStyle(setPieceKitContext.own, setPieceKitContext.ownGoalkeeper).shape
-      : teamPlayerStyle.shape;
-
     finishPlacementAction(
       {
         kind: 'team-player',
@@ -3696,7 +3690,7 @@ export default function Field(props = {}) {
           numberColor: teamPlayerStyle.numberColor || '#ffffff',
           textColor: teamPlayerStyle.textColor || '#000000',
           textBackgroundColor: teamPlayerStyle.textBackgroundColor || '#ffffff',
-          shape: setPiecePlayerShape || 'circle',
+          shape: teamPlayerStyle.shape || 'circle',
           hasStripes: teamPlayerStyle.hasStripes === true,
           hasBib: teamPlayerStyle.hasBib === true,
           bibColor: teamPlayerStyle.bibColor || NEUTRAL_PLAYER_COLORS.bib,

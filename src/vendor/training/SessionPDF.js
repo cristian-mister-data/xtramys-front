@@ -11,6 +11,7 @@ import { getEntityId } from '@/utils/sessionExercises';
 import { getSectionForExercise, getStrengthExerciseImage } from '@/data/strengthExercises';
 import { getContentImage } from '@/utils/contentVisual';
 import api from '@/api/client';
+import { didPlayerAttendTraining } from '@/utils/trainingAttendance';
 
 // ── Shared Styles ──────────────────────────────────────────────────
 const s = {
@@ -65,27 +66,41 @@ const s = {
     textAlign: 'center',
   },
 
-  rosterName: {
+  rosterNamePresent: {
     fontSize: 8,
-    color: COLORS.text,
-    backgroundColor: COLORS.bgSoft,
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    color: '#166534',
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#86efac',
+    paddingVertical: 2.5,
+    paddingHorizontal: 5,
     borderRadius: 4,
     marginRight: 4,
     marginBottom: 4,
   },
-  rosterNameExtra: {
+  rosterNameAbsent: {
     fontSize: 8,
-    color: COLORS.warning,
-    backgroundColor: '#fffbeb',
+    color: '#991b1b',
+    backgroundColor: '#fef2f2',
     borderWidth: 1,
-    borderColor: '#fde68a',
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+    borderColor: '#fca5a5',
+    paddingVertical: 2.5,
+    paddingHorizontal: 5,
     borderRadius: 4,
     marginRight: 4,
     marginBottom: 4,
+  },
+  attendanceLabel: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    marginBottom: 5,
+  },
+  attendanceNote: {
+    fontSize: 7,
+    color: COLORS.textSecondary,
+    lineHeight: 1.35,
+    marginBottom: 8,
   },
 
   // Exercises
@@ -309,8 +324,15 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
     return id;
   };
 
-  const jugadoresNombres = (session.jugadores || []).map(resolvePlayerName).filter(n => typeof n === 'string' && n.trim());
-  const jugadoresExtrasNombres = (session.jugadoresExtras || []).map(resolvePlayerName).filter(n => typeof n === 'string' && n.trim());
+  const attendanceRoster = [...(session.jugadores || []), ...(session.jugadoresExtras || [])];
+  const jugadoresPresentesNombres = attendanceRoster
+    .filter((player) => didPlayerAttendTraining(session, getEntityId(player)))
+    .map(resolvePlayerName)
+    .filter((name) => typeof name === 'string' && name.trim());
+  const jugadoresAusentesNombres = attendanceRoster
+    .filter((player) => !didPlayerAttendTraining(session, getEntityId(player)))
+    .map(resolvePlayerName)
+    .filter((name) => typeof name === 'string' && name.trim());
 
   // Observaciones
   const exerciseObservationsMap = {};
@@ -392,7 +414,9 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 
   return {
     t, locale, fechaFormateada,
-    jugadoresNombres, jugadoresExtrasNombres,
+    totalJugadores: attendanceRoster.length,
+    jugadoresPresentesNombres, jugadoresAusentesNombres,
+    asistenciaRegistrada: session.asistenciaRegistrada === true,
     generalObservationsText, exerciseObservationItems,
     ejerciciosOrdenados, detalleMap,
     horaInicio, horaFin, duracionLabel,
@@ -406,7 +430,7 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 
 
 const SessionCoverPage = ({ data, title }) => {
-  const { t, fechaFormateada, jugadoresNombres, jugadoresExtrasNombres, generalObservationsText, exerciseObservationItems, ejerciciosOrdenados, horaInicio, horaFin, duracionLabel, teamName } = data;
+  const { t, fechaFormateada, totalJugadores, jugadoresPresentesNombres, jugadoresAusentesNombres, asistenciaRegistrada, generalObservationsText, exerciseObservationItems, ejerciciosOrdenados, horaInicio, horaFin, duracionLabel, teamName } = data;
 
   const generalObservationsPreview = generalObservationsText ? truncateText(generalObservationsText, 520) : '';
   const exerciseObservationsPreview = exerciseObservationItems.slice(0, 5).map(item => ({ title: item.title, text: truncateText(item.text, 140) }));
@@ -418,37 +442,46 @@ const SessionCoverPage = ({ data, title }) => {
 
       <PdfSection title={t('session.summaryTitle', 'Resumen de la Sesión')}>
         <View style={[s.grid4, { marginBottom: SPACING.md }]}>
-          <View style={s.metricBox}>
+          <View style={[s.metricBox, s.col4]}>
             <Text style={s.metricVal}>{horaInicio} - {horaFin}</Text>
             <Text style={s.metricLbl}>{t('session.scheduleLabelPdf', 'Horario')} ({duracionLabel})</Text>
           </View>
-          <View style={s.metricBox}>
+          <View style={[s.metricBox, s.col4]}>
             <Text style={s.metricVal}>{ejerciciosOrdenados.length}</Text>
             <Text style={s.metricLbl}>{t('session.fieldExercises', 'Ejercicios de Campo')}</Text>
           </View>
-          <View style={s.metricBox}>
-            <Text style={s.metricVal}>{jugadoresNombres.length + jugadoresExtrasNombres.length}</Text>
-            <Text style={s.metricLbl}>{t('session.totalPlayers', 'Jugadores Totales')}</Text>
+          <View style={[s.metricBox, s.col4]}>
+            <Text style={[s.metricVal, { color: '#166534' }]}>{jugadoresPresentesNombres.length}</Text>
+            <Text style={s.metricLbl}>{t('session.presentPlayers', 'Presentes')}</Text>
+          </View>
+          <View style={[s.metricBox, s.col4]}>
+            <Text style={[s.metricVal, { color: '#991b1b' }]}>{jugadoresAusentesNombres.length}</Text>
+            <Text style={s.metricLbl}>{t('session.absentPlayers', 'Ausentes')}</Text>
           </View>
         </View>
 
         <View style={s.grid2}>
           <View style={[s.halfColumn, s.card]}>
-            <Text style={s.cardTitle}>{t('session.availablePlayers', 'Jugadores Disponibles')} ({jugadoresNombres.length + jugadoresExtrasNombres.length})</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-              {jugadoresNombres.length > 0 ? (
-                jugadoresNombres.map((n, i) => <Text key={i} style={s.rosterName}>{n}</Text>)
-              ) : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontStyle: 'italic' }}>{t('session.noPlayersLoaded', 'Sin jugadores cargados')}</Text>}
-            </View>
-            
-            {jugadoresExtrasNombres.length > 0 && (
-              <>
-                <Text style={[s.cardTitle, { marginTop: SPACING.md, fontSize: FONT_SIZE.sm }]}>{t('session.extraPlayers', 'Jugadores Extras')} ({jugadoresExtrasNombres.length})</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-                  {jugadoresExtrasNombres.map((n, i) => <Text key={i} style={s.rosterNameExtra}>{n}</Text>)}
-                </View>
-              </>
+            <Text style={s.cardTitle}>{t('session.pdfAttendanceTitle', 'Asistencia')} ({totalJugadores})</Text>
+            {!asistenciaRegistrada && (
+              <Text style={s.attendanceNote}>{t('session.attendanceDefaultPdf', 'Lista no registrada: todos los jugadores añadidos cuentan como presentes.')}</Text>
             )}
+            <Text style={[s.attendanceLabel, { color: '#166534' }]}>
+              {t('session.presentPlayers', 'Presentes')} ({jugadoresPresentesNombres.length})
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {jugadoresPresentesNombres.length > 0 ? (
+                jugadoresPresentesNombres.map((name, index) => <Text key={index} style={s.rosterNamePresent}>{name}</Text>)
+              ) : <Text style={{ fontSize: 8, color: COLORS.textMuted, fontStyle: 'italic' }}>{t('session.noPresentPlayers', 'Ningún jugador presente')}</Text>}
+            </View>
+            <Text style={[s.attendanceLabel, { color: '#991b1b', marginTop: SPACING.sm }]}>
+              {t('session.absentPlayers', 'Ausentes')} ({jugadoresAusentesNombres.length})
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+              {jugadoresAusentesNombres.length > 0 ? (
+                jugadoresAusentesNombres.map((name, index) => <Text key={index} style={s.rosterNameAbsent}>{name}</Text>)
+              ) : <Text style={{ fontSize: 8, color: COLORS.textMuted, fontStyle: 'italic' }}>{t('session.noAbsentPlayers', 'Ningún jugador ausente')}</Text>}
+            </View>
           </View>
 
           <View style={[s.halfColumn, s.card]}>

@@ -1,7 +1,7 @@
 {
   "name": "xtramys-front-web",
   "private": true,
-  "version": "1.0.22",
+  "version": "1.0.23",
   "type": "module",
   "description": "Xtramys web application",
   "scripts": {
@@ -9,6 +9,7 @@
     "build": "vite build",
     "check:lineup-positions": "node scripts/check-lineup-positions.mjs",
     "check:set-piece-kits": "node scripts/check-set-piece-kits.mjs",
+    "check:training-attendance": "node scripts/check-training-attendance.mjs",
     "check:set-piece-migration": "node scripts/check-set-piece-migration.mjs",
     "check:mobile-subscriptions": "node scripts/check-mobile-subscriptions.mjs",
     "check:subscription-flow": "node scripts/check-subscription-flow.mjs",

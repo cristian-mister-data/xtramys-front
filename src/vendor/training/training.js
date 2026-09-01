@@ -70,6 +70,7 @@ import TrainingSessionPdfUploadModal from '@/components/season/TrainingSessionPd
 import TrainingSessionPdfViewerModal from '@/components/season/TrainingSessionPdfViewerModal';
 import { mergeExercises } from '@/utils/sessionExercises';
 import { getContentImage } from '@/utils/contentVisual';
+import { didPlayerAttendTraining } from '@/utils/trainingAttendance';
 
 const isMobileDevice = () => {
   const { width } = Dimensions.get('window');
@@ -1568,6 +1569,16 @@ export default function Training({ canMutate }) {
     }
   }
 
+  async function handleAttendanceUpdate(session, jugadoresAusentes) {
+    const updated = await dispatch(updateEntrenamiento({
+      id: session._id,
+      data: { asistenciaRegistrada: true, jugadoresAusentes },
+    })).unwrap();
+    setSelectedSession(updated);
+    toast.success(t('session.attendanceSaved'));
+    return updated;
+  }
+
   async function handleCloseEditSession() {
     if (repeatedSessionId) {
       try {
@@ -1771,17 +1782,11 @@ export default function Training({ canMutate }) {
     const dayName = sessionDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { weekday: 'short' }).toUpperCase();
     const monthName = sessionDate.toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'en-US', { month: 'short' }).toUpperCase();
 
-    // Obtener nombres de jugadores
-    const jugadoresSesion = (session.jugadores || []).map(jid => {
-      const jugador = jugadoresDisponibles.find(j => j._id === (typeof jid === 'string' ? jid : jid._id));
-      return jugador ? getPlayerFullName(jugador) : null;
-    }).filter(Boolean);
-
-    // Obtener jugadores extras
     const jugadoresExtrasSesion = session.jugadoresExtras || [];
-
-    // Total de jugadores
-    const totalJugadores = jugadoresSesion.length + jugadoresExtrasSesion.length;
+    const attendanceRoster = [...(session.jugadores || []), ...jugadoresExtrasSesion];
+    const absentCount = attendanceRoster.filter(player => !didPlayerAttendTraining(session, player)).length;
+    const presentCount = attendanceRoster.length - absentCount;
+    const totalJugadores = attendanceRoster.length;
 
     // Calcular duración
     const calcDuration = () => {
@@ -1867,6 +1872,30 @@ export default function Training({ canMutate }) {
                 </View>
                 <Text style={styles.proStatValue}>{totalJugadores}</Text>
                 <Text style={styles.proStatLabel}>{t('session.players')}</Text>
+              </View>
+
+              <View
+                style={styles.proStatItem}
+                accessible
+                accessibilityLabel={`${t('session.presentPlayers')}: ${presentCount}`}
+              >
+                <View style={[styles.proStatIcon, { backgroundColor: theme.colors.successSoft || '#dcfce7' }]}>
+                  <MaterialIcons name="check-circle" size={14} color={theme.colors.success || '#15803d'} />
+                </View>
+                <Text style={styles.proStatValue}>{presentCount}</Text>
+                <Text style={styles.proStatLabel}>{t('session.presentPlayers')}</Text>
+              </View>
+
+              <View
+                style={styles.proStatItem}
+                accessible
+                accessibilityLabel={`${t('session.absentPlayers')}: ${absentCount}`}
+              >
+                <View style={[styles.proStatIcon, { backgroundColor: theme.colors.errorSoft || '#fee2e2' }]}>
+                  <MaterialIcons name="cancel" size={14} color={theme.colors.error || '#b91c1c'} />
+                </View>
+                <Text style={styles.proStatValue}>{absentCount}</Text>
+                <Text style={styles.proStatLabel}>{t('session.absentPlayers')}</Text>
               </View>
 
               {/* Extras si hay */}
@@ -2540,6 +2569,7 @@ export default function Training({ canMutate }) {
         onDelete={handleDeleteSession}
         onRepeat={canMutate !== false ? handleRepeatSession : undefined}
         onWellnessUpdate={handleWellnessUpdate}
+        onAttendanceUpdate={handleAttendanceUpdate}
         canMutate={canMutate}
         onViewPdf={openPdfViewer}
         onUploadPdf={openPdfUpload}

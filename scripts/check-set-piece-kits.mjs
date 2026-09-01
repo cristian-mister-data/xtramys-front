@@ -15,6 +15,7 @@ import { composeFieldId, decomposeFieldId } from '../src/vendor/tacticalBoard/fi
 const elements = [
   { id: 'icon1-clone-legacy', type: 'player', paletteIndex: 0, color: '#000000', showPhotos: true },
   { id: 'goalkeeper-2-clone-legacy', type: 'player', paletteIndex: 3, color: '#000000' },
+  { id: 'icon1-circle', type: 'player', paletteIndex: 0, shape: 'circle', color: '#000000' },
 ];
 const kitContext = {
   own: { pattern: 'halves', primaryColor: '#123456', secondaryColor: '#112233', numberColor: '#ffeedd' },
@@ -33,6 +34,7 @@ assert.equal(result[0].showPhotos, true);
 assert.equal(result[1].color, '#fedcba');
 assert.equal(result[1].kitRole, 'rivalGoalkeeper');
 assert.equal(result[1].showPhotos, false);
+assert.equal(result[2].shape, 'circle');
 const paletteResult = applySetPieceKitsToPalette(elements, kitContext);
 assert.equal(paletteResult[0].shape, 'jersey');
 assert.equal(paletteResult[0].color, '#123456');
@@ -200,6 +202,7 @@ assert.match(boardSource, /const ownKits = normalizeKits\(team\?\.equipaciones\)
 assert.match(boardSource, /setPieceKitContext \? \{ kitContext: setPieceKitContext \} : \{\}/);
 assert.doesNotMatch(boardSource, /setActualClones\(\(prev\) => applySetPieceKitsToElements/);
 assert.doesNotMatch(boardSource, /setPieceMode \? initialConfig\?\.kitContext : null/);
+assert.doesNotMatch(boardSource, /const setPiecePlayerShape = setPieceKitContext/);
 
 const exerciseFormSource = readFileSync(new URL('../src/vendor/exercise/createExerciseForm.js', import.meta.url), 'utf8');
 assert.match(exerciseFormSource, /kitContext,[\s\S]{0,100}teamPlayers:/);

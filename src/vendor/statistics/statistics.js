@@ -42,6 +42,7 @@ import InjuryStatistics from '@/vendor/injuries/injuryStatistics';
 const PlayerProfile = () => null;
 import { getPlayerFullName } from '@/utils/playerHelpers';
 import { getMatchPlayerContributions, idOf } from '@/utils/matchPlayerStats';
+import { didPlayerAttendTraining } from '@/utils/trainingAttendance';
 
 // Helper para obtener locale basado en i18n
 const getLocale = () => (i18n.language === 'en' ? 'en-US' : 'es-ES');
@@ -183,12 +184,9 @@ export default function Statistics({ navigation: navigationProp }) {
 
     players.forEach((p) => {
       // Count training sessions attended by this player
-      const trainingsAttended = pastTrainingSessions.filter((session) => {
-        const jugadoresIds = (session.jugadores || []).map((j) =>
-          typeof j === 'object' ? j._id : j,
-        );
-        return jugadoresIds.includes(p._id);
-      }).length;
+      const trainingsAttended = pastTrainingSessions.filter((session) =>
+        didPlayerAttendTraining(session, p._id)
+      ).length;
 
       playerStatsMap[idOf(p)] = {
         id: idOf(p),
@@ -637,18 +635,12 @@ export default function Statistics({ navigation: navigationProp }) {
             (player) => selectedPlayerIds.length === 0 || selectedPlayerIds.includes(player._id),
           ) // Filter by selected players
           .map((player) => {
-            const attendedSessions = week.sessions.filter((session) => {
-              const jugadoresIds = (session.jugadores || []).map((j) =>
-                typeof j === 'object' ? j._id : j,
-              );
-              return jugadoresIds.includes(player._id);
-            });
-            const missedSessions = week.sessions.filter((session) => {
-              const jugadoresIds = (session.jugadores || []).map((j) =>
-                typeof j === 'object' ? j._id : j,
-              );
-              return !jugadoresIds.includes(player._id);
-            });
+            const attendedSessions = week.sessions.filter((session) =>
+              didPlayerAttendTraining(session, player._id)
+            );
+            const missedSessions = week.sessions.filter((session) =>
+              !didPlayerAttendTraining(session, player._id)
+            );
             return {
               playerId: player._id,
               playerName: getPlayerFullName(player),
