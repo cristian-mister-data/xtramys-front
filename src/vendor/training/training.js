@@ -77,6 +77,14 @@ const isMobileDevice = () => {
   return width < 500;
 };
 
+const SESSION_LIST_BATCH_PROPS = {
+  initialNumToRender: 8,
+  maxToRenderPerBatch: 6,
+  updateCellsBatchingPeriod: 80,
+  windowSize: 5,
+  removeClippedSubviews: Platform.OS !== 'web',
+};
+
 /* ---------------- Helpers ---------------- */
 function formatFechaSesion(fechaStr, horaInicio, horaFin, t) {
   const fecha = new Date(fechaStr);
@@ -984,6 +992,10 @@ export default function Training({ canMutate }) {
   const ejerciciosDisponibles = useMemo(
     () => mergeExercises(userExercises, globalExercises),
     [userExercises, globalExercises]
+  );
+  const exerciseById = useMemo(
+    () => new Map(ejerciciosDisponibles.map((exercise) => [String(exercise._id), exercise])),
+    [ejerciciosDisponibles]
   );
   const jugadoresDisponibles = useSelector(s => s.player.players || []);
   // Separar jugadores de plantilla y extras
@@ -1914,13 +1926,13 @@ export default function Training({ canMutate }) {
             {!hasPdf && session.ejercicios && session.ejercicios.length > 0 && (
               <View style={styles.proExercisePreview}>
                 {session.ejercicios.slice(0, 4).map((ejercicioId, index) => {
-                  const ejercicio = ejerciciosDisponibles.find(e => e._id === ejercicioId);
+                  const ejercicio = exerciseById.get(String(ejercicioId));
                   return (
                     <View key={`${ejercicioId}-${index}`} style={[styles.proExerciseMini, { zIndex: 4 - index, marginLeft: index > 0 ? -8 : 0 }]}>
                       {getContentImage(ejercicio) ? (
                         <Image
                           source={{
-                            uri: normalizeImageSource(getContentImage(ejercicio), { cacheBust: true })
+                            uri: normalizeImageSource(getContentImage(ejercicio))
                           }}
                           style={styles.proExerciseMiniImage}
                         />
@@ -2123,6 +2135,7 @@ export default function Training({ canMutate }) {
               renderItem={({ item }) => renderSession(item, 'futuro')}
               contentContainerStyle={styles.proListContent}
               showsVerticalScrollIndicator={false}
+              {...SESSION_LIST_BATCH_PROPS}
             />
           )
         ) : (
@@ -2149,6 +2162,7 @@ export default function Training({ canMutate }) {
               renderItem={({ item }) => renderSession(item, 'pasado')}
               contentContainerStyle={styles.proListContent}
               showsVerticalScrollIndicator={false}
+              {...SESSION_LIST_BATCH_PROPS}
             />
           )
         )}

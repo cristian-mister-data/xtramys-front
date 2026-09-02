@@ -4,6 +4,8 @@ import {
   Document, Page, Text, View, Image, StyleSheet,
   baseStyles, COLORS, SPACING, FONT_SIZE, PdfHeader, PdfFooter, renderPdf
 } from '@/utils/pdfDesign';
+import { resolvePdfImage } from '@/utils/pdfImage';
+import { getContentImage } from '@/utils/contentVisual';
 
 const s = StyleSheet.create({
   mainContainer: {
@@ -155,8 +157,9 @@ const ExerciseDocument = ({ exercise, imageBase64, t }) => {
   );
 };
 
-export async function generateExercisePdf(exercise, imageBase64, t) {
+export async function generateExercisePdf(exercise, t) {
   const fileName = `${(exercise.nombre || t('exercise.exercise') || 'Ejercicio').replace(/[/\?%*:|"<>]/g, '-')}`;
+  const imageBase64 = await resolvePdfImage(getContentImage(exercise));
   await renderPdf(
     <ExerciseDocument
       exercise={exercise}

@@ -299,31 +299,7 @@ function StrategyDetail({ strategy, onBack, navigation, onEdit, onDelete, onEdit
   // Función para generar y compartir PDF
   const generatePDF = async () => {
     try {
-      // Preparar la imagen
-      let imageBase64 = '';
-      if (getContentImage(strategy)) {
-        if (getContentImage(strategy).startsWith('http')) {
-          // Si es URL, intentar descargar
-          try {
-            const response = await fetch(getContentImage(strategy));
-            const blob = await response.blob();
-            const reader = new FileReader();
-            imageBase64 = await new Promise((resolve) => {
-              reader.onloadend = () => resolve(reader.result);
-              reader.readAsDataURL(blob);
-            });
-          } catch (error) {
-            console.error('Error descargando imagen:', error);
-          }
-        } else if (getContentImage(strategy).startsWith('data:image')) {
-          imageBase64 = getContentImage(strategy);
-        } else {
-          // Es base64 sin prefijo
-          imageBase64 = `data:image/png;base64,${getContentImage(strategy)}`;
-        }
-      }
-
-      await generateStrategyPdf(strategy, getFolderName(), imageBase64, t);
+      await generateStrategyPdf(strategy, getFolderName(), t);
     } catch (error) {
       console.error('Error generando PDF:', error);
       Alert.alert(t('message.error'), t('strategy.pdfGenerateError'));

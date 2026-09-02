@@ -283,29 +283,7 @@ function ExerciseDetail({ exercise, onBack, navigation, onEdit, onDelete, onEdit
 
   const generatePDF = async () => {
     try {
-      // Preparar la imagen
-      let imageBase64 = '';
-      if (getContentImage(exercise)) {
-        const normalizedImage = normalizeImageSource(getContentImage(exercise), { cacheBust: false });
-        if (normalizedImage.startsWith('http')) {
-          // Si es URL, intentar descargar
-          try {
-            const response = await fetch(normalizedImage);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            imageBase64 = await new Promise((resolve) => {
-              reader.onloadend = () => resolve(reader.result);
-              reader.readAsDataURL(blob);
-            });
-          } catch (error) {
-            console.error('Error descargando imagen:', error);
-          }
-        } else {
-          imageBase64 = normalizedImage;
-        }
-      }
-
-      await generateExercisePdf(exercise, imageBase64, t);
+      await generateExercisePdf(exercise, t);
     } catch (error) {
       console.error('Error generando PDF:', error);
       Alert.alert(t('message.error'), t('exercise.pdfGenerateError'));

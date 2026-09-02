@@ -4,6 +4,7 @@ import {
   Document, Page, Text, View, Image, StyleSheet,
   baseStyles, COLORS, SPACING, FONT_SIZE, PdfHeader, PdfFooter, renderPdf
 } from '@/utils/pdfDesign';
+import { resolvePdfImage } from '@/utils/pdfImage';
 import { getContentImage } from '@/utils/contentVisual';
 import { applySetPiecePlayerOverlays } from '@/utils/kits';
 import { loadVideoPlayerPhotos } from '@/utils/videoPlayerPhotos';
@@ -192,8 +193,9 @@ const SetPiecesDocument = ({ setPieces, t }) => (
   </Document>
 );
 
-export async function generateStrategyPdf(strategy, folderName, imageBase64, t) {
+export async function generateStrategyPdf(strategy, folderName, t) {
   const fileName = `${(strategy.nombre || 'Estrategia').replace(/[/\?%*:|"<>]/g, '-')}`;
+  const imageBase64 = await resolvePdfImage(strategy.imagen);
   await renderPdf(
     <StrategyDocument
       strategy={strategy}
@@ -248,5 +250,9 @@ export async function generateSetPiecesPdf(setPieces, t, fileName = 'ABP') {
       return setPiece;
     }
   }));
-  await renderPdf(<SetPiecesDocument setPieces={renderedSetPieces} t={t} />, fileName.replace(/[/\?%*:|"<>]/g, '-'));
+  const resolvedSetPieces = await Promise.all(renderedSetPieces.map(async (setPiece) => ({
+    ...setPiece,
+    imagen: await resolvePdfImage(setPiece.imagen),
+  })));
+  await renderPdf(<SetPiecesDocument setPieces={resolvedSetPieces} t={t} />, fileName.replace(/[/\?%*:|"<>]/g, '-'));
 }
