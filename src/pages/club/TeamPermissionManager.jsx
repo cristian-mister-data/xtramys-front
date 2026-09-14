@@ -198,8 +198,9 @@ const PanelTitle = styled.div`
   color: ${({ theme }) => theme.colors.text};
 `;
 const EditGrid = styled.div`
-  display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(120px, .6fr)); gap: 12px;
-  @media (max-width: 700px) { grid-template-columns: 1fr; }
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px;
+  min-width: 0;
+  & > * { min-width: 0; }
 `;
 const DangerButton = styled(Button)`
   background: transparent !important; color: #f87171 !important; border: 1px solid rgba(248,113,113,.35) !important;
