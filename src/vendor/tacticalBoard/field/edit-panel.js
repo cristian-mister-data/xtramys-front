@@ -279,9 +279,11 @@ export function LeftEditPanel({
                             ? t('tacticalBoard.elements.rectangle')
                             : icon.type === 'custom-shape'
                               ? t('tacticalBoard.elements.customShape')
-                              : icon.type === 'goal'
-                                ? t('tacticalBoard.elements.barrier')
-                                : icon.type === 'goal-large'
+                              : icon.type === 'player'
+                                ? t('tacticalBoard.editPanel.player')
+                                : icon.type === 'goal'
+                                  ? t('tacticalBoard.elements.barrier')
+                                  : icon.type === 'goal-large'
                                   ? t('tacticalBoard.elements.goalLarge')
                                   : icon.type === 'goal-small'
                                     ? t('tacticalBoard.elements.goalSmall')
@@ -1606,7 +1608,11 @@ export function LeftEditPanel({
                                   bibColor: updatedIcon.bibColor,
                                   stripeColor: updatedIcon.stripeColor,
                                   goalkeeperStripeColor: updatedIcon.goalkeeperStripeColor,
-                                  // No incluir number ni thickness
+                                  number:
+                                    Number.isFinite(parseInt(updatedIcon.number, 10))
+                                      ? parseInt(updatedIcon.number, 10) + 1
+                                      : updatedIcon.number,
+                                  // No incluir thickness
                                 }
                               : {
                                   ...updatedIcon,

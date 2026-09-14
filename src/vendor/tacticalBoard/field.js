@@ -293,6 +293,8 @@ export default function Field(props = {}) {
   const players = useSelector((state) => state.player.players || []);
   const season = useSelector((state) => state.season.season);
   const equipos = useSelector((state) => state.team.teams || []);
+  const activeUserId = useSelector((state) => state.usuario.user?._id);
+  const supervising = useSelector((state) => state.usuario.supervising);
 
   // route.params (vienen de location.state cuando se naveg� v�a
   // navigation.navigate) siempre tiene prioridad. Los props directos
@@ -815,14 +817,11 @@ export default function Field(props = {}) {
 
   // Persistir formaci�n en Configuraci�n de usuario (debounced)
   useEffect(() => {
+    if (supervising || !activeUserId) return undefined;
     let timer = setTimeout(async () => {
       try {
-        const str = await AsyncStorage.getItem('usuario');
-        if (!str) return;
-        const usuario = JSON.parse(str);
-        if (!usuario || !usuario._id) return;
         const response = await dispatch(
-          updateUsuario({ id: usuario._id, updatedUser: { formationSettings } }),
+          updateUsuario({ id: activeUserId, updatedUser: { formationSettings } }),
         );
         const updated = response?.payload;
         if (updated && typeof updated === 'object') {
@@ -834,7 +833,7 @@ export default function Field(props = {}) {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [formationSettings, dispatch]);
+  }, [formationSettings, dispatch, activeUserId, supervising]);
 
   // Referencia para controlar si ya se cargaron los datos del usuario
   const userSettingsLoadedRef = useRef(false);
@@ -887,14 +886,10 @@ export default function Field(props = {}) {
 
   // Guardado inmediato de formationSettings (bot�n Guardar)
   const handleSaveFormationSettings = useCallback(async () => {
+    if (supervising || !activeUserId) return;
     try {
-      const str = await AsyncStorage.getItem('usuario');
-      if (!str) return;
-      const usuario = JSON.parse(str);
-      if (!usuario || !usuario._id) return;
-
       const result = await dispatch(
-        updateUsuario({ id: usuario._id, updatedUser: { formationSettings } }),
+        updateUsuario({ id: activeUserId, updatedUser: { formationSettings } }),
       );
       const updated = result?.payload;
       if (updated && typeof updated === 'object') {
@@ -910,7 +905,7 @@ export default function Field(props = {}) {
         t('formations.saveError') || 'Error al guardar la Configuraci�n',
       );
     }
-  }, [dispatch, formationSettings, t]);
+  }, [dispatch, formationSettings, t, activeUserId, supervising]);
 
   // Guardado inmediato de boardSettings (bot�n Guardar en panel de ajustes)
   // Ahora acepta un par�metro opcional settingsParam para evitar efectos de estado stale
@@ -1009,18 +1004,14 @@ export default function Field(props = {}) {
   }, []);
   const handleSaveBoardSettings = useCallback(
     async (settingsParam) => {
+      if (supervising || !activeUserId) return;
       const settingsToSave = normalizeBoardSettings(settingsParam || boardSettings);
       if (settingsToSave?.playerIcon1?.size) {
         setStandardSize(settingsToSave.playerIcon1.size);
       }
       try {
-        const str = await AsyncStorage.getItem('usuario');
-        if (!str) return;
-        const usuario = JSON.parse(str);
-        if (!usuario || !usuario._id) return;
-
         const result = await dispatch(
-          updateUsuario({ id: usuario._id, updatedUser: { boardSettings: settingsToSave } }),
+          updateUsuario({ id: activeUserId, updatedUser: { boardSettings: settingsToSave } }),
         );
         const updated = result?.payload;
         if (updated && typeof updated === 'object') {
@@ -1211,7 +1202,7 @@ export default function Field(props = {}) {
         );
       }
     },
-    [dispatch, boardSettings, t],
+    [dispatch, boardSettings, t, activeUserId, supervising],
   );
 
   // Cargar Configuraci�n guardada del usuario al entrar a la pantalla
@@ -1221,20 +1212,22 @@ export default function Field(props = {}) {
         // Si ya se cargaron los datos en esta sesi�n, no volver a cargar
         try {
           const str = await AsyncStorage.getItem('usuario');
-          if (!str) {
+          const storedUsuario = str ? JSON.parse(str) : null;
+          if (!activeUserId) {
             userSettingsLoadedRef.current = true;
             setUserSettingsLoaded(true);
             return;
           }
 
-          const storedUsuario = JSON.parse(str);
-          let usuario = storedUsuario;
-          if (storedUsuario?._id) {
+          let usuario = String(storedUsuario?._id) === String(activeUserId)
+            ? storedUsuario
+            : { _id: activeUserId };
+          if (activeUserId) {
             try {
-              const response = await api.get(`/user/${storedUsuario._id}`, { skipCache: true });
+              const response = await api.get(`/user/${activeUserId}`, { skipCache: true });
               if (response?.data) {
                 usuario = response.data;
-                await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
+                if (!supervising) await AsyncStorage.setItem('usuario', JSON.stringify(usuario));
               }
             } catch (err) {
               console.warn('Error refreshing user settings, using local copy', err);
@@ -1477,7 +1470,7 @@ export default function Field(props = {}) {
       };
 
       loadUserSettings();
-    }, []),
+    }, [activeUserId, supervising]),
   );
 
   // Helper: clear multi-select
@@ -3210,8 +3203,10 @@ export default function Field(props = {}) {
         const nextNumber = currentNumber + 1;
         iconCounters.current[placementAction.paletteIconId] = nextNumber;
         setPaletteIcons((prev) =>
-          prev.map((ic) =>
-            ic.id === placementAction.paletteIconId ? { ...ic, number: nextNumber } : ic,
+          prev.map((ic, idx) =>
+            ic.id === placementAction.paletteIconId || idx === placementAction.paletteIndex
+              ? { ...ic, number: nextNumber }
+              : ic,
           ),
         );
       }
@@ -4150,7 +4145,7 @@ export default function Field(props = {}) {
 
   const unlockOrientationAndGoBack = useCallback(async () => {
     await restoreFlexibleOrientation();
-    if (!embeddedBoard) navigation.goBack();
+    if (!embeddedBoard) navigation.goBack('/app');
   }, [navigation, embeddedBoard]);
 
   const handleGuardarGrafico = async () => {
@@ -4256,7 +4251,7 @@ export default function Field(props = {}) {
         setVideoKeyframes([]);
         // Liberar orientaci�n antes de navegar
         await restoreFlexibleOrientation();
-        if (!embeddedBoard) navigation.goBack();
+        if (!embeddedBoard) navigation.goBack('/app');
       } catch (error) {
         console.error('Error capturing field:', error);
       }

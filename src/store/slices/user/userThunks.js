@@ -40,6 +40,7 @@ export const loginThunk = createAsyncThunk(
       sessionStorage.removeItem('xtramys:club-supervision-owner');
       sessionStorage.removeItem('xtramys:club-manage-user');
       sessionStorage.removeItem('xtramys:club-supervision-user-data');
+      sessionStorage.removeItem('xtramys:club-supervision-active');
       const data = credentials?.provider === 'apple'
         ? await authApi.apple(credentials.credential)
         : await authApi.login(credentials);
@@ -103,6 +104,7 @@ export const logoutThunk = createAsyncThunk(
     sessionStorage.removeItem('xtramys:club-supervision-owner');
     sessionStorage.removeItem('xtramys:club-manage-user');
     sessionStorage.removeItem('xtramys:club-supervision-user-data');
+    sessionStorage.removeItem('xtramys:club-supervision-active');
     authApi.clearMeCache();
     clearUserCache();
     clearUser();

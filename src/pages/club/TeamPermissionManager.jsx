@@ -6,11 +6,20 @@ import api from '@/api/client';
 import Modal from '@/ui/Modal';
 import { Button, Card, Field, Input, Label, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
-import { getTeamCategoryLabel } from '@/components/season/seasonHelpers';
+import { categoryOptions, getTeamCategoryLabel } from '@/components/season/seasonHelpers';
 
 const Header = styled.div`
   display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap;
   min-width: 0;
+`;
+const CollapseButton = styled.button`
+  width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  &:focus-visible { outline: 2px solid ${({ theme }) => theme.colors.primary}; outline-offset: 6px; border-radius: 12px; }
+`;
+const CollapseSummary = styled.div`
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end;
+  color: ${({ theme }) => theme.colors.muted}; font-size: 13px; font-weight: 800;
 `;
 const HeaderCopy = styled.div`
   display: grid; gap: 8px;
@@ -52,7 +61,7 @@ const CreatePanel = styled.div`
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 `;
 const Form = styled.form`
-  display: grid; grid-template-columns: minmax(180px, 1fr) minmax(150px, .65fr) auto;
+  display: grid; grid-template-columns: minmax(180px, 1fr) minmax(150px, .65fr) minmax(150px, .65fr) auto;
   gap: 14px; align-items: end;
   & > * { min-width: 0; }
   & > div { margin-bottom: 0; }
@@ -261,13 +270,16 @@ const Select = styled.select`
 
 export default function TeamPermissionManager({ data, onRefresh }) {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
   const [activeView, setActiveView] = useState('accounts');
   const [name, setName] = useState('');
+  const [categoryKey, setCategoryKey] = useState('alevin');
   const [seasonId, setSeasonId] = useState('');
   const [openMemberId, setOpenMemberId] = useState('');
   const [openTeamId, setOpenTeamId] = useState('');
   const [editingTeamId, setEditingTeamId] = useState('');
   const [editingTeamName, setEditingTeamName] = useState('');
+  const [editingTeamCategoryKey, setEditingTeamCategoryKey] = useState('');
   const [confirmTeam, setConfirmTeam] = useState(null);
   const [saving, setSaving] = useState(false);
   const [busyKey, setBusyKey] = useState('');
@@ -306,10 +318,10 @@ export default function TeamPermissionManager({ data, onRefresh }) {
 
   const createTeam = async (event) => {
     event.preventDefault();
-    if (!name.trim() || !seasonId || atLimit) return;
+    if (!name.trim() || !seasonId || !categoryKey || atLimit) return;
     setSaving(true);
     try {
-      await api.post('/club/teams', { nombre: name.trim(), temporada: seasonId, categoriaKey: 'otro' });
+      await api.post('/club/teams', { nombre: name.trim(), temporada: seasonId, categoriaKey: categoryKey });
       setName('');
       toast.success(t('clubTeamManager.created'));
       await onRefresh();
@@ -339,18 +351,26 @@ export default function TeamPermissionManager({ data, onRefresh }) {
     setOpenTeamId(String(team._id));
     setEditingTeamId(String(team._id));
     setEditingTeamName(team.nombre || '');
+    setEditingTeamCategoryKey(team.categoriaKey || (team.categoria === 'otro' ? 'otro' : team.categoria) || 'otro');
   };
 
   const saveTeam = async (team) => {
     const trimmed = editingTeamName.trim();
-    if (!trimmed) return;
+    if (!trimmed || !editingTeamCategoryKey) return;
     const key = `team:${team._id}`;
     setBusyKey(key);
     try {
-      await api.put(`/club/teams/${team._id}`, { nombre: trimmed, temporada: team.temporada?._id || team.temporada });
+      await api.put(`/club/teams/${team._id}`, {
+        nombre: trimmed,
+        temporada: team.temporada?._id || team.temporada,
+        categoriaKey: editingTeamCategoryKey,
+        categoriaCustom: team.categoriaCustom || '',
+        teamOnly: true,
+      });
       toast.success(t('clubTeamManager.teamUpdated'));
       setEditingTeamId('');
       setEditingTeamName('');
+      setEditingTeamCategoryKey('');
       await onRefresh();
     } catch (error) {
       toast.error(error.message || t('clubTeamManager.teamUpdateError'));
@@ -358,6 +378,8 @@ export default function TeamPermissionManager({ data, onRefresh }) {
       setBusyKey('');
     }
   };
+
+  const categories = categoryOptions(t);
 
   const deleteTeam = async (team) => {
     const key = `delete:${team._id}`;
@@ -377,20 +399,34 @@ export default function TeamPermissionManager({ data, onRefresh }) {
 
   return (
     <PanelCard>
-      <Header>
+      <CollapseButton type="button" aria-expanded={expanded} onClick={() => setExpanded((current) => !current)}>
         <HeaderCopy>
           <Eyebrow><MdOutlineShield size={14} />{t('clubTeamManager.eyebrow')}</Eyebrow>
-          <HeaderTitle>{t('clubTeamManager.title')}</HeaderTitle>
-          <HeaderSubtitle>{t('clubTeamManager.userSubtitle')}</HeaderSubtitle>
+          {expanded ? (
+            <>
+              <HeaderTitle>{t('clubTeamManager.title')}</HeaderTitle>
+              <HeaderSubtitle>{t('clubTeamManager.userSubtitle')}</HeaderSubtitle>
+            </>
+          ) : null}
         </HeaderCopy>
-        <HeaderControls>
-          <LicensePill>{t('clubTeamManager.licenseCount', { used: legacy ? data?.club?.activeUsers || 0 : activeTeams, total: maxTeams })}</LicensePill>
-          <TopNav>
-            <TopNavButton type="button" $active={activeView === 'accounts'} onClick={() => setActiveView('accounts')}>{t('clubTeamManager.accountsTitle')}</TopNavButton>
-            <TopNavButton type="button" $active={activeView === 'teams'} onClick={() => setActiveView('teams')}>{t('clubTeamManager.teamsTitle')}</TopNavButton>
-          </TopNav>
-        </HeaderControls>
-      </Header>
+        <CollapseSummary>
+          <span>{t('clubTeamManager.licenseCount', { used: legacy ? data?.club?.activeUsers || 0 : activeTeams, total: maxTeams })}</span>
+          <MdChevronRight size={22} style={{ transform: expanded ? 'rotate(90deg)' : 'none', flexShrink: 0 }} />
+        </CollapseSummary>
+      </CollapseButton>
+
+      {expanded ? (
+        <>
+          <Header style={{ marginTop: 18 }}>
+            <HeaderCopy />
+            <HeaderControls>
+              <LicensePill>{t('clubTeamManager.licenseCount', { used: legacy ? data?.club?.activeUsers || 0 : activeTeams, total: maxTeams })}</LicensePill>
+              <TopNav>
+                <TopNavButton type="button" $active={activeView === 'accounts'} onClick={() => setActiveView('accounts')}>{t('clubTeamManager.accountsTitle')}</TopNavButton>
+                <TopNavButton type="button" $active={activeView === 'teams'} onClick={() => setActiveView('teams')}>{t('clubTeamManager.teamsTitle')}</TopNavButton>
+              </TopNav>
+            </HeaderControls>
+          </Header>
 
       {activeView === 'teams' ? (
         <CreatePanel>
@@ -400,8 +436,14 @@ export default function TeamPermissionManager({ data, onRefresh }) {
             <Form onSubmit={createTeam}>
               <Field><Label>{t('clubTeamManager.teamName')}</Label><Input placeholder={t('clubTeamManager.teamName')} value={name} onChange={(event) => setName(event.target.value)} maxLength={120} /></Field>
               <Field><Label>{t('clubTeamManager.season')}</Label><Select value={seasonId} onChange={(event) => setSeasonId(event.target.value)}>{seasons.map((season) => <option key={season._id || season} value={season._id || season}>{season.año || season.year}</option>)}</Select></Field>
+              <Field>
+                <Label>{t('team.category', 'Categoría')}</Label>
+                <Select value={categoryKey} onChange={(event) => setCategoryKey(event.target.value)}>
+                  {categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                </Select>
+              </Field>
               <SubmitWrap>
-                <Button type="submit" disabled={saving || !name.trim() || !seasons.length}>{saving ? t('common.saving') : t('clubTeamManager.createTeam')}</Button>
+                <Button type="submit" disabled={saving || !name.trim() || !categoryKey || !seasons.length}>{saving ? t('common.saving') : t('clubTeamManager.createTeam')}</Button>
               </SubmitWrap>
             </Form>
           )}
@@ -514,6 +556,12 @@ export default function TeamPermissionManager({ data, onRefresh }) {
                           <Label>{t('clubTeamManager.season')}</Label>
                           <Input value={team.temporada?.año || ''} disabled />
                         </Field>
+                        <Field>
+                          <Label>{t('team.category', 'Categoría')}</Label>
+                          <Select value={isEditing ? editingTeamCategoryKey : (team.categoriaKey || '')} disabled={!isEditing || busyKey === `team:${team._id}`} onChange={(event) => setEditingTeamCategoryKey(event.target.value)}>
+                            {categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                          </Select>
+                        </Field>
                       </EditGrid>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         {isEditing ? (
@@ -561,6 +609,8 @@ export default function TeamPermissionManager({ data, onRefresh }) {
           <Muted>{t('clubTeamManager.teamDeleteHint')}</Muted>
         </ConfirmCopy>
       </Modal>
+        </>
+      ) : null}
     </PanelCard>
   );
 }

@@ -85,7 +85,8 @@ const userSlice = createSlice({
       })
 
       .addCase(updateUsuario.fulfilled, (s, a) => {
-        s.user = a.payload;
+        if (String(s.user?._id) === String(a.payload?._id)) s.user = a.payload;
+        else if (String(s.backupUser?._id) === String(a.payload?._id)) s.backupUser = a.payload;
       })
 
       .addCase(loginThunk.pending, (s) => { s.loading = true; s.error = null; })

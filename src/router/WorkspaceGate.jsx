@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchWorkspaces, selectWorkspace } from '@/store/slices/workspace/workspaceSlice';
+import { startSupervision } from '@/store/slices/user/userSlice';
 
 const Fallback = () => (
   <div style={{
@@ -35,19 +36,33 @@ export default function WorkspaceGate({ children }) {
   const selecting = useRef(false);
 
   const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
+  const storedSupervisionTarget = sessionStorage.getItem('xtramys:club-supervision-user')
+    || sessionStorage.getItem('xtramys:club-manage-user');
+  const storedSupervisionOwner = sessionStorage.getItem('xtramys:club-supervision-owner');
   const hasSupervisionSession = Boolean(
     supervising ||
     location.state?.clubSupervision ||
-    sessionStorage.getItem('xtramys:club-supervision-active') === '1' ||
-    (sessionStorage.getItem('xtramys:club-supervision-user') &&
-      (sessionStorage.getItem('xtramys:club-supervision-owner') === String(user?._id) ||
-        sessionStorage.getItem('xtramys:club-supervision-user') === String(user?._id))) ||
-    (sessionStorage.getItem('xtramys:club-manage-user') &&
-      (sessionStorage.getItem('xtramys:club-supervision-owner') === String(user?._id) ||
-        sessionStorage.getItem('xtramys:club-supervision-user') === String(user?._id)))
+    (storedSupervisionTarget &&
+      (storedSupervisionOwner === String(user?._id) || storedSupervisionTarget === String(user?._id)))
   );
 
   const isClubAdmin = (user?.role === 'club_admin' || user?.clubRole === 'admin') && !hasSupervisionSession;
+
+  useEffect(() => {
+    if (!storedSupervisionTarget || String(user?._id) === String(storedSupervisionTarget)) return;
+    if (storedSupervisionOwner !== String(user?._id)) return;
+    try {
+      const target = JSON.parse(sessionStorage.getItem('xtramys:club-supervision-user-data') || 'null');
+      if (String(target?._id) === String(storedSupervisionTarget)) {
+        dispatch(startSupervision({
+          user: target,
+          mode: sessionStorage.getItem('xtramys:club-supervision-mode') || 'view',
+        }));
+      }
+    } catch {
+      // App.jsx renovará los datos del usuario objetivo desde la API.
+    }
+  }, [dispatch, storedSupervisionOwner, storedSupervisionTarget, user?._id]);
 
   useEffect(() => {
     // En supervisión cargamos los workspaces del usuario objetivo.

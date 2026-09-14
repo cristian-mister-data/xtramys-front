@@ -53,6 +53,7 @@ export function SettingsPanel({
   // Estados para color pickers
   const [colorPicker1Visible, setColorPicker1Visible] = useState(false);
   const [colorPicker2Visible, setColorPicker2Visible] = useState(false);
+  const [colorPicker3Visible, setColorPicker3Visible] = useState(false);
   const [colorPickerNeutralVisible, setColorPickerNeutralVisible] = useState(false);
   const [neutralBgPickerVisible, setNeutralBgPickerVisible] = useState(false);
   const [neutralLetterPickerVisible, setNeutralLetterPickerVisible] = useState(false);
@@ -525,6 +526,40 @@ export function SettingsPanel({
                   {renderIconShapeControls('playerIcon2')}
                 </View>
 
+                {/* Jugador 3 */}
+                <View style={styles.proModalCard}>
+                  <View style={styles.proModalCardHeader}>
+                    <View
+                      style={[
+                        styles.proModalColorBtn,
+                        {
+                          backgroundColor: draftSettings?.playerIcon3?.color || '#ffa600',
+                          width: 32,
+                          height: 32,
+                          borderRadius: 16,
+                        },
+                      ]}
+                    />
+                    <Text style={styles.proModalCardTitle}>
+                      {t('tacticalBoard.settings.unnamedPlayer3')}
+                    </Text>
+                  </View>
+                  <View style={styles.proModalRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.proModalColorBtn,
+                        { backgroundColor: draftSettings?.playerIcon3?.color || '#ffa600' },
+                      ]}
+                      onPress={() => setColorPicker3Visible(true)}
+                    />
+                    <Text style={styles.proModalHint}>
+                      {t('tacticalBoard.editPanel.colorLabel')}
+                    </Text>
+                  </View>
+                  <View style={styles.proModalRow}>{renderNumberColorControl('playerIcon3')}</View>
+                  {renderIconShapeControls('playerIcon3')}
+                </View>
+
                 <View style={styles.proModalCard}>
                   <View style={styles.proModalCardHeader}>
                     <View
@@ -609,46 +644,6 @@ export function SettingsPanel({
                   </View>
                   {renderIconShapeControls('goalkeeperIcon2', false)}
                 </View>
-
-                {/* Jugador 3 eliminado de la configuración
-                 <View style={styles.proModalCard}>
-                  <View style={styles.proModalCardHeader}>
-                    <View
-                      style={[
-                        styles.proModalColorBtn,
-                        {
-                          backgroundColor: draftSettings?.playerIcon3?.color || '#ffa600',
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                        },
-                      ]}
-                    />
-                    <Text style={styles.proModalCardTitle}>
-                      {t('tacticalBoard.settings.unnamedPlayer3')}
-                    </Text>
-                  </View>
-                  <View style={styles.proModalRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.proModalColorBtn,
-                        { backgroundColor: draftSettings?.playerIcon3?.color || '#ffa600' },
-                      ]}
-                      onPress={() => setColorPicker3Visible(true)}
-                    />
-                    <TextInput
-                      style={[styles.proModalInputMobile, { flex: 1 }]}
-                      keyboardType="number-pad"
-                      autoComplete="off"
-                      value={size3}
-                      onChangeText={setSize3}
-                      placeholder="Tama�o"
-                      placeholderTextColor="#999"
-                    />
-                  </View>
-                  {renderIconShapeControls('playerIcon3')}
-                 </View>
-                 */}
 
                 {/* Comodin */}
                 <View style={styles.proModalCard}>
@@ -907,6 +902,20 @@ export function SettingsPanel({
                   ...prev,
                   playerIcon2: {
                     ...prev.playerIcon2,
+                    color: c,
+                  },
+                }))
+              }
+            />
+            <MiniColorPickerModal
+              visible={colorPicker3Visible}
+              initialColor={draftSettings?.playerIcon3?.color || '#ffa600'}
+              onClose={() => setColorPicker3Visible(false)}
+              onSelect={(c) =>
+                setDraftSettings((prev) => ({
+                  ...prev,
+                  playerIcon3: {
+                    ...prev.playerIcon3,
                     color: c,
                   },
                 }))

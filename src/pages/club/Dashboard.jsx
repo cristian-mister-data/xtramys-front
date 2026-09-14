@@ -857,8 +857,8 @@ export default function ClubDashboard() {
 
       setClubTeam(ownerTeam);
       setTeamForm({
-        nombre: ownerTeam.nombre || '',
-        escudo: ownerTeam.escudo || null,
+        nombre: data?.club?.name || '',
+        escudo: teams.find((team) => team.escudo)?.escudo || null,
       });
     } catch (error) {
       setIsTeamEditorOpen(false);
@@ -894,11 +894,15 @@ export default function ClubDashboard() {
 
     setTeamSaving(true);
     try {
-      await api.post(`/team/${clubTeam._id}`, {
+      const response = await api.put(`/club/teams/${clubTeam._id}`, {
         nombre,
         escudo: teamForm.escudo || null,
       });
-      toast.success('Equipo del club actualizado.');
+      setData((prev) => ({
+        ...prev,
+        club: { ...prev.club, ...(response.data?.club || {}), name: nombre },
+      }));
+      toast.success('Club actualizado.');
       setIsTeamEditorOpen(false);
       setClubTeam(null);
     } catch (error) {
@@ -2067,14 +2071,14 @@ export default function ClubDashboard() {
           <form onSubmit={handleSaveClubTeam}>
             <Stack $gap={16}>
               <InfoNotice>
-                Al guardar, el nombre y el escudo se actualizarán en todos los equipos asociados a esta temporada del club.
+                Al guardar, se actualizará el nombre del club y el escudo se aplicará a todos sus equipos asociados a esta temporada.
               </InfoNotice>
               <Field>
-                <Label>Nombre del equipo</Label>
+                <Label>Nombre del club</Label>
                 <Input
                   value={teamForm.nombre}
                   onChange={(event) => setTeamForm((prev) => ({ ...prev, nombre: event.target.value }))}
-                  placeholder="Nombre del equipo"
+                  placeholder="Nombre del club"
                   disabled={teamSaving}
                   required
                   autoFocus

@@ -1713,6 +1713,20 @@ export const getInitialIcons = () => [
     numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
   },
   {
+    id: 'icon3',
+    type: 'player',
+    label: i18n.t('tacticalBoard.icons.orangePlayer'),
+    color: '#ffa600',
+    size: DEFAULT_PLAYER_ICON_SIZE,
+    number: 2,
+    shape: 'circle',
+    hasStripes: false,
+    stripeColor: '#ffffff',
+    kitPattern: 'solid',
+    kitSecondaryColor: '#ffffff',
+    numberColor: DEFAULT_PLAYER_NUMBER_COLOR,
+  },
+  {
     id: 'goalkeeper-1',
     type: 'player',
     label: i18n.t('tacticalBoard.icons.goalkeeper', {

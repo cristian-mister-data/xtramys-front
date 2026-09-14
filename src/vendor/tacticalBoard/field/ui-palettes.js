@@ -984,6 +984,7 @@ export function createFieldPalettes(dependencies) {
           prev.color !== next.color ||
           prev.backgroundColor !== next.backgroundColor ||
           prev.numberColor !== next.numberColor ||
+          prev.number !== next.number ||
           prev.size !== next.size ||
           prev.type !== next.type ||
           prev.shape !== next.shape ||

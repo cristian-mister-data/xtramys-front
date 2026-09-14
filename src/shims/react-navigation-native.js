@@ -122,11 +122,11 @@ export function useNavigation() {
   };
   return {
     navigate: (name, params) => trackedNavigate(resolveScreen(name), { state: params }),
-    goBack: () => {
+    goBack: (fallback = '/') => {
       // Si no hubo navegaciones in-app (usuario entró directo por URL),
-      // navigate(-1) no haría nada útil. Fallback a home.
+      // navigate(-1) no haría nada útil.
       if (inAppNavCount <= 0) {
-        navigate('/', { replace: true });
+        navigate(fallback, { replace: true });
         return;
       }
       inAppNavCount--;

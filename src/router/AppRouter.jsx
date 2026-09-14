@@ -238,9 +238,11 @@ export default function AppRouter() {
       <Route
         element={
           <ProtectedRoute>
-            <RequireSeason>
-              <FullscreenLayout />
-            </RequireSeason>
+            <WorkspaceGate>
+              <RequireSeason>
+                <FullscreenLayout />
+              </RequireSeason>
+            </WorkspaceGate>
           </ProtectedRoute>
         }
       >

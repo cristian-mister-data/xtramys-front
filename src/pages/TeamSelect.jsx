@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { MdArrowForward, MdHistory, MdLockOutline, MdRefresh, MdShield } from 'react-icons/md';
@@ -108,6 +108,8 @@ export default function TeamSelect() {
   const { items, loading, loaded, error } = useSelector((state) => state.workspace);
   const user = useSelector((state) => state.usuario?.user);
   const supervising = useSelector((state) => state.usuario?.supervising);
+  const isClubAdmin = user?.clubRole === 'admin'
+    || (user?.role === 'club_admin' && user?.clubRole !== 'coach');
 
   useEffect(() => {
     const isDemo = user?.plan === 'demo' || user?.accessMode === 'demo';
@@ -115,8 +117,8 @@ export default function TeamSelect() {
   }, [navigate, user?.plan, user?.accessMode]);
 
   useEffect(() => {
-    if (!loaded && !loading) dispatch(fetchWorkspaces());
-  }, [dispatch, loaded, loading]);
+    if (!isClubAdmin && !loaded && !loading) dispatch(fetchWorkspaces());
+  }, [dispatch, isClubAdmin, loaded, loading]);
 
   const choose = async (workspace) => {
     const teamId = workspace.team?._id;
@@ -167,6 +169,10 @@ export default function TeamSelect() {
   }, [loaded, loading, error, items, selectingId]);
 
   const singleWorkspaceRedirecting = loaded && items.length === 1;
+
+  if (isClubAdmin && !supervising) {
+    return <Navigate to="/club/dashboard" replace />;
+  }
 
   return (
     <Page>
