@@ -15,6 +15,8 @@ import Modal from '@/ui/Modal';
 import { isNative } from '@/platform/capacitor';
 import TeamPermissionManager from './TeamPermissionManager';
 import { getTeamCategoryLabel } from '@/components/season/seasonHelpers';
+import KitDesigner from '@/components/shared/KitDesigner';
+import { normalizeKits } from '@/utils/kits';
 
 const isDuplicateSeasonError = (error) => {
   const message = `${error?.message || ''} ${error?.response?.data?.mensaje || ''} ${error?.response?.data?.message || ''}`.toLowerCase();
@@ -708,7 +710,7 @@ export default function ClubDashboard() {
   const [licenseScheduleOverrides, setLicenseScheduleOverrides] = useState({});
   const [isTeamEditorOpen, setIsTeamEditorOpen] = useState(false);
   const [clubTeam, setClubTeam] = useState(null);
-  const [teamForm, setTeamForm] = useState({ nombre: '', escudo: null });
+  const [teamForm, setTeamForm] = useState({ nombre: '', escudo: null, equipaciones: normalizeKits() });
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamSaving, setTeamSaving] = useState(false);
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
@@ -859,6 +861,7 @@ export default function ClubDashboard() {
       setTeamForm({
         nombre: data?.club?.name || '',
         escudo: teams.find((team) => team.escudo)?.escudo || null,
+        equipaciones: normalizeKits(teams.find((team) => team.equipaciones)?.equipaciones),
       });
     } catch (error) {
       setIsTeamEditorOpen(false);
@@ -897,6 +900,7 @@ export default function ClubDashboard() {
       const response = await api.put(`/club/teams/${clubTeam._id}`, {
         nombre,
         escudo: teamForm.escudo || null,
+        equipaciones: teamForm.equipaciones,
       });
       setData((prev) => ({
         ...prev,
@@ -2071,7 +2075,7 @@ export default function ClubDashboard() {
           <form onSubmit={handleSaveClubTeam}>
             <Stack $gap={16}>
               <InfoNotice>
-                Al guardar, se actualizará el nombre del club y el escudo se aplicará a todos sus equipos asociados a esta temporada.
+                Al guardar, el nombre, el escudo y las cuatro equipaciones se aplicarán a todos los equipos del club asociados a esta temporada.
               </InfoNotice>
               <Field>
                 <Label>Nombre del club</Label>
@@ -2115,6 +2119,13 @@ export default function ClubDashboard() {
                     </Button>
                   )}
                 </div>
+              </Field>
+              <Field>
+                <Label>Equipaciones</Label>
+                <KitDesigner
+                  value={teamForm.equipaciones}
+                  onChange={(equipaciones) => setTeamForm((prev) => ({ ...prev, equipaciones }))}
+                />
               </Field>
               <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
                 <Button
