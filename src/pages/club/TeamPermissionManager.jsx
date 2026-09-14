@@ -6,7 +6,7 @@ import api from '@/api/client';
 import Modal from '@/ui/Modal';
 import { Button, Card, Field, Input, Label, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
-import { categoryOptions, getTeamCategoryLabel } from '@/components/season/seasonHelpers';
+import { categoryOptions, getTeamCategoryLabel, playersPerTeamOptions, timePerHalfOptions } from '@/components/season/seasonHelpers';
 
 const Header = styled.div`
   display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; flex-wrap: wrap;
@@ -61,7 +61,7 @@ const CreatePanel = styled.div`
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 `;
 const Form = styled.form`
-  display: grid; grid-template-columns: minmax(180px, 1fr) minmax(150px, .65fr) minmax(150px, .65fr) auto;
+  display: grid; grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(120px, .5fr)) auto;
   gap: 14px; align-items: end;
   & > * { min-width: 0; }
   & > div { margin-bottom: 0; }
@@ -198,7 +198,7 @@ const PanelTitle = styled.div`
   color: ${({ theme }) => theme.colors.text};
 `;
 const EditGrid = styled.div`
-  display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(150px, .6fr); gap: 12px;
+  display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(120px, .6fr)); gap: 12px;
   @media (max-width: 700px) { grid-template-columns: 1fr; }
 `;
 const DangerButton = styled(Button)`
@@ -274,12 +274,16 @@ export default function TeamPermissionManager({ data, onRefresh }) {
   const [activeView, setActiveView] = useState('accounts');
   const [name, setName] = useState('');
   const [categoryKey, setCategoryKey] = useState('alevin');
+  const [timePerHalf, setTimePerHalf] = useState(45);
+  const [playersPerTeam, setPlayersPerTeam] = useState(11);
   const [seasonId, setSeasonId] = useState('');
   const [openMemberId, setOpenMemberId] = useState('');
   const [openTeamId, setOpenTeamId] = useState('');
   const [editingTeamId, setEditingTeamId] = useState('');
   const [editingTeamName, setEditingTeamName] = useState('');
   const [editingTeamCategoryKey, setEditingTeamCategoryKey] = useState('');
+  const [editingTeamTimePerHalf, setEditingTeamTimePerHalf] = useState(45);
+  const [editingTeamPlayersPerTeam, setEditingTeamPlayersPerTeam] = useState(11);
   const [confirmTeam, setConfirmTeam] = useState(null);
   const [saving, setSaving] = useState(false);
   const [busyKey, setBusyKey] = useState('');
@@ -321,7 +325,13 @@ export default function TeamPermissionManager({ data, onRefresh }) {
     if (!name.trim() || !seasonId || !categoryKey || atLimit) return;
     setSaving(true);
     try {
-      await api.post('/club/teams', { nombre: name.trim(), temporada: seasonId, categoriaKey: categoryKey });
+      await api.post('/club/teams', {
+        nombre: name.trim(),
+        temporada: seasonId,
+        categoriaKey: categoryKey,
+        tiempoPorParte: Number(timePerHalf),
+        jugadoresPorEquipo: Number(playersPerTeam),
+      });
       setName('');
       toast.success(t('clubTeamManager.created'));
       await onRefresh();
@@ -352,6 +362,8 @@ export default function TeamPermissionManager({ data, onRefresh }) {
     setEditingTeamId(String(team._id));
     setEditingTeamName(team.nombre || '');
     setEditingTeamCategoryKey(team.categoriaKey || (team.categoria === 'otro' ? 'otro' : team.categoria) || 'otro');
+    setEditingTeamTimePerHalf(team.tiempoPorParte || 45);
+    setEditingTeamPlayersPerTeam(team.jugadoresPorEquipo || 11);
   };
 
   const saveTeam = async (team) => {
@@ -364,13 +376,17 @@ export default function TeamPermissionManager({ data, onRefresh }) {
         nombre: trimmed,
         temporada: team.temporada?._id || team.temporada,
         categoriaKey: editingTeamCategoryKey,
-        categoriaCustom: team.categoriaCustom || '',
+        categoriaCustom: editingTeamCategoryKey === 'otro' ? (team.categoriaCustom || '') : '',
+        tiempoPorParte: Number(editingTeamTimePerHalf),
+        jugadoresPorEquipo: Number(editingTeamPlayersPerTeam),
         teamOnly: true,
       });
       toast.success(t('clubTeamManager.teamUpdated'));
       setEditingTeamId('');
       setEditingTeamName('');
       setEditingTeamCategoryKey('');
+      setEditingTeamTimePerHalf(45);
+      setEditingTeamPlayersPerTeam(11);
       await onRefresh();
     } catch (error) {
       toast.error(error.message || t('clubTeamManager.teamUpdateError'));
@@ -440,6 +456,18 @@ export default function TeamPermissionManager({ data, onRefresh }) {
                 <Label>{t('team.category', 'Categoría')}</Label>
                 <Select value={categoryKey} onChange={(event) => setCategoryKey(event.target.value)}>
                   {categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                </Select>
+              </Field>
+              <Field>
+                <Label>{t('team.timePerHalf', 'Tiempo por parte')}</Label>
+                <Select value={timePerHalf} onChange={(event) => setTimePerHalf(Number(event.target.value))}>
+                  {timePerHalfOptions.map((minutes) => <option key={minutes} value={minutes}>{t('team.timePerHalfMinutes', { minutes })}</option>)}
+                </Select>
+              </Field>
+              <Field>
+                <Label>{t('team.playersPerTeam', 'Jugadores por equipo')}</Label>
+                <Select value={playersPerTeam} onChange={(event) => setPlayersPerTeam(Number(event.target.value))}>
+                  {playersPerTeamOptions.map((count) => <option key={count} value={count}>{t('team.playersPerTeamCount', { count })}</option>)}
                 </Select>
               </Field>
               <SubmitWrap>
@@ -531,6 +559,8 @@ export default function TeamPermissionManager({ data, onRefresh }) {
                       <TeamMeta>
                         <MetaChip><MdOutlineShield size={14} />{team.temporada?.año || '—'}</MetaChip>
                         {catLabel ? <MetaChip><MdSportsSoccer size={14} />{catLabel}</MetaChip> : null}
+                        <MetaChip>{team.tiempoPorParte || 45} min</MetaChip>
+                        <MetaChip>{t('team.playersPerTeamCount', { count: team.jugadoresPorEquipo || 11 })}</MetaChip>
                         <MetaChip><MdGroups size={14} />{t('clubTeamManager.teamUsersCount', { count: assignedUsers })}</MetaChip>
                       </TeamMeta>
                     </TeamIdentity>
@@ -560,6 +590,18 @@ export default function TeamPermissionManager({ data, onRefresh }) {
                           <Label>{t('team.category', 'Categoría')}</Label>
                           <Select value={isEditing ? editingTeamCategoryKey : (team.categoriaKey || '')} disabled={!isEditing || busyKey === `team:${team._id}`} onChange={(event) => setEditingTeamCategoryKey(event.target.value)}>
                             {categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                          </Select>
+                        </Field>
+                        <Field>
+                          <Label>{t('team.timePerHalf', 'Tiempo por parte')}</Label>
+                          <Select value={isEditing ? editingTeamTimePerHalf : (team.tiempoPorParte || 45)} disabled={!isEditing || busyKey === `team:${team._id}`} onChange={(event) => setEditingTeamTimePerHalf(Number(event.target.value))}>
+                            {timePerHalfOptions.map((minutes) => <option key={minutes} value={minutes}>{t('team.timePerHalfMinutes', { minutes })}</option>)}
+                          </Select>
+                        </Field>
+                        <Field>
+                          <Label>{t('team.playersPerTeam', 'Jugadores por equipo')}</Label>
+                          <Select value={isEditing ? editingTeamPlayersPerTeam : (team.jugadoresPorEquipo || 11)} disabled={!isEditing || busyKey === `team:${team._id}`} onChange={(event) => setEditingTeamPlayersPerTeam(Number(event.target.value))}>
+                            {playersPerTeamOptions.map((count) => <option key={count} value={count}>{t('team.playersPerTeamCount', { count })}</option>)}
                           </Select>
                         </Field>
                       </EditGrid>

@@ -28,8 +28,8 @@ export const categoryOptions = (t) => [
 export const getTeamCategoryLabel = (team, t = (key, fallback) => fallback) => {
   if (!team) return '';
   const key = team.categoriaKey || (team.categoria === 'otro' ? 'otro' : team.categoria);
-  const custom = team.categoriaCustom || (team.categoriaKey === 'otro' ? team.categoria : '');
-  if (key === 'otro' || (custom && key !== custom)) {
+  const custom = key === 'otro' ? (team.categoriaCustom || (team.categoriaKey === 'otro' ? team.categoria : '')) : '';
+  if (key === 'otro') {
     return custom || t('team.categories.otro', 'Otro');
   }
   if (!key) return custom || '';
