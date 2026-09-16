@@ -329,6 +329,31 @@ export const proxyUploadToR2 = async (localVideoPath) => {
     window.Capacitor.getPlatform() !== 'web';
   if (isNative) {
     try {
+      const nativeSource = /^(blob:|data:)/i.test(localVideoPath)
+        ? localVideoPath
+        : window.Capacitor?.convertFileSrc?.(localVideoPath) || localVideoPath;
+      try {
+        const fileResponse = await fetch(nativeSource);
+        const videoBlob = await fileResponse.blob();
+        if (!fileResponse.ok || !videoBlob.size) {
+          throw new Error(`No se pudo leer el video local (${fileResponse.status})`);
+        }
+        const uploadContentType = /^video\/(mp4|webm)$/i.test(videoBlob.type)
+          ? videoBlob.type
+          : 'application/octet-stream';
+        const response = await api.post('/video/proxy-upload', videoBlob, {
+          timeout: 180000,
+          headers: { 'Content-Type': uploadContentType },
+          transformRequest: [(data) => data],
+        });
+        return response.data;
+      } catch (binaryError) {
+        console.info(
+          '[proxyUploadToR2] Subida binaria no disponible; usando compatibilidad base64',
+          binaryError,
+        );
+      }
+
       let base64Data;
       let contentType = 'video/mp4';
 

@@ -99,145 +99,119 @@ public class AppleSignInPlugin: CAPPlugin, CAPBridgedPlugin,
     }
 }
 
-@objc(NativeVideoEncoderPlugin)
-public class NativeVideoEncoderPlugin: CAPPlugin, CAPBridgedPlugin {
-    public let identifier = "NativeVideoEncoderPlugin"
-    public let jsName = "NativeVideoEncoder"
-    public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "encodeFrames", returnType: CAPPluginReturnPromise)
-    ]
+private final class NativeVideoEncodingSession {
+    let queue = DispatchQueue(label: "com.xtramys.video.session", qos: .userInitiated)
+    let outputURL: URL
 
-    @objc func encodeFrames(_ call: CAPPluginCall) {
-        guard let frames = call.getArray("frames", String.self), !frames.isEmpty else {
-            call.reject("No frames provided")
-            return
-        }
-        let fps = max(1, call.getInt("fps") ?? 30)
+    private let writer: AVAssetWriter
+    private let input: AVAssetWriterInput
+    private let adaptor: AVAssetWriterInputPixelBufferAdaptor
+    private let width: Int
+    private let height: Int
+    private let fps: Int
+    private var nextFrameIndex = 0
+    private var closed = false
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            let outputURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("xtramys_video_\(UUID().uuidString).mp4")
-            do {
-                try self.encode(frames: frames, fps: fps, outputURL: outputURL)
-                let data = try Data(contentsOf: outputURL)
-                try? FileManager.default.removeItem(at: outputURL)
-                call.resolve([
-                    "mimeType": "video/mp4",
-                    "data": data.base64EncodedString()
-                ])
-            } catch {
-                try? FileManager.default.removeItem(at: outputURL)
-                call.reject("Native video encode failed: \(error.localizedDescription)", nil, error)
-            }
-        }
-    }
+    init(width requestedWidth: Int, height requestedHeight: Int, fps: Int, bitrate: Int) throws {
+        width = max(2, requestedWidth - requestedWidth % 2)
+        height = max(2, requestedHeight - requestedHeight % 2)
+        self.fps = max(1, fps)
+        outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("xtramys_video_\(UUID().uuidString).mp4")
+        writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
 
-    private func encode(frames: [String], fps: Int, outputURL: URL) throws {
-        guard let firstImage = try decodeFrame(frames[0]).cgImage else {
-            throw encoderError("Invalid first frame")
-        }
-        let width = max(2, firstImage.width - firstImage.width % 2)
-        let height = max(2, firstImage.height - firstImage.height % 2)
-        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
-        let areaScale = max(1.0, Double(width * height) / Double(1920 * 1080))
-        let bitrate = Int(min(28_000_000.0, max(8_000_000.0, areaScale * 14_000_000.0)))
         let settings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.h264,
             AVVideoWidthKey: width,
             AVVideoHeightKey: height,
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: bitrate,
-                AVVideoMaxKeyFrameIntervalKey: fps,
-                AVVideoExpectedSourceFrameRateKey: fps
+                AVVideoAverageBitRateKey: max(1, bitrate),
+                AVVideoMaxKeyFrameIntervalKey: self.fps,
+                AVVideoExpectedSourceFrameRateKey: self.fps
             ]
         ]
-        let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+        input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
         input.expectsMediaDataInRealTime = false
-        let attributes: [String: Any] = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: width,
-            kCVPixelBufferHeightKey as String: height,
-            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
-        ]
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+        adaptor = AVAssetWriterInputPixelBufferAdaptor(
             assetWriterInput: input,
-            sourcePixelBufferAttributes: attributes
+            sourcePixelBufferAttributes: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                kCVPixelBufferWidthKey as String: width,
+                kCVPixelBufferHeightKey as String: height,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+            ]
         )
-        guard writer.canAdd(input) else { throw encoderError("Video writer input unavailable") }
+        guard writer.canAdd(input) else { throw Self.error("Video writer input unavailable") }
         writer.add(input)
         guard writer.startWriting() else {
-            throw writer.error ?? encoderError("Video writer could not start")
+            throw writer.error ?? Self.error("Video writer could not start")
         }
         writer.startSession(atSourceTime: .zero)
-        defer {
-            if writer.status == .writing {
-                input.markAsFinished()
-                writer.cancelWriting()
-            }
-        }
+    }
 
-        for (index, frame) in frames.enumerated() {
-            while !input.isReadyForMoreMediaData {
-                if writer.status == .failed || writer.status == .cancelled {
-                    throw writer.error ?? encoderError("Video writer failed")
+    func append(base64: String, index: Int, durationFrames: Int) throws {
+        guard !closed else { throw Self.error("Video writer is closed") }
+        try autoreleasepool {
+            let payload = base64.split(separator: ",", maxSplits: 1).last.map(String.init) ?? base64
+            guard let data = Data(base64Encoded: payload, options: .ignoreUnknownCharacters),
+                  let image = UIImage(data: data),
+                  let pixelBuffer = makePixelBuffer(image: image) else {
+                throw Self.error("Invalid frame data")
+            }
+
+            nextFrameIndex = max(nextFrameIndex, index)
+            for _ in 0..<max(1, durationFrames) {
+                while !input.isReadyForMoreMediaData {
+                    if writer.status == .failed || writer.status == .cancelled {
+                        throw writer.error ?? Self.error("Video writer failed")
+                    }
+                    Thread.sleep(forTimeInterval: 0.002)
                 }
-                Thread.sleep(forTimeInterval: 0.002)
-            }
-            let image = try decodeFrame(frame)
-            guard let pixelBuffer = makePixelBuffer(
-                image: image,
-                width: width,
-                height: height,
-                pool: adaptor.pixelBufferPool
-            ) else {
-                throw encoderError("Could not create video frame")
-            }
-            let time = CMTime(value: CMTimeValue(index), timescale: CMTimeScale(fps))
-            guard adaptor.append(pixelBuffer, withPresentationTime: time) else {
-                throw writer.error ?? encoderError("Could not append video frame")
+                let time = CMTime(value: CMTimeValue(nextFrameIndex), timescale: CMTimeScale(fps))
+                guard adaptor.append(pixelBuffer, withPresentationTime: time) else {
+                    throw writer.error ?? Self.error("Could not append video frame")
+                }
+                nextFrameIndex += 1
             }
         }
+    }
 
+    func finish(_ completion: @escaping (Error?) -> Void) {
+        guard !closed else {
+            completion(Self.error("Video writer is closed"))
+            return
+        }
+        closed = true
         input.markAsFinished()
-        let finished = DispatchSemaphore(value: 0)
-        writer.finishWriting { finished.signal() }
-        finished.wait()
-        guard writer.status == .completed else {
-            throw writer.error ?? encoderError("Video writer did not finish")
+        writer.finishWriting { [writer] in
+            completion(writer.status == .completed
+                ? nil
+                : writer.error ?? Self.error("Video writer did not finish"))
         }
     }
 
-    private func decodeFrame(_ value: String) throws -> UIImage {
-        let payload = value.split(separator: ",", maxSplits: 1).last.map(String.init) ?? value
-        guard let data = Data(base64Encoded: payload, options: .ignoreUnknownCharacters),
-              let image = UIImage(data: data) else {
-            throw encoderError("Invalid frame data")
-        }
-        return image
+    func cancel() {
+        guard !closed else { return }
+        closed = true
+        input.markAsFinished()
+        writer.cancelWriting()
+        try? FileManager.default.removeItem(at: outputURL)
     }
 
-    private func makePixelBuffer(
-        image: UIImage,
-        width: Int,
-        height: Int,
-        pool: CVPixelBufferPool?
-    ) -> CVPixelBuffer? {
+    private func makePixelBuffer(image: UIImage) -> CVPixelBuffer? {
         guard let cgImage = image.cgImage else { return nil }
         var pixelBuffer: CVPixelBuffer?
-        let status: CVReturn
-        if let pool {
-            status = CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer)
-        } else {
-            status = CVPixelBufferCreate(
-                nil,
-                width,
-                height,
-                kCVPixelFormatType_32BGRA,
-                [kCVPixelBufferCGImageCompatibilityKey: true,
-                 kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary,
-                &pixelBuffer
-            )
-        }
+        let status = adaptor.pixelBufferPool.map {
+            CVPixelBufferPoolCreatePixelBuffer(nil, $0, &pixelBuffer)
+        } ?? CVPixelBufferCreate(
+            nil,
+            width,
+            height,
+            kCVPixelFormatType_32BGRA,
+            [kCVPixelBufferCGImageCompatibilityKey: true,
+             kCVPixelBufferCGBitmapContextCompatibilityKey: true] as CFDictionary,
+            &pixelBuffer
+        )
         guard status == kCVReturnSuccess, let pixelBuffer else { return nil }
 
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
@@ -261,8 +235,117 @@ public class NativeVideoEncoderPlugin: CAPPlugin, CAPBridgedPlugin {
         return pixelBuffer
     }
 
-    private func encoderError(_ message: String) -> NSError {
+    static func error(_ message: String) -> NSError {
         NSError(domain: "com.xtramys.video", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+}
+
+@objc(NativeVideoEncoderPlugin)
+public class NativeVideoEncoderPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NativeVideoEncoderPlugin"
+    public let jsName = "NativeVideoEncoder"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "startEncoding", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "appendFrame", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "finishEncoding", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "cancelEncoding", returnType: CAPPluginReturnPromise)
+    ]
+
+    private var sessions: [String: NativeVideoEncodingSession] = [:]
+    private let sessionsLock = NSLock()
+
+    @objc func startEncoding(_ call: CAPPluginCall) {
+        let width = call.getInt("width") ?? 0
+        let height = call.getInt("height") ?? 0
+        guard width > 0, height > 0 else {
+            call.reject("Invalid video dimensions")
+            return
+        }
+        let fps = max(1, call.getInt("fps") ?? 30)
+        let bitrate = max(1, call.getInt("bitrate") ?? 14_000_000)
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let session = try NativeVideoEncodingSession(
+                    width: width,
+                    height: height,
+                    fps: fps,
+                    bitrate: bitrate
+                )
+                let sessionId = UUID().uuidString
+                self.sessionsLock.lock()
+                self.sessions[sessionId] = session
+                self.sessionsLock.unlock()
+                call.resolve(["sessionId": sessionId])
+            } catch {
+                call.reject("Native video encode failed: \(error.localizedDescription)", nil, error)
+            }
+        }
+    }
+
+    @objc func appendFrame(_ call: CAPPluginCall) {
+        guard let sessionId = call.getString("sessionId"),
+              let data = call.getString("data"),
+              let session = session(sessionId) else {
+            call.reject("Video encoding session not found")
+            return
+        }
+        let index = max(0, call.getInt("index") ?? 0)
+        let durationFrames = max(1, call.getInt("durationFrames") ?? 1)
+        session.queue.async {
+            do {
+                try session.append(base64: data, index: index, durationFrames: durationFrames)
+                call.resolve()
+            } catch {
+                self.removeSession(sessionId)?.cancel()
+                call.reject("Native video encode failed: \(error.localizedDescription)", nil, error)
+            }
+        }
+    }
+
+    @objc func finishEncoding(_ call: CAPPluginCall) {
+        guard let sessionId = call.getString("sessionId"),
+              let session = removeSession(sessionId) else {
+            call.reject("Video encoding session not found")
+            return
+        }
+        session.queue.async {
+            session.finish { error in
+                if let error {
+                    try? FileManager.default.removeItem(at: session.outputURL)
+                    call.reject("Native video encode failed: \(error.localizedDescription)", nil, error)
+                    return
+                }
+                call.resolve([
+                    "mimeType": "video/mp4",
+                    "path": session.outputURL.absoluteString
+                ])
+            }
+        }
+    }
+
+    @objc func cancelEncoding(_ call: CAPPluginCall) {
+        guard let sessionId = call.getString("sessionId"),
+              let session = removeSession(sessionId) else {
+            call.resolve()
+            return
+        }
+        session.queue.async {
+            session.cancel()
+            call.resolve()
+        }
+    }
+
+    private func session(_ id: String) -> NativeVideoEncodingSession? {
+        sessionsLock.lock()
+        defer { sessionsLock.unlock() }
+        return sessions[id]
+    }
+
+    private func removeSession(_ id: String) -> NativeVideoEncodingSession? {
+        sessionsLock.lock()
+        defer { sessionsLock.unlock() }
+        return sessions.removeValue(forKey: id)
     }
 }
 

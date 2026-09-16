@@ -641,7 +641,9 @@ function VideoRecorder({
         try {
           const base64Image = await captureViewShotBase64(fieldBaseRef);
           fieldImageData = base64Image
-            ? (base64Image.startsWith('data:') ? base64Image : `data:image/png;base64,${base64Image}`)
+            ? base64Image.startsWith('data:')
+              ? base64Image
+              : `data:image/png;base64,${base64Image}`
             : '';
         } catch (captureError) {
           console.warn(
@@ -734,8 +736,7 @@ function VideoRecorder({
                 : elem.isGoalkeeper || inferredGoalkeeper;
               snapshot.differentiateGoalkeeper =
                 elem.differentiateGoalkeeper ?? differentiateGoalkeeper;
-              snapshot.goalkeeperStripeColor =
-                elem.goalkeeperStripeColor || goalkeeperStripeColor;
+              snapshot.goalkeeperStripeColor = elem.goalkeeperStripeColor || goalkeeperStripeColor;
             } else if (elem.type === 'staff') {
               snapshot.staffRole = elem.staffRole;
               snapshot.displayLabel = elem.displayLabel; // Iniciales (E1, E2, PF, etc.)
@@ -1133,37 +1134,33 @@ function VideoRecorder({
         encodedFrames = 0;
       };
 
-      if (!isNativeAndroid()) {
-        try {
-          streamingEncoder = await createStreamingVideoEncoder({
-            speed: videoSpeed,
-            frameCount: totalFrames,
-            onProgress: (encodeProgress) => {
-              encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
-              updateLinearProgress();
-            },
-          });
-        } catch (streamingError) {
-          console.info(
-            '[videoRecorder] WebCodecs streaming no disponible, se usara fallback',
-            streamingError,
-          );
-          streamingEncoder = null;
-        }
+      try {
+        streamingEncoder = await createStreamingVideoEncoder({
+          speed: videoSpeed,
+          frameCount: totalFrames,
+          onProgress: (encodeProgress) => {
+            encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
+            updateLinearProgress();
+          },
+        });
+      } catch (streamingError) {
+        console.info(
+          '[videoRecorder] Codificacion incremental no disponible, se usara fallback',
+          streamingError,
+        );
+        streamingEncoder = null;
       }
 
       setGenerationPhase('generationCapturing');
 
       const renderVideoFrame = (frame) => {
-        renderFrameToCanvas(
-          ctx,
-          canvasW,
-          canvasH,
-          frame.elements,
-          frame.connectors,
-          fieldBgImage,
-          { playerPhotos, playersWithNumber, showPhotos, viewMode, renderCache },
-        );
+        renderFrameToCanvas(ctx, canvasW, canvasH, frame.elements, frame.connectors, fieldBgImage, {
+          playerPhotos,
+          playersWithNumber,
+          showPhotos,
+          viewMode,
+          renderCache,
+        });
       };
 
       const setFirstFrameThumbnail = () => {
@@ -1265,12 +1262,14 @@ function VideoRecorder({
       setGenerationPhase('generationEncoding');
       await yieldForGenerationPaint(true);
       let outputPath;
+      let playbackPath;
       let encodedMime;
 
       if (streamingEncoder) {
         try {
           const result = await streamingEncoder.finish();
           outputPath = result.outputPath;
+          playbackPath = result.playbackPath;
           encodedMime = result.mimeType;
           encodedFrames = totalFrames;
           updateLinearProgress();
@@ -1287,16 +1286,12 @@ function VideoRecorder({
       }
 
       if (!outputPath) {
-        const result = await encodeVideo(
-          framesDir,
-          totalFrames,
-          videoSpeed,
-          (encodeProgress) => {
-            encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
-            updateLinearProgress();
-          },
-        );
+        const result = await encodeVideo(framesDir, totalFrames, videoSpeed, (encodeProgress) => {
+          encodedFrames = Math.max(encodedFrames, Math.round(encodeProgress * totalFrames));
+          updateLinearProgress();
+        });
         outputPath = result.outputPath;
+        playbackPath = result.playbackPath;
         encodedMime = result.mimeType;
       }
       setLocalVideoMime(encodedMime || null);
@@ -1313,7 +1308,7 @@ function VideoRecorder({
       await new Promise((resolve) => setTimeout(resolve, 120));
 
       // 7. Reproducir video local
-      let fileUri = outputPath;
+      let fileUri = playbackPath || outputPath;
       if (
         Platform.OS === 'android' &&
         !outputPath.startsWith('file://') &&

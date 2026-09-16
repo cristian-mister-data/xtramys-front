@@ -98,7 +98,8 @@ export const warmUpFFmpeg = () => {
   if (
     typeof window !== 'undefined' &&
     ((window.VideoEncoder && window.VideoFrame) || getMediaRecorderMp4Mime())
-  ) return;
+  )
+    return;
   const run = () => getFFmpeg().catch(() => {});
   if (typeof window !== 'undefined' && window.requestIdleCallback) {
     window.requestIdleCallback(run, { timeout: 3000 });
@@ -477,12 +478,7 @@ function getMediaRecorderMp4Mime() {
   return candidates.find((mime) => window.MediaRecorder.isTypeSupported(mime)) || '';
 }
 
-function createMediaRecorderStreamingEncoder({
-  speed,
-  frameCount,
-  onProgress,
-  mimeType,
-}) {
+function createMediaRecorderStreamingEncoder({ speed, frameCount, onProgress, mimeType }) {
   const fps = SPEED_TO_FPS[speed] || 30;
   const frameDurationMs = 1000 / fps;
   let recorder = null;
@@ -565,11 +561,140 @@ function createMediaRecorderStreamingEncoder({
   return { addFrame, finish, abort };
 }
 
-export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, onProgress } = {}) {
-  if (typeof window === 'undefined' || !window.VideoEncoder || !window.VideoFrame) {
-    if (window?.Capacitor?.getPlatform?.() === 'ios') {
-      throw new Error('La codificacion directa se delega al encoder nativo de iOS');
+const blobToBase64 = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error || new Error('No se pudo leer el fotograma'));
+    reader.onload = () =>
+      resolve(
+        String(reader.result || '')
+          .split(',')
+          .pop() || '',
+      );
+    reader.readAsDataURL(blob);
+  });
+
+async function nativeFrameData(source) {
+  if (typeof HTMLCanvasElement !== 'undefined' && source instanceof HTMLCanvasElement) {
+    const blob = await new Promise((resolve, reject) => {
+      source.toBlob(
+        (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error('Canvas toBlob failed'))),
+        'image/jpeg',
+        0.97,
+      );
+    });
+    return { data: await blobToBase64(blob), width: source.width, height: source.height };
+  }
+
+  const image = await loadFrameImage(source);
+  try {
+    let blob;
+    if (isBlob(source)) {
+      blob = source;
+    } else if (typeof source === 'string' && source.startsWith('data:')) {
+      blob = await (await fetch(source)).blob();
+    } else {
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d', { alpha: false });
+      context.drawImage(image.image, 0, 0, image.width, image.height);
+      blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (nextBlob) => (nextBlob ? resolve(nextBlob) : reject(new Error('Canvas toBlob failed'))),
+          'image/jpeg',
+          0.97,
+        );
+      });
     }
+    return { data: await blobToBase64(blob), width: image.width, height: image.height };
+  } finally {
+    image.close();
+  }
+}
+
+function createNativeStreamingVideoEncoder({ speed, frameCount, onProgress }) {
+  const fps = SPEED_TO_FPS[speed] || 30;
+  let NativeVideoEncoder;
+  let sessionId = null;
+  let submittedFrameUnits = 0;
+  let finished = false;
+
+  const getPlugin = async () => {
+    if (!NativeVideoEncoder) {
+      const { registerPlugin } = await import('@capacitor/core');
+      NativeVideoEncoder = registerPlugin('NativeVideoEncoder');
+    }
+    return NativeVideoEncoder;
+  };
+
+  const addFrame = async (source, index = submittedFrameUnits, durationFrames = 1) => {
+    if (finished) throw new Error('El codificador de video ya ha finalizado');
+    const frame = await nativeFrameData(source);
+    const plugin = await getPlugin();
+    if (!sessionId) {
+      const started = await plugin.startEncoding({
+        width: frame.width,
+        height: frame.height,
+        fps,
+        bitrate: Math.max(
+          8_000_000,
+          Math.min(
+            28_000_000,
+            Math.round(((frame.width * frame.height) / (1920 * 1080)) * 14_000_000),
+          ),
+        ),
+      });
+      sessionId = started?.sessionId;
+      if (!sessionId) throw new Error('No se pudo iniciar el codificador nativo');
+    }
+
+    const safeDurationFrames = Math.max(1, Math.round(durationFrames));
+    await plugin.appendFrame({
+      sessionId,
+      data: frame.data,
+      index,
+      durationFrames: safeDurationFrames,
+    });
+    submittedFrameUnits = Math.max(submittedFrameUnits, index + safeDurationFrames);
+    onProgress?.(Math.min(0.99, submittedFrameUnits / Math.max(1, frameCount)));
+  };
+
+  const finish = async () => {
+    if (!sessionId) throw new Error('No hay frames para codificar');
+    const plugin = await getPlugin();
+    const result = await plugin.finishEncoding({ sessionId });
+    finished = true;
+    sessionId = null;
+    const outputPath = result?.path;
+    if (!outputPath) throw new Error('El codificador nativo no devolvio el archivo de video');
+    onProgress?.(0.995);
+    return {
+      outputPath,
+      playbackPath: window.Capacitor?.convertFileSrc?.(outputPath) || outputPath,
+      frameCount: submittedFrameUnits || frameCount,
+      mimeType: 'video/mp4',
+    };
+  };
+
+  const abort = () => {
+    if (!sessionId || finished) return;
+    const pendingSessionId = sessionId;
+    sessionId = null;
+    finished = true;
+    getPlugin()
+      .then((plugin) => plugin.cancelEncoding({ sessionId: pendingSessionId }))
+      .catch(() => {});
+  };
+
+  return { addFrame, finish, abort };
+}
+
+export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, onProgress } = {}) {
+  if (isNativeAndroid() || isNativeIOS()) {
+    return createNativeStreamingVideoEncoder({ speed, frameCount, onProgress });
+  }
+  if (typeof window === 'undefined' || !window.VideoEncoder || !window.VideoFrame) {
     const mediaRecorderMime = getMediaRecorderMp4Mime();
     if (mediaRecorderMime) {
       return createMediaRecorderStreamingEncoder({
@@ -658,17 +783,10 @@ export async function createStreamingVideoEncoder({ speed = 1, frameCount = 0, o
     if (encoderError) throw encoderError;
   };
 
-  const addFrame = async (
-    frameSource,
-    index = submittedFrameUnits,
-    durationFrames = 1,
-  ) => {
+  const addFrame = async (frameSource, index = submittedFrameUnits, durationFrames = 1) => {
     if (encoderError) throw encoderError;
 
-    if (
-      typeof HTMLCanvasElement !== 'undefined' &&
-      frameSource instanceof HTMLCanvasElement
-    ) {
+    if (typeof HTMLCanvasElement !== 'undefined' && frameSource instanceof HTMLCanvasElement) {
       if (!encoder) await setup(frameSource.width, frameSource.height);
       if (frameSource.width === outputWidth && frameSource.height === outputHeight) {
         await submitFrame(frameSource, index, durationFrames);
@@ -926,39 +1044,23 @@ const isNativeApp = () =>
   window.Capacitor.getPlatform() !== 'web';
 
 async function generateVideoWithNativeEncoder(framesDir, frameCount, speed = 1, onProgress) {
-  const { registerPlugin } = await import('@capacitor/core');
-  const NativeVideoEncoder = registerPlugin('NativeVideoEncoder');
-  const fps = SPEED_TO_FPS[speed] || 30;
   const { store, keys } = getSortedFrameKeys(framesDir);
-  const frames = [];
-  const encodedSources = new Map();
+  const encoder = createNativeStreamingVideoEncoder({ speed, frameCount, onProgress });
 
-  for (let index = 0; index < keys.length; index++) {
-    const source = store.get(keys[index]);
-    let encoded = encodedSources.get(source);
-    if (!encoded) {
-      encoded = await RNFS.readFile(keys[index], 'base64');
-      encodedSources.set(source, encoded);
+  try {
+    for (let index = 0; index < keys.length; index++) {
+      const key = keys[index];
+      const source = store.get(key);
+      if (!source) continue;
+      await encoder.addFrame(source, index, 1);
+      store.delete(key);
+      if (index % 4 === 0) await yieldToBrowser();
     }
-    frames.push(encoded);
-    onProgress?.(Math.min(0.35, ((index + 1) / keys.length) * 0.35));
-    if (index % 6 === 0) await yieldToBrowser();
+    return await encoder.finish();
+  } catch (error) {
+    encoder.abort();
+    throw error;
   }
-
-  const result = await NativeVideoEncoder.encodeFrames({ frames, fps });
-  if (!result?.data) throw new Error('El encoder nativo no devolvio video');
-  onProgress?.(0.95);
-
-  const videoBlob = new Blob([base64ToBytes(result.data)], { type: 'video/mp4' });
-  if (!videoBlob.size) throw new Error('El video nativo generado esta vacio');
-
-  for (const key of keys) store.delete(key);
-
-  return {
-    outputPath: URL.createObjectURL(videoBlob),
-    frameCount: keys.length || frameCount,
-    mimeType: 'video/mp4',
-  };
 }
 
 export const generateVideo = async (framesDir, frameCount, speed = 1, onProgress) => {

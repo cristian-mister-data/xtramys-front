@@ -23,6 +23,8 @@ android
 !/android/app/src/main/
 /android/app/src/main/*
 !/android/app/src/main/AndroidManifest.xml
+!/android/app/src/main/java/
+!/android/app/src/main/java/**
 # Launcher icons are release inputs, not disposable Gradle output.
 !/android/app/src/main/res/
 /android/app/src/main/res/*

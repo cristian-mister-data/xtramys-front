@@ -78,7 +78,9 @@ assert.doesNotMatch(directRegeneration, /toBlob|CAPTURE_FORMAT/);
 assert.match(localVideoRegenerator, /renderWidth/);
 assert.match(localVideoRegenerator, /localRegenerationResultCache/);
 assert.match(localVideoRegenerator, /if \(index === 0 \|\| !frame\._reusePreviousFrame\)[\s\S]*?canvas\.toBlob/);
-assert.match(videoUtils, /const encodedSources = new Map\(\)/);
+assert.match(videoUtils, /store\.delete\(key\)/);
+assert.match(videoUtils, /createNativeStreamingVideoEncoder/);
+assert.doesNotMatch(videoUtils, /NativeVideoEncoder\.encodeFrames|frames\.push\(encoded\)/);
 
 const canvasCurveRenderer = videoCanvasRenderer.slice(
   videoCanvasRenderer.indexOf('function drawCurveLine'),

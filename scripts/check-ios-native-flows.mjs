@@ -23,8 +23,11 @@ assert.match(videoRecorder, /renderVideoFieldImage\(fieldType, canvasW, canvasH\
 assert.match(videoRegenerator, /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/);
 
 const videoUtils = read('src/utils/videoUtils.js');
-assert.match(videoUtils, /getPlatform\?\.\(\) === 'ios'[\s\S]*?encoder nativo de iOS/);
 assert.match(videoUtils, /isNativeAndroid\(\) \|\| isNativeIOS\(\)[\s\S]*?generateVideoWithNativeEncoder/);
+assert.match(videoUtils, /plugin\.startEncoding/);
+assert.match(videoUtils, /plugin\.appendFrame/);
+assert.match(videoUtils, /plugin\.finishEncoding/);
+assert.doesNotMatch(videoUtils, /NativeVideoEncoder\.encodeFrames|frames\.push\(encoded\)/);
 
 const appDelegate = read('ios/App/App/AppDelegate.swift');
 assert.match(appDelegate, /registerPluginInstance\(NativeVideoEncoderPlugin\(\)\)/);
@@ -32,7 +35,12 @@ assert.match(appDelegate, /registerPluginInstance\(AppleSignInPlugin\(\)\)/);
 assert.match(appDelegate, /request\.requestedScopes = \[\.fullName, \.email\]/);
 assert.match(appDelegate, /request\.nonce = nonce/);
 assert.match(appDelegate, /AVAssetWriter\(outputURL: outputURL, fileType: \.mp4\)/);
-assert.match(appDelegate, /CMTime\(value: CMTimeValue\(index\), timescale: CMTimeScale\(fps\)\)/);
+assert.match(appDelegate, /func startEncoding/);
+assert.match(appDelegate, /func appendFrame/);
+assert.match(appDelegate, /func finishEncoding/);
+assert.match(appDelegate, /func cancelEncoding/);
+assert.match(appDelegate, /autoreleasepool/);
+assert.match(appDelegate, /"path": session\.outputURL\.absoluteString/);
 
 const entitlements = read('ios/App/App/App.entitlements');
 assert.match(entitlements, /com\.apple\.developer\.applesignin[\s\S]*?<string>Default<\/string>/);

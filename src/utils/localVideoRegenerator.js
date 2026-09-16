@@ -58,7 +58,7 @@ function getRenderConfig(video, renderWidth) {
     dimensions: {
       width,
       height: Number.isFinite(renderWidth)
-        ? Math.max(2, Math.round((width / aspect) / 2) * 2)
+        ? Math.max(2, Math.round(width / aspect / 2) * 2)
         : fullDimensions.height,
     },
   };
@@ -128,11 +128,7 @@ async function renderFramesDirectly(session, createFrames, frameCount, renderCon
     let pendingFrameRun = null;
     const encodePendingFrameRun = async () => {
       if (!pendingFrameRun) return;
-      await encoder.addFrame(
-        session.canvas,
-        pendingFrameRun.index,
-        pendingFrameRun.durationFrames,
-      );
+      await encoder.addFrame(session.canvas, pendingFrameRun.index, pendingFrameRun.durationFrames);
       pendingFrameRun = null;
     };
     for (const frame of createFrames()) {
@@ -160,7 +156,13 @@ async function renderFramesDirectly(session, createFrames, frameCount, renderCon
   }
 }
 
-async function renderFramesToDirectory(session, createFrames, frameCount, renderConfig, onProgress) {
+async function renderFramesToDirectory(
+  session,
+  createFrames,
+  frameCount,
+  renderConfig,
+  onProgress,
+) {
   const framesDir = await initRecordingSession();
 
   let index = 0;
@@ -176,7 +178,10 @@ async function renderFramesToDirectory(session, createFrames, frameCount, render
         );
       });
     }
-    await RNFS.moveFile(frameBlob, `${framesDir}/frame${String(index).padStart(4, '0')}.${CAPTURE_EXTENSION}`);
+    await RNFS.moveFile(
+      frameBlob,
+      `${framesDir}/frame${String(index).padStart(4, '0')}.${CAPTURE_EXTENSION}`,
+    );
 
     const currentProgress = 15 + Math.round(((index + 1) / frameCount) * 60);
     onProgress?.(currentProgress, 'generationEncoding');
@@ -206,7 +211,14 @@ async function persistGeneratedVideo(outputPath, persistVideo) {
   return { r2Key, videoUrl: upload.videoUrl };
 }
 
-async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = null, persistVideo = null, fieldTypeOverride = null, renderWidth = null) {
+async function regenerateStoredVideo(
+  videoId,
+  playerOverlays = [],
+  onProgress = null,
+  persistVideo = null,
+  fieldTypeOverride = null,
+  renderWidth = null,
+) {
   onProgress?.(5, 'generationPreparing');
   const response = await getVideoForEdit(videoId);
   let video = response?.success ? response.video : null;
@@ -240,7 +252,9 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
     renderConfig.holdDuration,
     renderConfig.speedMultiplier,
     renderConfig.extraDurationEnd,
-    typeof window !== 'undefined' && Math.min(window.innerWidth, window.innerHeight) < 1024 ? 12 : 10,
+    typeof window !== 'undefined' && Math.min(window.innerWidth, window.innerHeight) < 1024
+      ? 12
+      : 10,
   ];
   const frameCount = getInterpolatedFrameCount(...interpolationArgs);
   if (!frameCount) throw new Error('No hay frames suficientes para regenerar el video');
@@ -250,8 +264,9 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
   let framesDir = null;
   try {
     let outputPath;
+    let playbackPath;
     try {
-      ({ outputPath } = await renderFramesDirectly(
+      ({ outputPath, playbackPath } = await renderFramesDirectly(
         renderSession,
         createFrames,
         frameCount,
@@ -267,7 +282,7 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
         renderConfig,
         onProgress,
       );
-      ({ outputPath } = await encodeVideo(
+      ({ outputPath, playbackPath } = await encodeVideo(
         framesDir,
         frameCount,
         renderConfig.speedMultiplier,
@@ -282,14 +297,17 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
       try {
         persistedVideo = await persistGeneratedVideo(outputPath, persistVideo);
       } catch (error) {
-        console.warn('[video] El video local esta listo, pero no se pudo persistir su copia:', error);
+        console.warn(
+          '[video] El video local esta listo, pero no se pudo persistir su copia:',
+          error,
+        );
       }
     } else if (!playerOverlays.length) {
       const upload = await proxyUploadToR2(outputPath);
       if (upload?.r2Key) await updateVideo(videoId, { r2Key: upload.r2Key });
     }
     onProgress?.(100, 'generationComplete');
-    return { outputPath, persistedVideo };
+    return { outputPath: playbackPath || outputPath, storagePath: outputPath, persistedVideo };
   } finally {
     renderSession.releasePlayerPhotos?.();
     if (framesDir) RNFS.unlink(framesDir).catch(() => {});
@@ -299,15 +317,18 @@ async function regenerateStoredVideo(videoId, playerOverlays = [], onProgress = 
 const localRegenerationListeners = new Map();
 const localRegenerationSavedListeners = new Map();
 
-export function regenerateVideoInBrowser(videoId, {
-  playerOverlays = [],
-  fieldType,
-  onProgress,
-  persistVideo,
-  renderWidth,
-  cacheVersion,
-  reuseResult = false,
-} = {}) {
+export function regenerateVideoInBrowser(
+  videoId,
+  {
+    playerOverlays = [],
+    fieldType,
+    onProgress,
+    persistVideo,
+    renderWidth,
+    cacheVersion,
+    reuseResult = false,
+  } = {},
+) {
   if (!videoId) throw new Error('No hay video para regenerar');
   const cacheKey = `${videoId}:${cacheVersion || ''}:${fieldType || ''}:${renderWidth || 'full'}:${JSON.stringify(playerOverlays)}:${persistVideo ? 'persist' : 'preview'}`;
 
@@ -345,23 +366,38 @@ export function regenerateVideoInBrowser(videoId, {
 
     localRegenerationById.set(
       cacheKey,
-      regenerateStoredVideo(videoId, playerOverlays, triggerProgress, persistVideo, fieldType, renderWidth)
+      regenerateStoredVideo(
+        videoId,
+        playerOverlays,
+        triggerProgress,
+        persistVideo,
+        fieldType,
+        renderWidth,
+      )
         .then(async (result) => {
           if (result.persistedVideo) {
             const listeners = localRegenerationSavedListeners.get(cacheKey) || [];
             const artifact = { ...result.persistedVideo, url: result.outputPath };
             void Promise.allSettled(
               [...listeners].map((listener) => Promise.resolve().then(() => listener(artifact))),
-            ).then((settled) => settled.forEach((entry) => {
-              if (entry.status === 'rejected') {
-                console.warn('[video] No se pudo guardar la referencia del video de la ficha:', entry.reason);
-              }
-            }));
+            ).then((settled) =>
+              settled.forEach((entry) => {
+                if (entry.status === 'rejected') {
+                  console.warn(
+                    '[video] No se pudo guardar la referencia del video de la ficha:',
+                    entry.reason,
+                  );
+                }
+              }),
+            );
           }
           if (reuseResult) {
             const response = await fetch(result.outputPath);
             const cachedBlob = await response.blob();
-            URL.revokeObjectURL(result.outputPath);
+            if (result.outputPath.startsWith('blob:')) URL.revokeObjectURL(result.outputPath);
+            if (result.storagePath !== result.outputPath) {
+              RNFS.unlink(result.storagePath).catch(() => {});
+            }
             localRegenerationResultCache.set(cacheKey, cachedBlob);
             while (localRegenerationResultCache.size > MAX_PREVIEW_CACHE_ENTRIES) {
               const oldestKey = localRegenerationResultCache.keys().next().value;
