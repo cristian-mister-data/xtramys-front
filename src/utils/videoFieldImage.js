@@ -7,8 +7,19 @@ import FieldSVGRenderer from '@/vendor/tacticalBoard/fields/FieldSVGRenderer';
 function loadSvgImage(source) {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('No se pudo rasterizar el campo'));
+    const timer = setTimeout(() => {
+      image.onload = image.onerror = null;
+      image.src = '';
+      reject(new Error('No se pudo rasterizar el campo a tiempo'));
+    }, 15000);
+    image.onload = () => {
+      clearTimeout(timer);
+      resolve(image);
+    };
+    image.onerror = () => {
+      clearTimeout(timer);
+      reject(new Error('No se pudo rasterizar el campo'));
+    };
     image.src = source;
   });
 }

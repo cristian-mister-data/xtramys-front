@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { flushSync } from 'react-dom';
 import {
   View,
   Text,
@@ -120,6 +121,11 @@ const yieldForMobilePaint = () =>
 
 const isNativeAndroid = () =>
   typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'android';
+
+const isNativeMobile = () =>
+  typeof window !== 'undefined' &&
+  window.Capacitor?.getPlatform?.() &&
+  window.Capacitor.getPlatform() !== 'web';
 
 const captureVideoFrame = (canvas) => {
   if (isNativeAndroid()) {
@@ -463,6 +469,7 @@ function VideoRecorder({
   const [videoThumbnail, setVideoThumbnail] = useState(null);
   const videoThumbnailRef = useRef(null);
   const generationCancelledRef = useRef(false); // Para cancelar generación en curso
+  const generationEncoderRef = useRef(null);
   const uploadingPathRef = useRef(null); // Ruta del archivo que se está subiendo a R2 (no borrar)
   const [generationProgress, setGenerationProgress] = useState(0); // 0-100 porcentaje de generación
   const [generationPhase, setGenerationPhase] = useState('generationPreparing');
@@ -480,6 +487,7 @@ function VideoRecorder({
   useEffect(() => {
     return () => {
       generationCancelledRef.current = true;
+      generationEncoderRef.current?.abort?.();
       // Limpiar video local si existe Y no está pendiente de upload a R2
       if (localVideoPath && localVideoPath !== uploadingPathRef.current) {
         RNFS.unlink(localVideoPath).catch(() => {});
@@ -1020,13 +1028,52 @@ function VideoRecorder({
       return;
     }
 
-    if (!videoFrameControl?.current?.setFrame) {
+    const nativeMobile = isNativeMobile();
+    if (!nativeMobile && !videoFrameControl?.current?.setFrame) {
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
       return;
     }
 
     let streamingEncoder = null;
     let releasePlayerPhotos = null;
+    let releaseCanvas = null;
+    let recordingDirectory = null;
+    const showGeneratedVideo = async (outputPath, playbackPath, mimeType) => {
+      setLocalVideoMime(mimeType || null);
+      setGenerationPhase('generationFinalizing');
+      setGenerationProgress(100);
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      if (generationCancelledRef.current) {
+        await RNFS.unlink(outputPath).catch(() => {});
+        return;
+      }
+
+      let fileUri = playbackPath || outputPath;
+      if (
+        Platform.OS === 'android' &&
+        !outputPath.startsWith('file://') &&
+        !outputPath.startsWith('http') &&
+        !outputPath.startsWith('blob:')
+      ) {
+        fileUri = `file://${outputPath}`;
+      }
+      setLocalVideoPath(outputPath);
+      setVideoUrl(fileUri);
+      setCurrentVideoId(null);
+      setShowPreviewScreen(false);
+      setShowSaveModal(true);
+      if (!videoNombre.trim() && editingVideoName) setVideoNombre(editingVideoName);
+      setSelectedFolderId(presetFolderId || editingVideoFolderId || null);
+      try {
+        const foldersResult = await getAllVideoFoldersFlat(i18n.language);
+        if (foldersResult.success) {
+          setAllFolders((foldersResult.folders || []).filter((folder) => !folder.isGlobal));
+        }
+      } catch (folderError) {
+        console.error('Error cargando carpetas:', folderError);
+      }
+      if (onGoToLastKeyframe && keyframes.length > 0) onGoToLastKeyframe();
+    };
 
     try {
       setIsGenerating(true);
@@ -1057,6 +1104,12 @@ function VideoRecorder({
       ctx.imageSmoothingEnabled = true;
       if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
       const renderCache = createVideoRenderCache();
+      releaseCanvas = () => {
+        canvas.width = canvas.height = 0;
+        const background = renderCache.background?.canvas;
+        if (background) background.width = background.height = 0;
+        renderCache.background = null;
+      };
 
       // Cargar imagen del campo como fondo
       let fieldBgImage = await renderVideoFieldImage(fieldType, canvasW, canvasH).catch((error) => {
@@ -1100,6 +1153,7 @@ function VideoRecorder({
 
       // 3. Inicializar directorio de frames
       const framesDir = await initRecordingSession();
+      recordingDirectory = framesDir;
 
       const totalFrames = frameCount;
       let capturedFrames = 0;
@@ -1117,10 +1171,15 @@ function VideoRecorder({
         const nextProgress = Math.min(99, Math.round((completedWork / totalWork) * 99));
         if (nextProgress <= lastLinearProgress) return;
         lastLinearProgress = nextProgress;
-        setGenerationProgress((currentProgress) => Math.max(currentProgress, nextProgress));
+        const commitProgress = () =>
+          setGenerationProgress((currentProgress) => Math.max(currentProgress, nextProgress));
+        // React puede retener estos commits dentro del bucle asíncrono de una
+        // WebView y liberarlos sólo al recibir otro evento táctil.
+        flushSync(commitProgress);
       };
 
       const disableStreamingEncoder = (streamingErrorToReport) => {
+        if (nativeMobile) throw streamingErrorToReport;
         if (
           !String(streamingErrorToReport?.message || '').includes('H.264 WebCodecs no soportado')
         ) {
@@ -1143,7 +1202,9 @@ function VideoRecorder({
             updateLinearProgress();
           },
         });
+        generationEncoderRef.current = streamingEncoder;
       } catch (streamingError) {
+        if (nativeMobile) throw streamingError;
         console.info(
           '[videoRecorder] Codificacion incremental no disponible, se usara fallback',
           streamingError,
@@ -1228,6 +1289,9 @@ function VideoRecorder({
           if (checkGenerationCancelled()) return;
 
           try {
+            // Cede el hilo antes de la codificación PNG/subida para que iOS
+            // pueda pintar el porcentaje sin requerir interacción táctil.
+            await yieldForGenerationPaint(true);
             if (frame._reusePreviousFrame && pendingFrameRun) {
               pendingFrameRun.durationFrames += 1;
             } else {
@@ -1274,6 +1338,7 @@ function VideoRecorder({
           encodedFrames = totalFrames;
           updateLinearProgress();
         } catch (streamingError) {
+          if (nativeMobile) throw streamingError;
           console.warn(
             '[videoRecorder] Finalizacion streaming falló, usando fallback',
             streamingError,
@@ -1294,7 +1359,6 @@ function VideoRecorder({
         playbackPath = result.playbackPath;
         encodedMime = result.mimeType;
       }
-      setLocalVideoMime(encodedMime || null);
       RNFS.unlink(framesDir).catch(() => {});
 
       if (generationCancelledRef.current) {
@@ -1302,52 +1366,17 @@ function VideoRecorder({
         setGenerationProgress(0);
         return;
       }
-
-      setGenerationPhase('generationFinalizing');
-      setGenerationProgress(100);
-      await new Promise((resolve) => setTimeout(resolve, 120));
-
-      // 7. Reproducir video local
-      let fileUri = playbackPath || outputPath;
-      if (
-        Platform.OS === 'android' &&
-        !outputPath.startsWith('file://') &&
-        !outputPath.startsWith('http') &&
-        !outputPath.startsWith('blob:')
-      ) {
-        fileUri = `file://${outputPath}`;
-      }
-      setLocalVideoPath(outputPath);
-      setVideoUrl(fileUri);
-      setCurrentVideoId(null);
-      setShowPreviewScreen(false);
-      setShowSaveModal(true);
-      if (!videoNombre.trim() && editingVideoName) {
-        setVideoNombre(editingVideoName);
-      }
-      setSelectedFolderId(presetFolderId || editingVideoFolderId || null);
-      try {
-        const lang = i18n.language;
-        const foldersResult = await getAllVideoFoldersFlat(lang);
-        if (foldersResult.success) {
-          setAllFolders((foldersResult.folders || []).filter((f) => !f.isGlobal));
-        }
-      } catch (folderError) {
-        console.error('Error cargando carpetas:', folderError);
-      }
-      // NO llamar showNotification aquí — el modal abierto ya indica que el video se generó.
-      // La notificación causa re-renders (setNotification + Animated.sequence)
-      // que provocan parpadeo del SurfaceView dentro del Modal transparente en Android.
-
-      // Volver al último keyframe
-      if (onGoToLastKeyframe && keyframes.length > 0) {
-        onGoToLastKeyframe();
-      }
+      await showGeneratedVideo(outputPath, playbackPath, encodedMime);
     } catch (error) {
+      streamingEncoder?.abort?.();
+      if (generationCancelledRef.current) return;
       console.error('Error generando video:', error);
       showNotification(t('videoRecorder.errorGeneratingVideo'), 'error');
     } finally {
+      generationEncoderRef.current = null;
       releasePlayerPhotos?.();
+      releaseCanvas?.();
+      if (recordingDirectory) RNFS.unlink(recordingDirectory).catch(() => {});
       setIsGenerating(false);
       setGenerationPhase('generationPreparing');
     }
@@ -2551,6 +2580,7 @@ function VideoRecorder({
         animationType="fade"
         onRequestClose={() => {
           generationCancelledRef.current = true;
+          generationEncoderRef.current?.abort?.();
         }}
       >
         <View
@@ -2580,6 +2610,7 @@ function VideoRecorder({
               style={styles.progressCancelBtn}
               onPress={() => {
                 generationCancelledRef.current = true;
+                generationEncoderRef.current?.abort?.();
               }}
             >
               <Feather name="x" size={16} color="#EF4444" />

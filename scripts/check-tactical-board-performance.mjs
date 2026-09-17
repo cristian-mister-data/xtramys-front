@@ -79,7 +79,7 @@ assert.match(localVideoRegenerator, /renderWidth/);
 assert.match(localVideoRegenerator, /localRegenerationResultCache/);
 assert.match(localVideoRegenerator, /if \(index === 0 \|\| !frame\._reusePreviousFrame\)[\s\S]*?canvas\.toBlob/);
 assert.match(videoUtils, /store\.delete\(key\)/);
-assert.match(videoUtils, /createNativeStreamingVideoEncoder/);
+assert.match(videoUtils, /createServerFrameEncoder/);
 assert.doesNotMatch(videoUtils, /NativeVideoEncoder\.encodeFrames|frames\.push\(encoded\)/);
 
 const canvasCurveRenderer = videoCanvasRenderer.slice(

@@ -20,14 +20,23 @@ assert.ok(
 const videoRecorder = read('src/vendor/tacticalBoard/videoRecorder.js');
 const videoRegenerator = read('src/utils/localVideoRegenerator.js');
 assert.match(videoRecorder, /renderVideoFieldImage\(fieldType, canvasW, canvasH\)/);
-assert.match(videoRegenerator, /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/);
+assert.match(
+  videoRegenerator,
+  /renderVideoFieldImage\(video\.fieldType, canvas\.width, canvas\.height\)/,
+);
+assert.doesNotMatch(videoRecorder, /generateVideoForMobile/);
+assert.match(videoRecorder, /flushSync\(commitProgress\)/);
+assert.doesNotMatch(videoRegenerator, /regenerateVideoForMobile/);
 
 const videoUtils = read('src/utils/videoUtils.js');
-assert.match(videoUtils, /isNativeAndroid\(\) \|\| isNativeIOS\(\)[\s\S]*?generateVideoWithNativeEncoder/);
-assert.match(videoUtils, /plugin\.startEncoding/);
-assert.match(videoUtils, /plugin\.appendFrame/);
-assert.match(videoUtils, /plugin\.finishEncoding/);
+assert.match(videoUtils, /typeof window !== 'undefined'[\s\S]*?createServerFrameEncoder/);
+assert.doesNotMatch(videoUtils, /plugin\.startEncoding|plugin\.appendFrame|plugin\.finishEncoding/);
 assert.doesNotMatch(videoUtils, /NativeVideoEncoder\.encodeFrames|frames\.push\(encoded\)/);
+
+const serverFrameEncoder = read('src/utils/serverFrameEncoder.js');
+assert.match(serverFrameEncoder, /canvas\.toDataURL\('image\/png'\)/);
+assert.doesNotMatch(serverFrameEncoder, /canvas\.toBlob|FileReader|MessageChannel/);
+assert.match(serverFrameEncoder, /setTimeout\(resolve, 16\)/);
 
 const appDelegate = read('ios/App/App/AppDelegate.swift');
 assert.match(appDelegate, /registerPluginInstance\(NativeVideoEncoderPlugin\(\)\)/);
@@ -54,7 +63,10 @@ assert.match(appleSignIn, /AppleID\.auth\.init/);
 assert.match(appleSignIn, /usePopup: true/);
 assert.match(appleSignIn, /identityToken: authorization\.id_token/);
 assert.match(appleSignIn, /authorization\.state !== state/);
-assert.match(read('index.html'), /appleid\.cdn-apple\.com\/appleauth\/static\/jsapi\/appleid\/1\/en_US\/appleid\.auth\.js/);
+assert.match(
+  read('index.html'),
+  /appleid\.cdn-apple\.com\/appleauth\/static\/jsapi\/appleid\/1\/en_US\/appleid\.auth\.js/,
+);
 
 const storyboard = read('ios/App/App/Base.lproj/Main.storyboard');
 assert.match(storyboard, /customClass="BridgeViewController" customModule="App"/);
@@ -64,7 +76,10 @@ assert.match(pdf, /platform === 'ios'[\s\S]*?Directory\.Cache[\s\S]*?Share\.shar
 assert.match(pdf, /platform === 'ios'[\s\S]*?@capacitor\/share[\s\S]*?Share\.share/);
 
 const pdfDialog = read('src/ui/PdfActionDialog.jsx');
-assert.match(pdfDialog, /platform === 'android'[\s\S]*?registerPlugin\('VideoSaver'\)[\s\S]*?saveToDownloads/);
+assert.match(
+  pdfDialog,
+  /platform === 'android'[\s\S]*?registerPlugin\('VideoSaver'\)[\s\S]*?saveToDownloads/,
+);
 assert.match(pdfDialog, /action === 'share'[\s\S]*?Share\.share/);
 
 const plist = read('ios/App/App/Info.plist');
@@ -72,14 +87,20 @@ assert.match(plist, /LSSupportsOpeningDocumentsInPlace[\s\S]*?<true\/>/);
 assert.match(plist, /UIFileSharingEnabled[\s\S]*?<true\/>/);
 
 const snapshot = read('src/features/rivalAnalysis/TacticalSnapshotModal.jsx');
-assert.match(snapshot, /<Field[\s\S]*?onSave=\{handleFieldSave\}[\s\S]*?onCancel=\{handleFieldCancel\}/);
+assert.match(
+  snapshot,
+  /<Field[\s\S]*?onSave=\{handleFieldSave\}[\s\S]*?onCancel=\{handleFieldCancel\}/,
+);
 assert.doesNotMatch(snapshot, /global\.fieldCallbacks\s*=/);
 
 const field = read('src/vendor/tacticalBoard/field.js');
 assert.match(field, /if \(!isNative\) return undefined;[\s\S]*?ScreenOrientation\.lock/);
 assert.match(field, /lastPlacementCommitRef/);
 assert.match(field, /now - previous\.timestamp < 650/);
-assert.match(field, /Math\.hypot\(previous\.x - ratioPoint\.x, previous\.y - ratioPoint\.y\) < 0\.012/);
+assert.match(
+  field,
+  /Math\.hypot\(previous\.x - ratioPoint\.x, previous\.y - ratioPoint\.y\) < 0\.012/,
+);
 
 const kitDesigner = read('src/components/shared/KitDesigner.jsx');
 assert.match(kitDesigner, /styled\.input\.attrs\(\{ type: 'color' \}\)/);

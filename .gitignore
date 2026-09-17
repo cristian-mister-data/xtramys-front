@@ -74,3 +74,6 @@ AuthKey_*.p8
 /ios/App/Pods
 /ios/App/Podfile.lock
 
+# Generated video roundtrip comparisons
+/release/video-qa/
+

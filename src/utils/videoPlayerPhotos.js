@@ -1,13 +1,25 @@
 import { api } from '@/api/client';
 import { cdnUrl } from '@/config';
 
-const loadImageElement = (url, crossOrigin = false) => new Promise((resolve, reject) => {
-  const image = new Image();
-  if (crossOrigin) image.crossOrigin = 'anonymous';
-  image.onload = () => resolve(image);
-  image.onerror = reject;
-  image.src = url;
-});
+const loadImageElement = (url, crossOrigin = false) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    if (crossOrigin) image.crossOrigin = 'anonymous';
+    const timer = setTimeout(() => {
+      image.onload = image.onerror = null;
+      image.src = '';
+      reject(new Error('La foto no respondió a tiempo'));
+    }, 15000);
+    image.onload = () => {
+      clearTimeout(timer);
+      resolve(image);
+    };
+    image.onerror = (error) => {
+      clearTimeout(timer);
+      reject(error);
+    };
+    image.src = url;
+  });
 
 async function loadPlayerPhoto(source, objectUrls) {
   const directUrl = cdnUrl(source);
@@ -31,27 +43,37 @@ async function loadPlayerPhoto(source, objectUrls) {
 
 export async function loadVideoPlayerPhotos(keyframes = []) {
   const sources = new Set();
-  keyframes.forEach((frame) => (frame.elements || []).forEach((element) => {
-    const source = element.photoUrl || element.playerData?.foto;
-    if (element.type === 'player' && source) sources.add(source);
-  }));
+  keyframes.forEach((frame) =>
+    (frame.elements || []).forEach((element) => {
+      const source = element.photoUrl || element.playerData?.foto;
+      if (element.type === 'player' && source) sources.add(source);
+    }),
+  );
 
   const playerPhotos = {};
   const objectUrls = [];
-  await Promise.all([...sources].map(async (source) => {
-    try {
-      const image = await loadPlayerPhoto(source, objectUrls);
-      playerPhotos[source] = image;
-      playerPhotos[cdnUrl(source)] = image;
-    } catch (error) {
-      console.warn(`[video] No se pudo cargar la foto del jugador ${source}:`, error);
-    }
-  }));
+  await Promise.all(
+    [...sources].map(async (source) => {
+      try {
+        const image = await loadPlayerPhoto(source, objectUrls);
+        playerPhotos[source] = image;
+        playerPhotos[cdnUrl(source)] = image;
+      } catch (error) {
+        console.warn(`[video] No se pudo cargar la foto del jugador ${source}:`, error);
+      }
+    }),
+  );
 
   return {
     playerPhotos,
     release() {
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
+      new Set(Object.values(playerPhotos)).forEach((image) => {
+        image.src = '';
+      });
+      Object.keys(playerPhotos).forEach((key) => {
+        delete playerPhotos[key];
+      });
     },
   };
 }

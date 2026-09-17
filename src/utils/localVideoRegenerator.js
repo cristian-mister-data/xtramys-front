@@ -27,6 +27,10 @@ const MAX_PREVIEW_CACHE_ENTRIES = 6;
 
 const localRegenerationById = new Map();
 const localRegenerationResultCache = new Map();
+const isNativeMobile = () =>
+  typeof window !== 'undefined' &&
+  window.Capacitor?.getPlatform?.() &&
+  window.Capacitor.getPlatform() !== 'web';
 
 const yieldToBrowser = () =>
   new Promise((resolve) => {
@@ -274,6 +278,7 @@ async function regenerateStoredVideo(
         onProgress,
       ));
     } catch (streamingError) {
+      if (isNativeMobile()) throw streamingError;
       console.info('[video] Codificacion directa no disponible; usando fallback', streamingError);
       framesDir = await renderFramesToDirectory(
         renderSession,
@@ -310,6 +315,10 @@ async function regenerateStoredVideo(
     return { outputPath: playbackPath || outputPath, storagePath: outputPath, persistedVideo };
   } finally {
     renderSession.releasePlayerPhotos?.();
+    renderSession.canvas.width = renderSession.canvas.height = 0;
+    const background = renderSession.renderCache.background?.canvas;
+    if (background) background.width = background.height = 0;
+    renderSession.renderCache.background = null;
     if (framesDir) RNFS.unlink(framesDir).catch(() => {});
   }
 }

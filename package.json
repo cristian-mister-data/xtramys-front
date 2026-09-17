@@ -1,7 +1,7 @@
 {
   "name": "xtramys-front-web",
   "private": true,
-  "version": "1.0.27",
+  "version": "1.0.32",
   "type": "module",
   "description": "Xtramys web application",
   "scripts": {
@@ -14,6 +14,7 @@
     "check:mobile-subscriptions": "node scripts/check-mobile-subscriptions.mjs",
     "check:subscription-flow": "node scripts/check-subscription-flow.mjs",
     "check:ios-native-flows": "node scripts/check-ios-native-flows.mjs",
+    "check:video-frame-roundtrip": "node scripts/check-video-frame-roundtrip.mjs",
     "check:training-pdf-mobile": "node scripts/check-training-pdf-mobile.mjs",
     "check:app-version": "node scripts/check-app-version.mjs",
     "check:tactical-board-performance": "node scripts/check-tactical-board-performance.mjs",

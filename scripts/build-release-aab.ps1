@@ -4,7 +4,9 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $androidRoot = Join-Path $projectRoot 'android'
 $aabSource = Join-Path $androidRoot 'app\build\outputs\bundle\release\app-release.aab'
 $releaseDir = Join-Path $projectRoot 'release'
-$aabTarget = Join-Path $releaseDir 'xtramys-v1.0.27-build34.aab'
+$aabTarget = Join-Path $releaseDir 'xtramys-v1.0.32-build39.aab'
+$apkSource = Join-Path $androidRoot 'app\build\outputs\apk\release\app-release.apk'
+$apkTarget = Join-Path $releaseDir 'xtramys-v1.0.32-build39.apk'
 
 Push-Location $projectRoot
 try {
@@ -20,7 +22,7 @@ try {
 
     Push-Location $androidRoot
     try {
-        .\gradlew.bat bundleRelease
+        .\gradlew.bat bundleRelease assembleRelease
         if ($LASTEXITCODE -ne 0) {
             throw "El build Android fallo con codigo $LASTEXITCODE"
         }
@@ -34,7 +36,9 @@ try {
 
     New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
     Copy-Item -LiteralPath $aabSource -Destination $aabTarget -Force
+    Copy-Item -LiteralPath $apkSource -Destination $apkTarget -Force
     Write-Host "AAB generado: $aabTarget"
+    Write-Host "APK generado: $apkTarget"
 } finally {
     Pop-Location
 }
