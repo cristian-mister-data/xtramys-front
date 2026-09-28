@@ -198,6 +198,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
   const [idaYvueltaDesde, setIdaYvueltaDesde] = useState('todas');
   const [formatoFinal, setFormatoFinal] = useState('unico');
   const [cicloAmarillas, setCicloAmarillas] = useState('5');
+  const [cambiosPermitidos, setCambiosPermitidos] = useState('5');
 
   useEffect(() => {
     if (tournament) {
@@ -218,6 +219,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       setIdaYvueltaDesde(tournament.idaYvueltaDesde || 'todas');
       setFormatoFinal(tournament.formatoFinal || 'unico');
       setCicloAmarillas(String(tournament.cicloAmarillas || 5));
+      setCambiosPermitidos(tournament.cambiosPermitidos === null ? 'infinito' : String(tournament.cambiosPermitidos || 5));
       setPorDefecto(tournament.porDefecto || false);
       setShowAdvanced(!!tournament.formato);
     } else {
@@ -238,6 +240,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       setIdaYvueltaDesde('todas');
       setFormatoFinal('unico');
       setCicloAmarillas('5');
+      setCambiosPermitidos('5');
       setPorDefecto(false);
       setShowAdvanced(false);
     }
@@ -257,6 +260,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       fechaInicio: fechaInicio ? fechaInicio.toISOString() : null,
       fechaFin: fechaFin ? fechaFin.toISOString() : null,
       porDefecto,
+      cambiosPermitidos: cambiosPermitidos === 'infinito' ? null : (parseInt(cambiosPermitidos, 10) || 5),
     };
     // Advanced config — only include if explicitly set
     if (tipo === 'liga') {
@@ -460,6 +464,20 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
             </View>
 
             {/* ─── Configuración avanzada ─── */}
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>{t('tournaments.allowedSubstitutions', 'Cambios permitidos')}</Text>
+              <View style={styles.configChips} accessibilityRole="radiogroup">
+                {[1, 2, 3, 4, 5, 6, 7].map(value => (
+                  <TouchableOpacity key={value} accessibilityRole="radio" accessibilityState={{ selected: cambiosPermitidos === String(value) }} style={[styles.configChip, cambiosPermitidos === String(value) && styles.configChipActive]} onPress={() => setCambiosPermitidos(String(value))}>
+                    <Text style={[styles.configChipText, cambiosPermitidos === String(value) && styles.configChipTextActive]}>{value}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity accessibilityRole="radio" accessibilityState={{ selected: cambiosPermitidos === 'infinito' }} style={[styles.configChip, cambiosPermitidos === 'infinito' && styles.configChipActive]} onPress={() => setCambiosPermitidos('infinito')}>
+                  <Text style={[styles.configChipText, cambiosPermitidos === 'infinito' && styles.configChipTextActive]}>∞</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.configHint}>{t('tournaments.allowedSubstitutionsHint', 'Con ∞, un jugador puede volver a entrar.')}</Text>
+            </View>
             {(tipo === 'liga' || tipo === 'copa' || tipo === 'torneo') && (
               <View style={styles.formGroup}>
                 <TouchableOpacity

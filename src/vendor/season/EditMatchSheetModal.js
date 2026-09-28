@@ -65,7 +65,7 @@ import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 // Componente PlayerSelectionModal importado desde ../../shared/training
 
 // Modal para eventos (goles, tarjetas, cambios)
-function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], allowReentry = false, tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
+function EventModal({ visible, onClose, title, eventType, players, titulares = [], suplentes = [], allowReentry = false, cambiosPermitidos = Infinity, tiempoPorParte = 45, descuentoPT = 0, descuentoST = 0, jugadoresEnCampo = [], jugadoresExpulsados = [], cambiosRealizados = [], onAdd, editingEvent = null }) {
   const { t } = useTranslation();
   const theme = useTheme();
   const modalStyles = useMemo(() => makeModalStyles(theme), [theme]);
@@ -80,6 +80,7 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
   const [showMinuteModal, setShowMinuteModal] = useState(false);
 
   const isEditing = !!editingEvent;
+  const cambiosDisponibles = cambiosPermitidos === Infinity ? Infinity : Math.max(0, Number(cambiosPermitidos) - cambiosRealizados.length);
 
   const getPosColor = (pos) => {
     const colors = getPositionColor(pos);
@@ -195,6 +196,10 @@ function EventModal({ visible, onClose, title, eventType, players, titulares = [
   }, [visible, editingEvent]);
 
   const handleAdd = () => {
+    if (eventType === 'cambio' && !isEditing && cambiosDisponibles <= 0) {
+      Alert.alert(t('common.error'), t('matchSheet.substitutionLimitReached', 'Has alcanzado el límite de cambios de este torneo.'));
+      return;
+    }
     if (!minuto) {
       Alert.alert(t('common.error'), t('matchSheet.minuteRequired'));
       return;
@@ -1255,6 +1260,7 @@ export default function EditMatchSheetModal({
 
   // ─── Torneo seleccionado y lógica de formato ───
   const selectedTournament = useMemo(() => tournaments.find(t => t._id === torneoId), [tournaments, torneoId]);
+  const cambiosPermitidos = selectedTournament?.cambiosPermitidos === null ? Infinity : (selectedTournament?.cambiosPermitidos || 5);
   const torneoFormato = competicion === 'amistoso' ? null : (selectedTournament?.formato || null);
 
   // Orden de rondas de mayor a menor
@@ -4365,7 +4371,8 @@ export default function EditMatchSheetModal({
             players={players}
             titulares={alineacionTitulares}
             suplentes={alineacionSuplentes}
-            allowReentry={competicion === 'amistoso'}
+            allowReentry={competicion === 'amistoso' || cambiosPermitidos === Infinity}
+            cambiosPermitidos={cambiosPermitidos}
             tiempoPorParte={team?.tiempoPorParte || 45}
             descuentoPT={Number(descuentoPrimerTiempo) || 0}
             descuentoST={Number(descuentoSegundoTiempo) || 0}

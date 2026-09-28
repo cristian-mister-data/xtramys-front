@@ -78,6 +78,7 @@ const empty = {
   idaYvueltaDesde: 'todas',
   formatoFinal: 'unico',
   cicloAmarillas: '5',
+  cambiosPermitidos: '3',
   porDefecto: false,
 };
 
@@ -105,6 +106,7 @@ export default function TournamentFormModal({
         equiposPorGrupo: String(tournament.equiposPorGrupo || 4),
         formatoGrupos: tournament.formatoGrupos || 'unico',
         cicloAmarillas: String(tournament.cicloAmarillas || 5),
+        cambiosPermitidos: tournament.cambiosPermitidos === null ? 'infinito' : String(tournament.cambiosPermitidos || 3),
       });
       setShowAdvanced(!!tournament.formato);
     } else {
@@ -131,6 +133,7 @@ export default function TournamentFormModal({
       fechaInicio: form.fechaInicio ? new Date(form.fechaInicio).toISOString() : null,
       fechaFin: form.fechaFin ? new Date(form.fechaFin).toISOString() : null,
       porDefecto: !!form.porDefecto,
+      cambiosPermitidos: form.cambiosPermitidos === 'infinito' ? null : parseInt(form.cambiosPermitidos, 10),
     };
     if (form.tipo === 'liga') {
       data.formato = 'liga';
@@ -264,6 +267,15 @@ export default function TournamentFormModal({
 
         {showAdvanced && (
           <Stack $gap={12}>
+            <Field>
+              <Label>{t('tournaments.allowedSubstitutions', 'Cambios permitidos')}</Label>
+              <Select
+                value={form.cambiosPermitidos}
+                onChange={(v) => update({ cambiosPermitidos: v })}
+                options={[1, 2, 3, 4, 5, 6, 7].map((value) => ({ value: String(value), label: String(value) })).concat([{ value: 'infinito', label: '∞ · Ilimitados' }])}
+              />
+              <Muted>{t('tournaments.allowedSubstitutionsHint', 'Con cambios ilimitados, un jugador puede volver a entrar.')}</Muted>
+            </Field>
             {(form.tipo === 'copa' || form.tipo === 'torneo') && (
               <Field>
                 <Label>{t('tournaments.format', 'Formato')}</Label>

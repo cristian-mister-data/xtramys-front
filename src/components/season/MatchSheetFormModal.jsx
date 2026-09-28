@@ -232,6 +232,8 @@ export default function MatchSheetFormModal({
   }, [open, mode, match, defaultDate, team?.jugadoresPorEquipo, team?.tiempoPorParte]);
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
+  const selectedTournament = useMemo(() => tournaments.find((item) => String(item._id) === String(form.torneoId)), [tournaments, form.torneoId]);
+  const cambiosPermitidos = selectedTournament?.cambiosPermitidos === null ? Infinity : (selectedTournament?.cambiosPermitidos || 3);
   const selectOwnKit = (key) => {
     const kits = normalizeKits(team?.equipaciones);
     update({ equipacionPropiaKey: key, equipacionPropia: kits[key], equipacionPorteroPropia: kits[key === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] });
@@ -285,7 +287,13 @@ export default function MatchSheetFormModal({
   const removeRed = (i) => update({ tarjetasRojas: form.tarjetasRojas.filter((_, k) => k !== i) });
   const updateRed = (i, patch) => update({ tarjetasRojas: form.tarjetasRojas.map((c, k) => (k === i ? { ...c, ...patch } : c)) });
 
-  const addChange = () => update({ cambios: [...form.cambios, { minuto: 0, sale: null, entra: null }] });
+  const addChange = () => {
+    if (cambiosPermitidos !== Infinity && form.cambios.length >= cambiosPermitidos) {
+      setError(t('matchSheet.substitutionLimitReached', 'Has alcanzado el límite de cambios de este torneo.'));
+      return;
+    }
+    update({ cambios: [...form.cambios, { minuto: 0, sale: null, entra: null }] });
+  };
   const removeChange = (i) => update({ cambios: form.cambios.filter((_, k) => k !== i) });
   const updateChange = (i, patch) => update({ cambios: form.cambios.map((c, k) => (k === i ? { ...c, ...patch } : c)) });
 
@@ -619,7 +627,7 @@ export default function MatchSheetFormModal({
           <div>
             <Row style={{ justifyContent: 'space-between', marginBottom: 6 }}>
               <Label>🔁 {t('matchSheet.fields.changes', 'Cambios')} ({form.cambios.length})</Label>
-              <Button type="button" $variant="ghost" onClick={addChange} disabled={!callupPlayers.length}><MdAdd /> {t('common.add', 'Añadir')}</Button>
+              <Button type="button" $variant="ghost" onClick={addChange} disabled={!callupPlayers.length || (cambiosPermitidos !== Infinity && form.cambios.length >= cambiosPermitidos)}><MdAdd /> {t('common.add', 'Añadir')}</Button>
             </Row>
             <Stack $gap={6}>
               {form.cambios.length === 0 ? <ListEmpty>{t('common.empty', 'Sin datos')}</ListEmpty> : null}
