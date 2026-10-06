@@ -162,6 +162,9 @@ jobs:
           chmod 600 "$API_KEY_PATH"
           echo "API_KEY_PATH=$API_KEY_PATH" >> "$GITHUB_ENV"
 
+          export ARCHIVED_BUNDLE_IDENTIFIER="$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' build/Xtramys.xcarchive/Info.plist)"
+          node scripts/check-appstore-app.mjs
+
           xcrun altool --upload-app \
             -f "$IPA_PATH" \
             -t ios \
