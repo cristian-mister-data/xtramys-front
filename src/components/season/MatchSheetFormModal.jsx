@@ -233,7 +233,7 @@ export default function MatchSheetFormModal({
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }));
   const selectedTournament = useMemo(() => tournaments.find((item) => String(item._id) === String(form.torneoId)), [tournaments, form.torneoId]);
-  const cambiosPermitidos = selectedTournament?.cambiosPermitidos === null ? Infinity : (selectedTournament?.cambiosPermitidos || 3);
+  const cambiosPermitidos = selectedTournament?.cambiosPermitidos === null ? Infinity : (selectedTournament?.cambiosPermitidos ?? 3);
   const selectOwnKit = (key) => {
     const kits = normalizeKits(team?.equipaciones);
     update({ equipacionPropiaKey: key, equipacionPropia: kits[key], equipacionPorteroPropia: kits[key === 'second' ? 'goalkeeperSecond' : 'goalkeeperFirst'] });

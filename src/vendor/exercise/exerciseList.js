@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLayout from '@/vendor/shared/appLayout';
 import CreateExerciseForm from './createExerciseForm';
+import ErrorBoundary from '@/vendor/shared/ErrorBoundary';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchEjerciciosUsuario, createEjercicio, updateEjercicio, deleteEjercicio, duplicateGlobalExercise, copyClubExerciseToMine, fetchGlobalExercises, fetchGlobalFolders, toggleFavoriteExercise, batchDeleteExercises, batchMoveExercises } from '@/store/slices/exercise/exerciseThunks';
 import { fetchExerciseFolders, fetchExerciseFolderById, createExerciseFolder, updateExerciseFolder, deleteExerciseFolder, moveExerciseToFolder, duplicateExerciseToFolder, fetchExerciseFoldersFlat } from '@/store/slices/exercise/exerciseThunks';
@@ -1615,6 +1616,13 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
     clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
   };
 
+  const handleCreate = () => {
+    clearFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT);
+    clearFormDraft(STORAGE_KEYS.FIELD_RESULT);
+    setEditingExercise(null);
+    setCreating(true);
+  };
+
   // Funciones de navegación de carpetas
   const navigateToFolder = (folder) => {
     setFolderPath(prev => [...prev, { _id: folder._id, nombre: folder.nombre }]);
@@ -2309,23 +2317,19 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
 
     return (
       <AppLayout>
-        <Modal visible transparent animationType="fade" onRequestClose={() => {
-          setCreating(false);
-          setEditingExercise(null);
-        }}>
+        <Modal visible transparent animationType="fade" onRequestClose={handleCancel}>
           <View style={[styles.entityFormBackdrop, IS_FORM_MOBILE && styles.entityFormBackdropMobile]}>
             <View style={[styles.entityFormModal, IS_FORM_MOBILE && styles.entityFormModalMobile]}>
-              <CreateExerciseForm
-                key={formKey}
-                navigation={navigation}
-                onSave={handleSave}
-                onCancel={() => {
-                  setCreating(false);
-                  setEditingExercise(null);
-                }}
-                editingExercise={editingExercise}
-                setScrollEnabled={setScrollEnabled}
-              />
+              <ErrorBoundary key={formKey} onReset={handleCancel}>
+                <CreateExerciseForm
+                  key={formKey}
+                  navigation={navigation}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                  editingExercise={editingExercise}
+                  setScrollEnabled={setScrollEnabled}
+                />
+              </ErrorBoundary>
             </View>
           </View>
         </Modal>
@@ -2353,7 +2357,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
-                    onPress={() => { setCreating(true); setEditingExercise(null); }}
+                    onPress={handleCreate}
                     style={styles.mvCreateButton}
                     activeOpacity={0.7}
                   >

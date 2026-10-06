@@ -4811,6 +4811,11 @@
     "noRoot": "No root"
   },
   "tournaments": {
+    "allowedSubstitutions": "Allowed substitutions",
+    "unlimitedSubstitutions": "Unlimited",
+    "searchSubstitutionNumber": "Search substitution count",
+    "invalidSubstitutions": "Enter a whole number of substitutions greater than or equal to 0.",
+    "allowedSubstitutionsHint": "Enter the number of substitutions. With unlimited substitutions, a player can re-enter.",
     "title": "Tournaments",
     "league": "League",
     "tournament": "Tournament",

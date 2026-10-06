@@ -42,6 +42,8 @@ import EditMatchSheetModal from '@/vendor/season/EditMatchSheetModal';
 import MatchSheetDetailModal from '@/vendor/season/MatchSheetDetailModal';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import { generateTournamentPdf } from './pdf';
+import { parseSubstitutionLimit } from '@/utils/substitutionLimit';
+import SubstitutionLimitSelect from '@/components/tournament/SubstitutionLimitSelect';
 
 const TOURNAMENT_TYPES = [
   { value: 'liga', label: 'tournaments.league', icon: 'format-list-numbered', color: '#3B82F6' },
@@ -219,7 +221,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       setIdaYvueltaDesde(tournament.idaYvueltaDesde || 'todas');
       setFormatoFinal(tournament.formatoFinal || 'unico');
       setCicloAmarillas(String(tournament.cicloAmarillas || 5));
-      setCambiosPermitidos(tournament.cambiosPermitidos === null ? 'infinito' : String(tournament.cambiosPermitidos || 5));
+      setCambiosPermitidos(tournament.cambiosPermitidos === null ? 'infinito' : String(tournament.cambiosPermitidos ?? 5));
       setPorDefecto(tournament.porDefecto || false);
       setShowAdvanced(!!tournament.formato);
     } else {
@@ -247,6 +249,11 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
   }, [tournament, visible]);
 
   const handleSave = () => {
+    const substitutionLimit = parseSubstitutionLimit(cambiosPermitidos);
+    if (substitutionLimit === undefined) {
+      Alert.alert(t('common.error'), t('tournaments.invalidSubstitutions', 'Introduce un número entero de cambios igual o mayor que 0.'));
+      return;
+    }
     if (!nombre.trim()) {
       showMissingFieldsToast(t, [t('tournaments.name')]);
       return;
@@ -260,7 +267,7 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
       fechaInicio: fechaInicio ? fechaInicio.toISOString() : null,
       fechaFin: fechaFin ? fechaFin.toISOString() : null,
       porDefecto,
-      cambiosPermitidos: cambiosPermitidos === 'infinito' ? null : (parseInt(cambiosPermitidos, 10) || 5),
+      cambiosPermitidos: substitutionLimit,
     };
     // Advanced config — only include if explicitly set
     if (tipo === 'liga') {
@@ -464,18 +471,9 @@ function TournamentFormModal({ visible, onClose, onSave, tournament, loading, IS
             </View>
 
             {/* ─── Configuración avanzada ─── */}
-            <View style={styles.formGroup}>
+            <View style={[styles.formGroup, { zIndex: 1 }]}>
               <Text style={styles.formLabel}>{t('tournaments.allowedSubstitutions', 'Cambios permitidos')}</Text>
-              <View style={styles.configChips} accessibilityRole="radiogroup">
-                {[1, 2, 3, 4, 5, 6, 7].map(value => (
-                  <TouchableOpacity key={value} accessibilityRole="radio" accessibilityState={{ selected: cambiosPermitidos === String(value) }} style={[styles.configChip, cambiosPermitidos === String(value) && styles.configChipActive]} onPress={() => setCambiosPermitidos(String(value))}>
-                    <Text style={[styles.configChipText, cambiosPermitidos === String(value) && styles.configChipTextActive]}>{value}</Text>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity accessibilityRole="radio" accessibilityState={{ selected: cambiosPermitidos === 'infinito' }} style={[styles.configChip, cambiosPermitidos === 'infinito' && styles.configChipActive]} onPress={() => setCambiosPermitidos('infinito')}>
-                  <Text style={[styles.configChipText, cambiosPermitidos === 'infinito' && styles.configChipTextActive]}>∞</Text>
-                </TouchableOpacity>
-              </View>
+              <SubstitutionLimitSelect value={cambiosPermitidos} onChange={setCambiosPermitidos} />
               <Text style={styles.configHint}>{t('tournaments.allowedSubstitutionsHint', 'Con ∞, un jugador puede volver a entrar.')}</Text>
             </View>
             {(tipo === 'liga' || tipo === 'copa' || tipo === 'torneo') && (

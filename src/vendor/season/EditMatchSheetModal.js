@@ -1260,7 +1260,7 @@ export default function EditMatchSheetModal({
 
   // ─── Torneo seleccionado y lógica de formato ───
   const selectedTournament = useMemo(() => tournaments.find(t => t._id === torneoId), [tournaments, torneoId]);
-  const cambiosPermitidos = selectedTournament?.cambiosPermitidos === null ? Infinity : (selectedTournament?.cambiosPermitidos || 5);
+  const cambiosPermitidos = selectedTournament?.cambiosPermitidos === null ? Infinity : (selectedTournament?.cambiosPermitidos ?? 5);
   const torneoFormato = competicion === 'amistoso' ? null : (selectedTournament?.formato || null);
 
   // Orden de rondas de mayor a menor
@@ -4191,6 +4191,7 @@ export default function EditMatchSheetModal({
           {/* Modal de Convocados */}
           <PlayerSelectionModal
             visible={showConvocadosModal}
+            initialInjuryFilter="disponibles"
             onClose={() => setShowConvocadosModal(false)}
             title={t('schedule.selectCalled')}
             players={players.filter(p => p.activo !== false || convocados.includes(p._id))}

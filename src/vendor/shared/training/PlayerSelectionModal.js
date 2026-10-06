@@ -57,7 +57,8 @@ export default function PlayerSelectionModal({
   setSelectedIds, // Alternativa para actualización en tiempo real
   injuries = [],
   sanctionedPlayerIds = [], // IDs de jugadores sancionados en torneo actual
-  maxSelection = null 
+  maxSelection = null,
+  initialInjuryFilter = 'todos',
 }) {
   const { t } = useTranslation();
   const themeSC = useTheme();
@@ -120,7 +121,7 @@ export default function PlayerSelectionModal({
   
   const [tempSelected, setTempSelected] = useState([]);
   const [search, setSearch] = useState('');
-  const [injuryFilter, setInjuryFilter] = useState('todos');
+  const [injuryFilter, setInjuryFilter] = useState(initialInjuryFilter);
 
   // En modo directo, usamos selectedIds directamente
   // En modo batch, usamos tempSelected interno
@@ -132,9 +133,9 @@ export default function PlayerSelectionModal({
         setTempSelected([...selectedIds]);
       }
       setSearch('');
-      setInjuryFilter('todos');
+      setInjuryFilter(initialInjuryFilter);
     }
-  }, [visible, selectedIds, isDirectMode]);
+  }, [visible, selectedIds, isDirectMode, initialInjuryFilter]);
 
   const lower = search.trim().toLowerCase();
 

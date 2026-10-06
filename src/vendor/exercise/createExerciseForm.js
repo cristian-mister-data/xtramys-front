@@ -26,6 +26,7 @@ import FriendShareSelector from '@/components/shared/FriendShareSelector';
 import { useTheme } from 'styled-components';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import VisualMediaSelector from '@/vendor/shared/VisualMediaSelector';
+import { normalizeFriendSharing } from '@/utils/friendSharing';
 import { kitToBoardStyle, normalizeKits, normalizeRivalKits } from '@/utils/kits';
 import {
   saveFormDraft,
@@ -82,13 +83,13 @@ export default function CreateExerciseForm({
   // En web el componente puede remontarse después de volver del editor de campo.
   // Para sobrevivir remounts, inicializamos imagen/fieldElements/fieldType
   // leyendo primero el FIELD_RESULT persistido (si coincide con el ejercicio editado).
-  const __pendingFormDraft = (() => {
+  const __pendingFormDraft = useMemo(() => {
     try {
       return loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
     } catch {}
     return null;
-  })();
-  const __pendingFieldResult = (() => {
+  }, [formDraftId]);
+  const __pendingFieldResult = useMemo(() => {
     try {
       const fr = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
       const editingId = formDraftId;
@@ -96,7 +97,7 @@ export default function CreateExerciseForm({
       if (draftMatches && fr && (fr.editingId || null) === editingId && fr.kind === 'exercise') return fr;
     } catch {}
     return null;
-  })();
+  }, [formDraftId, __pendingFormDraft]);
   const __pendingDraftMatches = __pendingFormDraft
     && (__pendingFormDraft.editingId || null) === formDraftId
     && __pendingFormDraft.kind === 'exercise';
@@ -153,11 +154,7 @@ export default function CreateExerciseForm({
     return user?.role === 'admin';
   });
   const [visibility, setVisibility] = useState(editingExercise?.visibility || 'PRIVATE');
-  const isRestoringDraft = useMemo(() => {
-    const editingId = formDraftId;
-    const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
-    return !!(draft && (draft.editingId || null) === editingId && draft.kind === 'exercise');
-  }, [formDraftId]);
+  const isRestoringDraft = !!__pendingDraftMatches;
 
   const [friendSharing, setFriendSharing] = useState({
     sharedWithFriends: !!editingExercise?.sharedWithFriends,
@@ -225,8 +222,8 @@ export default function CreateExerciseForm({
   // desmonta esta pantalla).
   useEffect(() => {
     const editingId = formDraftId;
-    const draft = loadFormDraft(STORAGE_KEYS.EXERCISE_FORM_DRAFT, { remove: false });
-    const fieldResult = loadFormDraft(STORAGE_KEYS.FIELD_RESULT, { remove: false });
+    const draft = __pendingFormDraft;
+    const fieldResult = __pendingFieldResult;
     const draftMatches = draft && (draft.editingId || null) === editingId && draft.kind === 'exercise';
     const resultMatches = draftMatches && fieldResult && (fieldResult.editingId || null) === editingId && fieldResult.kind === 'exercise';
 
@@ -260,7 +257,7 @@ export default function CreateExerciseForm({
       if (typeof draft.importedImage === 'string') setImportedImage(draft.importedImage);
       if (typeof draft.visualSource === 'string') setVisualSource(draft.visualSource);
       if (Array.isArray(draft.pendingVideoIds)) pendingVideoIds.current = [...draft.pendingVideoIds];
-      if (draft.friendSharing) setFriendSharing(draft.friendSharing);
+      if (draft.friendSharing) setFriendSharing(normalizeFriendSharing(draft.friendSharing));
     }
 
     if (resultMatches) {

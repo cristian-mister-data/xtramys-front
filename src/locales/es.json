@@ -4818,6 +4818,11 @@
   },
   "tournaments": {
     "title": "Torneos",
+    "allowedSubstitutions": "Cambios permitidos",
+    "unlimitedSubstitutions": "Ilimitados",
+    "searchSubstitutionNumber": "Buscar número de cambios",
+    "invalidSubstitutions": "Introduce un número entero de cambios igual o mayor que 0.",
+    "allowedSubstitutionsHint": "Introduce el número de cambios. Con cambios ilimitados, un jugador puede volver a entrar.",
     "league": "Liga",
     "tournament": "Torneo",
     "friendly": "Amistoso",

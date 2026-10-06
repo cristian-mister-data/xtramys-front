@@ -7,6 +7,8 @@ import {
   Button, Field, Input, Label, Row, Stack, TextArea, ErrorText, Muted,
 } from '@/ui/primitives';
 import { showMissingFieldsToast } from '@/utils/validationToast';
+import { parseSubstitutionLimit } from '@/utils/substitutionLimit';
+import SubstitutionLimitSelect from './SubstitutionLimitSelect';
 import {
   TOURNAMENT_TYPES, FORMATO_OPTIONS, RONDAS_OPTIONS, TOURNAMENT_COLORS,
 } from './tournamentHelpers';
@@ -106,7 +108,7 @@ export default function TournamentFormModal({
         equiposPorGrupo: String(tournament.equiposPorGrupo || 4),
         formatoGrupos: tournament.formatoGrupos || 'unico',
         cicloAmarillas: String(tournament.cicloAmarillas || 5),
-        cambiosPermitidos: tournament.cambiosPermitidos === null ? 'infinito' : String(tournament.cambiosPermitidos || 3),
+        cambiosPermitidos: tournament.cambiosPermitidos === null ? 'infinito' : String(tournament.cambiosPermitidos ?? 3),
       });
       setShowAdvanced(!!tournament.formato);
     } else {
@@ -120,6 +122,11 @@ export default function TournamentFormModal({
 
   const handleSave = () => {
     setError(null);
+    const substitutionLimit = parseSubstitutionLimit(form.cambiosPermitidos);
+    if (substitutionLimit === undefined) {
+      setError(t('tournaments.invalidSubstitutions', 'Introduce un número entero de cambios igual o mayor que 0.'));
+      return;
+    }
     if (!form.nombre.trim()) {
       showMissingFieldsToast(t, [t('tournaments.name', 'Nombre')]);
       return;
@@ -133,7 +140,7 @@ export default function TournamentFormModal({
       fechaInicio: form.fechaInicio ? new Date(form.fechaInicio).toISOString() : null,
       fechaFin: form.fechaFin ? new Date(form.fechaFin).toISOString() : null,
       porDefecto: !!form.porDefecto,
-      cambiosPermitidos: form.cambiosPermitidos === 'infinito' ? null : parseInt(form.cambiosPermitidos, 10),
+      cambiosPermitidos: substitutionLimit,
     };
     if (form.tipo === 'liga') {
       data.formato = 'liga';
@@ -269,11 +276,7 @@ export default function TournamentFormModal({
           <Stack $gap={12}>
             <Field>
               <Label>{t('tournaments.allowedSubstitutions', 'Cambios permitidos')}</Label>
-              <Select
-                value={form.cambiosPermitidos}
-                onChange={(v) => update({ cambiosPermitidos: v })}
-                options={[1, 2, 3, 4, 5, 6, 7].map((value) => ({ value: String(value), label: String(value) })).concat([{ value: 'infinito', label: '∞ · Ilimitados' }])}
-              />
+              <SubstitutionLimitSelect value={form.cambiosPermitidos} onChange={(value) => update({ cambiosPermitidos: value })} defaultValue="3" />
               <Muted>{t('tournaments.allowedSubstitutionsHint', 'Con cambios ilimitados, un jugador puede volver a entrar.')}</Muted>
             </Field>
             {(form.tipo === 'copa' || form.tipo === 'torneo') && (

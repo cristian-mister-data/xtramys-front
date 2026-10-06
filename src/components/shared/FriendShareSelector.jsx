@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from 'styled-components';
 import { getFriends } from '@/api/friendship';
 import { getSharingDetails } from '@/api/sharedContent';
+import { normalizeFriendSharing } from '@/utils/friendSharing';
 
 const sameId = (a, b) => String(a || '') === String(b || '');
 
@@ -13,10 +14,10 @@ export default function FriendShareSelector({ contentType, contentId, value, onC
   const theme = useTheme();
   const styles = makeStyles(theme);
   const [friends, setFriends] = useState([]);
-  const selected = value || { sharedWithFriends: false, shareWithAll: true, sharingFriendIds: [] };
+  const selected = normalizeFriendSharing(value);
 
   useEffect(() => {
-    getFriends().then(({ data }) => setFriends(data || [])).catch(() => setFriends([]));
+    getFriends().then(({ data }) => setFriends(Array.isArray(data) ? data.filter((friend) => friend?._id) : [])).catch(() => setFriends([]));
   }, []);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function FriendShareSelector({ contentType, contentId, value, onC
       onChange({
         sharedWithFriends: !!(data?.shareWithAll || data?.sharedWith?.length),
         shareWithAll: data?.shareWithAll !== false,
-        sharingFriendIds: (data?.sharedWith || []).map(String),
+        sharingFriendIds: Array.isArray(data?.sharedWith) ? data.sharedWith.map(String) : [],
       });
     }).catch(() => {});
   }, [contentId, contentType, skipLoadFromDb]);
