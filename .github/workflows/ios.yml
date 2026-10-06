@@ -122,7 +122,8 @@ jobs:
             -archivePath build/Xtramys.xcarchive \
             XTRAMYS_TEAM_ID="$APPLE_TEAM_ID" \
             XTRAMYS_PROFILE_NAME="$PROFILE_NAME" \
-            XTRAMYS_BUILD_NUMBER="$GITHUB_RUN_NUMBER.$GITHUB_RUN_ATTEMPT"
+            CURRENT_PROJECT_VERSION="$((100 + GITHUB_RUN_NUMBER)).$GITHUB_RUN_ATTEMPT" \
+            MARKETING_VERSION="$(node -p "require('./package.json').version")"
 
       - name: Prepare export options
         run: |
