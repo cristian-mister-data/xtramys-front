@@ -21,7 +21,9 @@ export async function checkAppStoreApp(env, request = fetch) {
     signal: AbortSignal.timeout(30000),
   });
   if (!response.ok) {
-    throw new Error(`App Store Connect respondió HTTP ${response.status}. Revisa la clave API, su Issuer ID y sus permisos para la app.`);
+    const errorResponse = await response.json().catch(() => ({}));
+    const details = (errorResponse.errors || []).map(({ code, title, detail }) => [code, title, detail].filter(Boolean).join(': ')).join('; ');
+    throw new Error(`App Store Connect respondió HTTP ${response.status}. ${details || 'Apple no proporcionó más detalles.'}`);
   }
   const result = await response.json();
   if (!result.data?.length) {

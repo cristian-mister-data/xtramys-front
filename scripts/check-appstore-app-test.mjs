@@ -18,6 +18,6 @@ await checkAppStoreApp(env, async (url, options) => {
   return { ok: true, json: async () => ({ data: [{ id: 'test-app' }] }) };
 });
 await assert.rejects(checkAppStoreApp({ ...env, ARCHIVED_BUNDLE_IDENTIFIER: 'wrong' }), /Bundle ID/);
-await assert.rejects(checkAppStoreApp(env, async () => ({ ok: false, status: 403 })), /HTTP 403/);
+await assert.rejects(checkAppStoreApp(env, async () => ({ ok: false, status: 403, json: async () => ({ errors: [{ code: 'FORBIDDEN_ERROR', detail: 'The API key in use does not allow this request' }] }) })), /HTTP 403.*FORBIDDEN_ERROR.*The API key/);
 await assert.rejects(checkAppStoreApp(env, async () => ({ ok: true, json: async () => ({ data: [] }) })), /no encuentra una app/);
 console.log('App Store app preflight: ok');
