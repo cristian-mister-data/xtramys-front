@@ -2,6 +2,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
 import { createReadCache } from '@/utils/readCache';
+import { clearMeCache } from '@/api/auth';
 
 const seasonCache = createReadCache({ ttlMs: 60000 });
 const seasonKey = (scope, payload) => seasonCache.key(`season:${scope}`, payload);
@@ -53,6 +54,7 @@ export const createTemporadaEquipo = createAsyncThunk(
   async (nuevaTemporada) => {
     const res = await api.post('/season/createSeasonTeam', nuevaTemporada);
     clearSeasonCache();
+    clearMeCache();
     return res.data;
   }
 );

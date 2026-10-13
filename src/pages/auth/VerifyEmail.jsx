@@ -73,8 +73,8 @@ export default function VerifyEmail() {
         dispatch(setUser(user));
       }
       const from = location.state?.from;
-      const fromPath = from?.pathname || '';
-      const returnToSubscribe = fromPath.startsWith('/subscribe') || fromPath.startsWith('/suscripcion');
+      const fromPath = typeof from === 'string' ? from : from?.pathname || '';
+      const returnToSubscribe = fromPath === '/trial' || fromPath.startsWith('/subscribe') || fromPath.startsWith('/suscripcion');
       navigate(
         returnToSubscribe ? `${fromPath}${from.search || ''}${from.hash || ''}` : '/subscribe',
         { replace: true },

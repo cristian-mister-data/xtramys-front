@@ -1,81 +1,58 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import OnboardingTutorial from './OnboardingTutorial';
+import { newTutorial, readTutorialSession } from './tutorialSteps';
 import { updateUsuario } from '@/store/slices/user/userThunks';
+import { hasAppAccess } from '@/utils/subscriptionAccess';
 
-const TutorialContext = createContext({ openTutorial: () => {} });
-
-function demoTutorialKey(userId) {
-  return `xtramys.demoTutorialCompleto.${userId}`;
-}
-
-function tutorialKey(userId) {
-  return `xtramys.tutorialCompleto.${userId}`;
-}
+const TutorialContext = createContext({ openTutorial: () => {}, tutorialActive: false });
 
 export function TutorialProvider({ children }) {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.usuario?.user);
-  const [visible, setVisible] = useState(false);
-  const autoShownForUserRef = useRef(null);
-
+  const navigate = useNavigate();
+  const user = useSelector(state => state.usuario?.user);
+  const supervising = useSelector(state => state.usuario?.supervising);
+  const workspace = useSelector(state => state.workspace?.selected);
+  const canStartTutorial = Boolean(user?._id && user.role !== 'club_admin' && !supervising && !user.trialSetupRequired && hasAppAccess(user) && workspace && workspace.canWrite !== false);
+  const [session, setSession] = useState(() => readTutorialSession(user?._id));
   useEffect(() => {
-    if (!user?._id) {
-      autoShownForUserRef.current = null;
-      setVisible(false);
-      return;
-    }
-
-    if (autoShownForUserRef.current === user._id) return;
-    const isDemo = user.plan === 'demo' || user.accessMode === 'demo';
-    const demoCompleted = isDemo && localStorage.getItem(demoTutorialKey(user._id)) === 'true';
-    const locallyCompleted = localStorage.getItem(tutorialKey(user._id)) === 'true';
-    if (user.tutorialCompleto || demoCompleted || locallyCompleted) {
-      autoShownForUserRef.current = user._id;
-      return;
-    }
-    if (user.role === 'club_admin') {
-      autoShownForUserRef.current = user._id;
-      return;
-    }
-
-    autoShownForUserRef.current = user._id;
-    setVisible(true);
-  }, [user?._id, user?.tutorialCompleto, user?.role]);
-
-  const openTutorial = useCallback(() => {
-    setVisible(true);
-  }, []);
-
-  const completeTutorial = useCallback(async () => {
-    setVisible(false);
-    if (!user?._id) return;
-
-    // Se guarda primero localmente para que “Saltar” sea definitivo aunque
-    // la API esté temporalmente desconectada o se trate de una supervisión.
-    localStorage.setItem(tutorialKey(user._id), 'true');
-    if (user.tutorialCompleto) return;
-
-    if (user.plan === 'demo' || user.accessMode === 'demo') {
-      localStorage.setItem(demoTutorialKey(user._id), 'true');
-      return;
-    }
-
+    setSession(readTutorialSession(user?._id));
+  }, [user?._id]);
+  useEffect(() => {
     try {
-      await dispatch(
-        updateUsuario({ id: user._id, updatedUser: { tutorialCompleto: true } }),
-      ).unwrap();
+      if (session) sessionStorage.setItem('xtramys:guided-tutorial', JSON.stringify(session));
+      else sessionStorage.removeItem('xtramys:guided-tutorial');
     } catch {}
-  }, [dispatch, user]);
-
-  return (
-    <TutorialContext.Provider value={{ openTutorial }}>
-      {children}
-      <OnboardingTutorial visible={visible} onComplete={completeTutorial} />
-    </TutorialContext.Provider>
-  );
+  }, [session]);
+  const openTutorial = useCallback(() => {
+    if (!canStartTutorial) return;
+    const next = newTutorial(user._id);
+    try { sessionStorage.setItem('xtramys:guided-tutorial', JSON.stringify(next)); } catch {}
+    setSession(next);
+  }, [user, canStartTutorial]);
+  const finish = useCallback(() => {
+    setSession(null);
+    try {
+      sessionStorage.removeItem('xtramys:guided-tutorial');
+      localStorage.setItem(`xtramys.tutorialCompleto.${user._id}`, 'true');
+      localStorage.setItem(`xtramys.demoTutorialCompleto.${user._id}`, 'true');
+    } catch {}
+    navigate('/app', { replace: true });
+    if (!user.tutorialCompleto) dispatch(updateUsuario({id: user._id, updatedUser: {tutorialCompleto: true}}));
+  }, [dispatch, navigate, user]);
+  const change = useCallback(next => {
+    // Save before routing: refresh and layout changes must preserve the explicitly started guide.
+    setSession(previous => {
+      if (previous && next.task < previous.task) return previous;
+      try { sessionStorage.setItem('xtramys:guided-tutorial', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+  const active = Boolean(session && session.userId === user?._id && hasAppAccess(user) && !supervising);
+  return <TutorialContext.Provider value={{openTutorial, tutorialActive: active, canStartTutorial}}>
+    {children}
+    {active && <OnboardingTutorial session={session} onChange={change} onComplete={finish} />}
+  </TutorialContext.Provider>;
 }
-
-export function useTutorial() {
-  return useContext(TutorialContext);
-}
+export function useTutorial() { return useContext(TutorialContext); }

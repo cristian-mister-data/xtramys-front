@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import RequireSeason from './RequireSeason';
 import WorkspaceGate from './WorkspaceGate';
+import { TutorialProvider } from '@/components/shared/TutorialProvider';
 import AuthLayout from '@/layouts/AuthLayout';
 import AppLayout from '@/layouts/AppLayout';
 import FullscreenLayout from '@/layouts/FullscreenLayout';
@@ -45,6 +46,9 @@ const Methodology = lazy(() => import('@/pages/Methodology'));
 const GoalkeeperMethodology = lazy(() => import('@/pages/GoalkeeperMethodology'));
 const WellnessTemplates = lazy(() => import('@/pages/WellnessTemplates'));
 const WellnessManagement = lazy(() => import('@/pages/WellnessManagement'));
+const TrialWelcome = lazy(() => import('@/pages/TrialWelcome'));
+const ActivateTrial = lazy(() => import('@/pages/auth/ActivateTrial'));
+const AdminUserActivity = lazy(() => import('@/pages/AdminUserActivity'));
 const Profile = lazy(() => import('@/pages/Profile'));
 const Friends = lazy(() => import('@/pages/Friends'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
@@ -74,7 +78,7 @@ const lazy_ = (el) => <Suspense fallback={<RouteFallback />}>{el}</Suspense>;
 
 const SubscribeRoute = isNative ? (
   <ProtectedRoute>
-    <Navigate to="/profile" replace />
+    {lazy_(<TrialWelcome />)}
   </ProtectedRoute>
 ) : lazy_(<Subscribe />);
 
@@ -94,11 +98,12 @@ const SubscribeClubRoute = isNative ? (
 
 export default function AppRouter() {
   return (
-    <Routes>
+    <TutorialProvider><Routes>
       {/* Root: redirect to login or app based on auth status */}
       <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
       {/* Auth */}
+      <Route path="/auth/trial" element={lazy_(<ActivateTrial />)} />
       <Route element={<AuthLayout />}>
         <Route path="/auth/welcome" element={isNative ? <Navigate to="/auth/login" replace /> : <Welcome />} />
         <Route path="/auth/login" element={<Login />} />
@@ -118,6 +123,7 @@ export default function AppRouter() {
       <Route path="/friendship/accept/:token" element={lazy_(<FriendshipAccept />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
       {/* Web checkout is public; native apps keep subscriptions disabled. */}
+      <Route path="/trial" element={<ProtectedRoute>{lazy_(<TrialWelcome />)}</ProtectedRoute>} />
       <Route path="/subscribe" element={SubscribeRoute} />
       <Route path="/suscripcion" element={<LangSubscribe lang="es">{SubscribeRoute}</LangSubscribe>} />
       <Route path="/en/subscribe" element={<LangSubscribe lang="en">{SubscribeRoute}</LangSubscribe>} />
@@ -214,8 +220,8 @@ export default function AppRouter() {
         <Route path="/training" element={lazy_(<Training />)} />
         <Route path="/my-videos" element={lazy_(<MyVideos />)} />
         <Route path="/video-editor" element={lazy_(<VideoEditor />)} />
-        <Route path="/methodology" element={lazy_(<DemoSubscribeGate><Methodology /></DemoSubscribeGate>)} />
-        <Route path="/goalkeeper-methodology" element={lazy_(<DemoSubscribeGate><GoalkeeperMethodology /></DemoSubscribeGate>)} />
+        <Route path="/methodology" element={lazy_(<DemoSubscribeGate feature="methodology"><Methodology /></DemoSubscribeGate>)} />
+        <Route path="/goalkeeper-methodology" element={lazy_(<DemoSubscribeGate feature="goalkeeperMethodology"><GoalkeeperMethodology /></DemoSubscribeGate>)} />
         <Route path="/wellness" element={lazy_(<DemoSubscribeGate><WellnessManagement /></DemoSubscribeGate>)} />
         <Route path="/wellness/templates" element={lazy_(<DemoSubscribeGate><WellnessTemplates /></DemoSubscribeGate>)} />
         <Route path="/rivals" element={lazy_(<Rivals />)} />
@@ -227,11 +233,16 @@ export default function AppRouter() {
         <Route path="/scouting" element={lazy_(<Scouting />)} />
         <Route path="/anthropometry" element={lazy_(<Anthropometry />)} />
         <Route path="/statistics" element={lazy_(<Statistics />)} />
-        <Route path="/nutrition" element={lazy_(<DemoSubscribeGate><Nutrition /></DemoSubscribeGate>)} />
-        <Route path="/profile" element={lazy_(<Profile />)} />
+        <Route path="/nutrition" element={lazy_(<DemoSubscribeGate feature="nutrition"><Nutrition /></DemoSubscribeGate>)} />
         <Route path="/friends" element={lazy_(<Friends />)} />
         <Route path="/notifications" element={lazy_(<Notifications />)} />
         <Route path="/club/dashboard" element={lazy_(<ClubDashboard />)} />
+      </Route>
+
+      {/* Profile stays available before/after a trial, without requiring a team. */}
+      <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route path="/profile" element={lazy_(<Profile />)} />
+        <Route path="/admin/users/:userId/activity" element={lazy_(<AdminUserActivity />)} />
       </Route>
 
       {/* Tactical Board: layout fullscreen sin sidebar */}
@@ -251,6 +262,6 @@ export default function AppRouter() {
 
       <Route path="/index" element={<Navigate to="/" replace />} />
       <Route path="*" element={<NotFound />} />
-    </Routes>
+    </Routes></TutorialProvider>
   );
 }

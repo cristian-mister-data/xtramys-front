@@ -500,7 +500,7 @@ export default function Players() {
               {t('player.rosterPdfButton', 'PDF plantilla')}
             </Button>
             <CanMutate>
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button data-tutorial="player-open" onClick={() => setCreateOpen(true)}>
                 <MdAdd size={18} />
                 {t('player.createPlayer', 'Nuevo jugador')}
               </Button>
@@ -658,7 +658,7 @@ export default function Players() {
               </Muted>
               {players.length === 0 ? (
                 <CanMutate>
-                  <Button $variant="primary" onClick={() => setCreateOpen(true)}>
+                  <Button $variant="primary" data-tutorial="player-open" onClick={() => setCreateOpen(true)}>
                     <Row $gap={6}>
                       <MdAdd size={18} />
                       {t('player.createPlayer', 'Crear jugador')}

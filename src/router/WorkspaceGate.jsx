@@ -66,17 +66,20 @@ export default function WorkspaceGate({ children }) {
 
   useEffect(() => {
     // En supervisión cargamos los workspaces del usuario objetivo.
-    if (user && !isDemo && !loaded && !loading) {
+    if (user && !user.trialSetupRequired && !isDemo && !loaded && !loading) {
       dispatch(fetchWorkspaces());
     }
   }, [dispatch, loaded, loading, supervising, user, isDemo]);
 
   useEffect(() => {
-    if (isDemo || isClubAdmin || !loaded || selected || items.length !== 1 || selecting.current) return;
+    if (user?.trialSetupRequired || isDemo || isClubAdmin || !loaded || selected || items.length !== 1 || selecting.current) return;
     selecting.current = true;
     dispatch(selectWorkspace(items[0])).finally(() => { selecting.current = false; });
-  }, [dispatch, items, loaded, selected, supervising, isDemo, isClubAdmin]);
+  }, [dispatch, items, loaded, selected, supervising, isDemo, isClubAdmin, user?.trialSetupRequired]);
 
+  if (user?.trialSetupRequired && !user?.clubId && !hasSupervisionSession) {
+    return <Navigate to="/season/create" replace />;
+  }
   if (isDemo) return children;
 
   if (sessionStorage.getItem('xtramys:club-supervision-leaving') === '1') return children;
@@ -102,6 +105,9 @@ export default function WorkspaceGate({ children }) {
   if (error) {
     if (location.pathname === '/team-select') return children;
     return <Navigate to="/team-select" state={{ error }} replace />;
+  }
+  if (!user?.clubId && user?.role === 'user' && !supervising && items.length === 0) {
+    return <Navigate to="/season/create" replace />;
   }
   if (user?.role === 'club_admin' && items.length === 0 && location.pathname === '/club/dashboard') return children;
   if (user?.role === 'club_admin' && items.length === 0) return <Navigate to="/club/dashboard" replace />;

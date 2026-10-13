@@ -102,7 +102,7 @@ export default function MatchSheets() {
       icon={MdDescription}
       actions={selectedTeam ? (
         <CanMutate>
-          <Button $variant="primary" onClick={create}>
+          <Button data-tutorial={activeTab === 'own' ? 'match-open' : undefined} $variant="primary" onClick={create}>
             <Row $gap={6}>
               <MdAdd size={18} />
               {activeTab === 'own' ? t('matchSheet.actions.createMatchSheet') : t('opponentMatch.actions.create')}

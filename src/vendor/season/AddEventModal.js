@@ -3103,6 +3103,7 @@ export default function AddEventModal({
       <View style={styles.footerButtonRow}>
         <TouchableOpacity
           style={styles.footerCancelBtn}
+          testID="tutorial-exit"
           onPress={onClose}
         >
           <Text style={styles.footerCancelBtnText}>{t('common.cancel')}</Text>
@@ -4785,7 +4786,7 @@ export default function AddEventModal({
       onRequestClose={onClose}
    >
       <View style={styles.modalBg}>
-        <View style={[styles.modalContent, isMobile && styles.modalContentMobile, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View testID={eventType === 'session' ? 'tutorial-training-form' : undefined} style={[styles.modalContent, isMobile && styles.modalContentMobile, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
@@ -4794,6 +4795,7 @@ export default function AddEventModal({
             </Text>
             <TouchableOpacity
               style={styles.modalCloseBtn}
+              testID="tutorial-exit"
               onPress={onClose}
             >
               <Ionicons name="close" size={24} color={theme.colors.textSecondary} />

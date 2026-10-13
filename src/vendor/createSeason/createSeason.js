@@ -27,6 +27,7 @@ import AppLayout from '@/vendor/shared/appLayout';
 import CustomAlertModal from '@/vendor/shared/customAlert';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import KitDesigner from '@/components/shared/KitDesigner';
+import { getNewSeasonName } from '@/utils/seasonName';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -35,7 +36,7 @@ const isMobileDevice = () => {
 
 const INPUT_HEIGHT = 52;
 
-export default function CreateSeasonAndTeam({ setToken, navigation }) {
+export default function CreateSeasonAndTeam({ setToken, navigation, existingSeasons = [] }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function CreateSeasonAndTeam({ setToken, navigation }) {
     }
   };
 
-  const [año, setAño] = useState(getDefaultSeasonString());
+  const [año, setAño] = useState(() => getNewSeasonName(getDefaultSeasonString(), existingSeasons));
   const [teamName, setTeamName] = useState('');
   const [idUsuario, setIdUsuario] = useState(null);
 

@@ -295,7 +295,7 @@ export default function ImageCropper({ src, onConfirm, onCancel, title }) {
 
   const content = !img ? (
     <Overlay>
-      <Panel>
+      <Panel data-tutorial="image-cropper">
         <Header>
           {headerTitle}
           <CloseBtn onClick={onCancel}>×</CloseBtn>
@@ -307,7 +307,7 @@ export default function ImageCropper({ src, onConfirm, onCancel, title }) {
     </Overlay>
   ) : (
     <Overlay>
-      <Panel>
+      <Panel data-tutorial="image-cropper">
         <Header>
           {headerTitle}
           <CloseBtn onClick={onCancel}>×</CloseBtn>

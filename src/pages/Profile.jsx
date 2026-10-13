@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TrialOffer from '@/components/subscription/TrialOffer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -563,7 +564,7 @@ const AdminUserList = styled.div`
 
 const AdminUserRow = styled.div`
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   width: 100%;
@@ -574,6 +575,7 @@ const AdminUserRow = styled.div`
   color: ${({ theme }) => theme.colors.text};
   opacity: ${({ $disabled }) => ($disabled ? 0.65 : 1)};
   text-align: left;
+  @media (max-width: 600px) { grid-template-columns: 1fr; }
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceElevated};
   }
@@ -611,7 +613,7 @@ export default function Profile() {
   const { t, i18n } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { openTutorial } = useTutorial();
+  const { openTutorial, canStartTutorial } = useTutorial();
   const user = useSelector((s) => s.usuario?.user);
   const workspaces = useSelector((s) => s.workspace?.items || []);
   const selectedWorkspace = useSelector((s) => s.workspace?.selected);
@@ -1158,12 +1160,13 @@ export default function Profile() {
               <span style={{ color: '#cbd5e1' }}>{'>'}</span>
             </AccountBtn>
             {user?.role !== 'club_admin' && (
-            <AccountBtn type="button" onClick={openTutorial}>
+            <AccountBtn type="button" onClick={openTutorial} disabled={!canStartTutorial}>
               <MdPlayCircleOutline size={20} />
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <div>{t('tutorial.replayButton', 'Ver tutorial de nuevo')}</div>
-                <Muted style={{ fontSize: 12, color: '#94a3b8' }}>
-                  {t('tutorial.replayHint', 'Puedes volver a ver este tutorial desde tu perfil.')}
+                <div>{i18n.language?.startsWith('en') ? 'Restart guided tutorial' : 'Volver a pasar el tutorial guiado'}</div>
+                <Muted style={{ fontSize: 13 }}>
+                  {!canStartTutorial ? (i18n.language?.startsWith('en') ? 'Select a team with editing access to start the tutorial.' : 'Selecciona un equipo con acceso de edición para empezar el tutorial.')
+                    : i18n.language?.startsWith('en') ? 'Players, exercises, training, opponents and match sheets. You can skip any task.' : 'Jugadores, ejercicios, entrenamientos, rivales y fichas. Puedes saltar tareas.'}
                 </Muted>
               </div>
               <span style={{ color: '#cbd5e1' }}>›</span>
@@ -1255,9 +1258,11 @@ export default function Profile() {
                         <AdminUserMeta>
                           <AdminPill>{item.role || 'user'}</AdminPill>
                           <AdminPill>{item.plan || 'free'}</AdminPill>
+                          <AdminPill>{({ not_started: item.trialActivationRequestedAt ? 'Solicitada sin activar' : 'Sin solicitar', awaiting_activation: 'Correo enviado', active: 'Prueba activa', expired: 'Prueba caducada', unavailable: 'No disponible' })[item.trialStatus] || 'Sin activar'}</AdminPill>
                           {item.clubMemberStatus ? <AdminPill>{item.clubMemberStatus}</AdminPill> : null}
                         </AdminUserMeta>
                       </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <Button
                         type="button"
                         onClick={() => handleImpersonate(item)}
@@ -1266,6 +1271,8 @@ export default function Profile() {
                         <MdLogin size={18} />
                         {isCurrentUser ? 'Actual' : isBusy ? 'Entrando...' : 'Entrar'}
                       </Button>
+                      <Button type="button" onClick={() => navigate(`/admin/users/${item._id}/activity`)}>Ver actividad</Button>
+                      </div>
                     </AdminUserRow>
                   );
                 })
@@ -1554,14 +1561,10 @@ export default function Profile() {
               <FreeCard>
                 <FreeIcon>{isNative ? 'ℹ️' : '💳'}</FreeIcon>
                 <FreeTitle>
-                  {isNative
-                    ? t('subscription.demoPlan', 'Plan demo')
-                    : t('subscription.required', 'Suscripción necesaria')}
+                  {t('subscription.required', 'Suscripción necesaria')}
                 </FreeTitle>
                 <FreeDesc>
-                  {isNative
-                    ? t('subscription.demoProfileNotice', 'Este es el acceso disponible para tu cuenta.')
-                    : t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
+                  {t('subscription.freeDescription', 'Accede a todas las funciones con una suscripción profesional.')}
                 </FreeDesc>
                 <FreeBtn type="button" onClick={handleSubscribe} disabled={portalLoading}>
                   {isNative
@@ -1570,6 +1573,7 @@ export default function Profile() {
                 </FreeBtn>
               </FreeCard>
             )}
+            <TrialOffer />
           </SubscriptionCard>
         </FormCard>
         )}

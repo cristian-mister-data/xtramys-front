@@ -2319,7 +2319,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
       <AppLayout>
         <Modal visible transparent animationType="fade" onRequestClose={handleCancel}>
           <View style={[styles.entityFormBackdrop, IS_FORM_MOBILE && styles.entityFormBackdropMobile]}>
-            <View style={[styles.entityFormModal, IS_FORM_MOBILE && styles.entityFormModalMobile]}>
+            <View testID="tutorial-exercise-form" style={[styles.entityFormModal, IS_FORM_MOBILE && styles.entityFormModalMobile]}>
               <ErrorBoundary key={formKey} onReset={handleCancel}>
                 <CreateExerciseForm
                   key={formKey}
@@ -2357,6 +2357,7 @@ export default function ExerciseList({ navigation: navigationProp, canMutate }) 
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
+                    testID="tutorial-exercise-open"
                     onPress={handleCreate}
                     style={styles.mvCreateButton}
                     activeOpacity={0.7}

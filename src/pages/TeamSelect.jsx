@@ -163,15 +163,21 @@ export default function TeamSelect() {
   };
 
   useEffect(() => {
-    if (!loaded || loading || error || items.length !== 1 || selectingId || autoSelecting.current) return;
+    if (user?.trialSetupRequired || !loaded || loading || error || items.length !== 1 || selectingId || autoSelecting.current) return;
     autoSelecting.current = true;
     choose(items[0]);
-  }, [loaded, loading, error, items, selectingId]);
+  }, [loaded, loading, error, items, selectingId, user?.trialSetupRequired]);
 
   const singleWorkspaceRedirecting = loaded && items.length === 1;
 
   if (isClubAdmin && !supervising) {
     return <Navigate to="/club/dashboard" replace />;
+  }
+  if (user?.trialSetupRequired && !user?.clubId && !supervising) {
+    return <Navigate to="/season/create" replace />;
+  }
+  if (loaded && !loading && !error && items.length === 0 && !supervising && !user?.clubId && user?.role === 'user') {
+    return <Navigate to="/season/create" replace />;
   }
 
   return (

@@ -247,16 +247,17 @@ export default function PlayerFormModal({
 
   return (
     <Modal
+      tutorialId={mode === 'create' ? 'player-form' : undefined}
       open={open}
       onClose={onClose}
       title={mode === 'edit' ? t('player.editPlayer', 'Editar jugador') : t('player.createPlayer', 'Crear jugador')}
       width={FORM_MODAL_WIDTH}
       footer={
         <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
-          <Button type="button" $variant="ghost" onClick={onClose}>
+          <Button data-tutorial-exit type="button" $variant="ghost" onClick={onClose}>
             {t('common.cancel', 'Cancelar')}
           </Button>
-          <Button type="button" onClick={handleSubmit} disabled={loading}>
+          <Button data-tutorial={mode === 'create' ? 'player-save' : undefined} type="button" onClick={handleSubmit} disabled={loading}>
             {loading
               ? t('common.saving', 'Guardando...')
               : mode === 'edit'
@@ -268,7 +269,7 @@ export default function PlayerFormModal({
     >
       <form onSubmit={handleSubmit}>
         <Stack style={{ gap: 14 }}>
-          <PhotoWrap>
+          <PhotoWrap data-tutorial="player-photo">
             <PhotoPreview $colors={colors}>
               {data.foto ? <img src={cdnUrl(data.foto)} alt="" /> : initials}
             </PhotoPreview>
@@ -288,31 +289,31 @@ export default function PlayerFormModal({
           </PhotoWrap>
 
           <Grid>
-            <Field>
-              <Label>{t('player.name', 'Nombre')}</Label>
-              <Input value={data.nombre} onChange={set('nombre')} />
+            <Field data-tutorial="player-name">
+              <Label htmlFor="player-nombre">{t('player.name', 'Nombre')}</Label>
+              <Input id="player-nombre" aria-required="true" value={data.nombre} onChange={set('nombre')} />
             </Field>
-            <Field>
-              <Label>{t('player.lastName', 'Apellido')}</Label>
-              <Input value={data.apellido} onChange={set('apellido')} />
+            <Field data-tutorial="player-surname">
+              <Label htmlFor="player-apellido">{t('player.lastName', 'Apellido')}</Label>
+              <Input id="player-apellido" aria-required="true" value={data.apellido} onChange={set('apellido')} />
             </Field>
-            <Field>
-              <Label>{t('player.nickname', 'Apodo')}</Label>
-              <Input value={data.apodo} onChange={set('apodo')} />
+            <Field data-tutorial="player-nickname">
+              <Label htmlFor="player-apodo">{t('player.nickname', 'Apodo')}</Label>
+              <Input id="player-apodo" value={data.apodo} onChange={set('apodo')} />
             </Field>
-            <Field>
-              <Label>{t('player.dorsal', 'Dorsal')}</Label>
-              <Input type="number" min="0" value={data.dorsal} onChange={set('dorsal')} />
+            <Field data-tutorial="player-number">
+              <Label htmlFor="player-dorsal">{t('player.dorsal', 'Dorsal')}</Label>
+              <Input id="player-dorsal" type="number" min="0" value={data.dorsal} onChange={set('dorsal')} />
             </Field>
-            <Field>
-              <Label>{t('player.age', 'Edad')}</Label>
-              <Input type="number" min="0" value={data.edad} onChange={set('edad')} />
+            <Field data-tutorial="player-age">
+              <Label htmlFor="player-edad">{t('player.age', 'Edad')}</Label>
+              <Input id="player-edad" type="number" min="0" value={data.edad} onChange={set('edad')} />
             </Field>
-            <Field>
-              <Label>{t('player.height', 'Altura (cm)')}</Label>
-              <Input type="number" min="0" value={data.altura} onChange={set('altura')} />
+            <Field data-tutorial="player-height">
+              <Label htmlFor="player-altura">{t('player.height', 'Altura (cm)')}</Label>
+              <Input id="player-altura" type="number" min="0" value={data.altura} onChange={set('altura')} />
             </Field>
-            <Field>
+            <Field data-tutorial="player-sex">
               <Label>{t('player.sex', 'Sexo')}</Label>
               <SexRow>
                 <SexBtn type="button" $active={data.sexo === 'M'} onClick={() => setData((d) => ({ ...d, sexo: 'M' }))}>
@@ -323,11 +324,11 @@ export default function PlayerFormModal({
                 </SexBtn>
               </SexRow>
             </Field>
-            <Field>
-              <Label>{t('player.birthDate', 'Fecha de nacimiento')}</Label>
-              <Input type="date" value={data.fechaNacimiento} onChange={handleBirthDateChange} />
+            <Field data-tutorial="player-birth">
+              <Label htmlFor="player-fechaNacimiento">{t('player.birthDate', 'Fecha de nacimiento')}</Label>
+              <Input id="player-fechaNacimiento" type="date" value={data.fechaNacimiento} onChange={handleBirthDateChange} />
             </Field>
-            <Field>
+            <Field data-tutorial="player-foot">
               <Label>{t('player.preferredFoot', 'Pierna')}</Label>
               <SexRow>
                 <SexBtn type="button" $active={data.pierna === 'right'} onClick={() => setData((d) => ({ ...d, pierna: 'right' }))}>
@@ -343,7 +344,7 @@ export default function PlayerFormModal({
             </Field>
           </Grid>
 
-          <Field>
+          <Field data-tutorial="player-position">
             <Label>{t('player.position', 'Posición')}</Label>
             <PosGrid>
               {positions.map((p) => {
@@ -364,7 +365,7 @@ export default function PlayerFormModal({
             </PosGrid>
           </Field>
 
-          <ToggleRow>
+          <ToggleRow data-tutorial="player-extra">
             <input
               type="checkbox"
               checked={data.extra}
@@ -375,18 +376,18 @@ export default function PlayerFormModal({
 
           {data.extra ? (
             <Grid>
-              <Field>
-                <Label>{t('player.extraOrigin', 'Procedencia del jugador extra')}</Label>
-                <Input value={data.procedenciaExtra} onChange={set('procedenciaExtra')} placeholder={t('player.extraOriginPlaceholder', 'Filial, club de origen...')} />
+              <Field data-tutorial="player-extra">
+                <Label htmlFor="player-procedenciaExtra">{t('player.extraOrigin', 'Procedencia del jugador extra')}</Label>
+                <Input id="player-procedenciaExtra" value={data.procedenciaExtra} onChange={set('procedenciaExtra')} placeholder={t('player.extraOriginPlaceholder', 'Filial, club de origen...')} />
               </Field>
-              <Field>
-                <Label>{t('player.extraCategory', 'Categoría de procedencia')}</Label>
-                <Input value={data.categoriaExtra} onChange={set('categoriaExtra')} placeholder={t('player.extraCategoryPlaceholder', 'Ej. Cadete, Juvenil...')} />
+              <Field data-tutorial="player-extra">
+                <Label htmlFor="player-categoriaExtra">{t('player.extraCategory', 'Categoría de procedencia')}</Label>
+                <Input id="player-categoriaExtra" value={data.categoriaExtra} onChange={set('categoriaExtra')} placeholder={t('player.extraCategoryPlaceholder', 'Ej. Cadete, Juvenil...')} />
               </Field>
             </Grid>
           ) : null}
 
-          {error ? <ErrorText>{error}</ErrorText> : null}
+          {error ? <ErrorText role="alert">{error}</ErrorText> : null}
         </Stack>
       </form>
       {cropperSrc && (

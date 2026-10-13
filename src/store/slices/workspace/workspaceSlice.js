@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '@/api/client';
 import { clearWorkspace, loadWorkspace, saveWorkspace } from '@/auth/storage';
+import { createTemporadaEquipo } from '@/store/slices/season/seasonThunks';
 
 const cachedWorkspace = loadWorkspace();
 
@@ -102,6 +103,13 @@ const workspaceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(createTemporadaEquipo.fulfilled, (state) => {
+        state.loaded = false;
+        state.items = [];
+        state.selected = null;
+        state.error = null;
+        clearWorkspace();
+      })
       .addCase(fetchWorkspaces.pending, (state) => {
         state.loading = true;
         state.loaded = false;
@@ -114,7 +122,7 @@ const workspaceSlice = createSlice({
         state.loading = false;
         state.loaded = true;
         state.items = action.payload.workspaces || [];
-        const selectedId = state.selected?.team?._id || state.selected?.teamId;
+        const selectedId = action.payload.selectedTeamId || state.selected?.team?._id || state.selected?.teamId;
         const current = state.items.find(({ team }) => String(team?._id) === String(selectedId))
           || (state.items.length === 1 ? state.items[0] : null);
         if (current) {

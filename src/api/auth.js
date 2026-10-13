@@ -6,7 +6,7 @@ import { createReadCache } from '@/utils/readCache';
 // En modo cookie, el backend setea la cookie en login/verify/google/apple.
 
 const ME_CACHE_TTL_MS = 5 * 60 * 1000;
-const ME_STORAGE_KEY = 'auth_me_cache_v1';
+const ME_STORAGE_KEY = 'auth_me_cache_v4_trial_setup';
 const meReadCache = createReadCache({ ttlMs: ME_CACHE_TTL_MS });
 
 const readStoredMe = () => {
@@ -60,6 +60,15 @@ export const verifyEmail = (correo, codigo) =>
 
 export const resendVerification = (correo) =>
   api.post('/auth/resend-verification', { correo }).then((res) => res.data);
+
+export const requestTrialActivation = (source = 'web') => api.post('/auth/trial/request-activation', { source }).then((res) => {
+  clearMeCache();
+  return res.data;
+});
+export const activateTrialFromEmail = (credentials) => api.post('/auth/trial/activate', credentials).then((res) => {
+  clearMeCache();
+  return res.data;
+});
 
 export const forgotPassword = (correo) => api.post('/auth/forgot-password', { correo }).then((res) => res.data);
 
@@ -144,6 +153,9 @@ export const impersonateUser = (userId) =>
     });
 
 export { clearMeCache };
+
+export const getAdminUserActivity = (userId, section, page = 1) =>
+  api.get(`/auth/support/users/${userId}/activity`, { params: { section, page }, cache: false }).then((res) => res.data);
 
 export const acceptClubInvite = ({ correo, token }) =>
   api.post('/auth/accept-club-invite', { correo, token }).then((res) => {

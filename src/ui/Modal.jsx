@@ -179,7 +179,7 @@ const Footer = styled.div`
   }
 `;
 
-export default function Modal({ open, onClose, title, children, footer, width }) {
+export default function Modal({ open, onClose, title, children, footer, width, tutorialId }) {
   const contentRef = useRef(null);
   const previouslyFocused = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -191,6 +191,7 @@ export default function Modal({ open, onClose, title, children, footer, width })
     previouslyFocused.current = document.activeElement;
 
     const onKey = (e) => {
+      if (document.body.dataset.guidedTutorial) return;
       if (e.key === 'Escape' && onCloseRef.current) onCloseRef.current();
       if (e.key === 'Tab' && contentRef.current) {
         const focusables = contentRef.current.querySelectorAll(
@@ -255,6 +256,7 @@ export default function Modal({ open, onClose, title, children, footer, width })
       }}
     >
       <Content
+        data-tutorial={tutorialId}
         ref={contentRef}
         $width={width}
         role="dialog"
@@ -266,7 +268,7 @@ export default function Modal({ open, onClose, title, children, footer, width })
           <Header>
             <Title id="modal-title">{title}</Title>
             {onClose && (
-              <Close onClick={onClose} aria-label="Cerrar diálogo">×</Close>
+              <Close data-tutorial-exit onClick={onClose} aria-label="Cerrar diálogo">×</Close>
             )}
           </Header>
         )}

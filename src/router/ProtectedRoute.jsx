@@ -1,9 +1,12 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useReducer } from 'react';
 import { useSelector } from 'react-redux';
 import { getAccessMode, hasAppAccess } from '@/utils/subscriptionAccess';
 import { isNative } from '@/platform/capacitor';
 
 const SUBSCRIBE_PATHS = [
+  '/trial',
+  '/profile',
   '/subscribe',
   '/subscribe-club',
   '/en/subscribe-club',
@@ -58,6 +61,7 @@ const DEMO_ALLOWED_PREFIXES = [
   '/scouting',
   '/anthropometry',
   '/statistics',
+  '/trial',
   '/profile',
   '/tactical-board',
   '/exercises',
@@ -87,6 +91,13 @@ export default function ProtectedRoute({ children }) {
   const supervising = useSelector((s) => s.usuario.supervising);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
   const location = useLocation();
+  const [, refreshAccess] = useReducer((value) => value + 1, 0);
+  useEffect(() => {
+    const remaining = new Date(user?.trialEndsAt || 0).getTime() - Date.now();
+    if (!Number.isFinite(remaining) || remaining <= 0) return;
+    const timer = window.setTimeout(refreshAccess, Math.min(remaining + 25, 2147483647));
+    return () => window.clearTimeout(timer);
+  }, [user?.trialEndsAt]);
 
   if (!authChecked) {
     return <GuardFallback />;
@@ -131,7 +142,7 @@ export default function ProtectedRoute({ children }) {
 
   if (user?.role !== 'admin' && user?.role !== 'club_admin' && !hasAccess) {
     if (!SUBSCRIBE_PATHS.some((p) => location.pathname.startsWith(p))) {
-      return <Navigate to="/subscribe" state={{ from: location }} replace />;
+      return <Navigate to={user?.trialEligible || user?.trialStartedAt ? "/trial" : "/subscribe"} state={{ from: location }} replace />;
     }
   }
 

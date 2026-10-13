@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchUsuario, updateUsuario, loginThunk, fetchMe, logoutThunk, checkSubscription } from './userThunks';
-import { loadUser } from '@/auth/storage';
+import { loadUser, saveUser } from '@/auth/storage';
+import { createTemporadaEquipo } from '@/store/slices/season/seasonThunks';
 
 const cachedUser = loadUser();
 const cachedSupervision = (() => {
@@ -73,6 +74,13 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(createTemporadaEquipo.fulfilled, (state, action) => {
+        if (state.user?.trialSetupRequired) {
+          state.user.trialSetupRequired = false;
+          state.user.selectedSeasonId = action.payload._id;
+          saveUser(state.user);
+        }
+      })
       .addCase(fetchUsuario.pending, (s) => { s.loading = true; })
       .addCase(fetchUsuario.fulfilled, (s, a) => {
         s.loading = false;

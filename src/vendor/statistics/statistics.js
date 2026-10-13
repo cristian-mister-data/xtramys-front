@@ -1,3 +1,4 @@
+import { getGoalMinuteStats } from '@/utils/goalMinuteStats';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
@@ -467,100 +468,8 @@ export default function Statistics({ navigation: navigationProp }) {
       }
     });
 
-    // --- Rival Goal Statistics ---
-    const rivalGoalStats = (() => {
-      // Collect all rival goal minutes from played matches that have golesRival data
-      const matchesWithData = playedMatches.filter((m) => m.golesRival && m.golesRival.length > 0);
-      const allRivalGoalMinutes = [];
-      const firstGoalMinutes = []; // first rival goal per match
-
-      matchesWithData.forEach((match) => {
-        const minutes = match.golesRival
-          .map((g) => {
-            if (!g.minuto) return null;
-            const str = String(g.minuto);
-            if (str.includes('+')) {
-              const parts = str.split('+');
-              const base = parseInt(parts[0]);
-              const extra = parseInt(parts[1]) || 0;
-              return isNaN(base) ? null : base + extra;
-            }
-            const parsed = parseInt(str);
-            return isNaN(parsed) ? null : parsed;
-          })
-          .filter((m) => m !== null);
-
-        allRivalGoalMinutes.push(...minutes);
-        if (minutes.length > 0) {
-          firstGoalMinutes.push(Math.min(...minutes));
-        }
-      });
-
-      if (allRivalGoalMinutes.length === 0) {
-        return {
-          hasData: false,
-          matchesWithData: matchesWithData.length,
-          totalRivalGoals: 0,
-        };
-      }
-
-      // Average first rival goal minute
-      const avgFirstGoal =
-        firstGoalMinutes.length > 0
-          ? (firstGoalMinutes.reduce((a, b) => a + b, 0) / firstGoalMinutes.length).toFixed(1)
-          : null;
-
-      // Most common rival goal minutes (histogram in 15-min buckets)
-      const buckets = { '1-15': 0, '16-30': 0, '31-45': 0, '46-60': 0, '61-75': 0, '76-90+': 0 };
-      allRivalGoalMinutes.forEach((m) => {
-        if (m <= 15) buckets['1-15']++;
-        else if (m <= 30) buckets['16-30']++;
-        else if (m <= 45) buckets['31-45']++;
-        else if (m <= 60) buckets['46-60']++;
-        else if (m <= 75) buckets['61-75']++;
-        else buckets['76-90+']++;
-      });
-
-      // Find most dangerous period
-      let mostDangerousPeriod = '1-15';
-      let mostDangerousCount = 0;
-      Object.entries(buckets).forEach(([period, count]) => {
-        if (count > mostDangerousCount) {
-          mostDangerousCount = count;
-          mostDangerousPeriod = period;
-        }
-      });
-
-      // Goals per half
-      const tiempoPorParteDefault = 45;
-      const firstHalfGoals = allRivalGoalMinutes.filter((m) => m <= tiempoPorParteDefault).length;
-      const secondHalfGoals = allRivalGoalMinutes.filter((m) => m > tiempoPorParteDefault).length;
-
-      // Avg rival goals per match (across ALL played matches, not just those with data)
-      const avgPerMatch =
-        playedMatches.length > 0
-          ? (allRivalGoalMinutes.length / playedMatches.length).toFixed(1)
-          : '0';
-
-      // Earliest and latest rival goal
-      const earliest = Math.min(...allRivalGoalMinutes);
-      const latest = Math.max(...allRivalGoalMinutes);
-
-      return {
-        hasData: true,
-        matchesWithData: matchesWithData.length,
-        totalRivalGoals: allRivalGoalMinutes.length,
-        avgFirstGoal,
-        buckets,
-        mostDangerousPeriod,
-        mostDangerousCount,
-        firstHalfGoals,
-        secondHalfGoals,
-        avgPerMatch,
-        earliest,
-        latest,
-      };
-    })();
+    const rivalGoalStats = getGoalMinuteStats(playedMatches, 'golesRival', 'golesContra', selectedTeam?.tiempoPorParte);
+    const ownGoalStats = getGoalMinuteStats(playedMatches, 'goles', 'golesFavor', selectedTeam?.tiempoPorParte);
 
     return {
       team: {
@@ -569,6 +478,7 @@ export default function Statistics({ navigation: navigationProp }) {
         avgSubs: teamStats.matches ? (teamStats.totalSubs / teamStats.matches).toFixed(1) : 0,
         winRate: teamStats.matches ? Math.round((teamStats.wins / teamStats.matches) * 100) : 0,
         rivalGoalStats,
+        ownGoalStats,
       },
       players: sortedPlayers,
     };
@@ -580,6 +490,7 @@ export default function Statistics({ navigation: navigationProp }) {
     sortBy,
     sortOrder,
     competitionFilter,
+    selectedTeam?.tiempoPorParte,
   ]);
 
   // Calculate weekly training attendance

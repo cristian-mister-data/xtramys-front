@@ -1390,7 +1390,7 @@ export default function Training({ canMutate }) {
       fecha: sessionData.fecha,
       expectedWellness: sessionData.expectedWellness,
       manualAverageWellness: sessionData.manualAverageWellness
-    }));
+    })).unwrap();
 
     dispatch(fetchEntrenamientosPorEquipo({ team: selectedTeam._id }));
     toast.success(t('session.createSuccess'));
@@ -1989,6 +1989,7 @@ export default function Training({ canMutate }) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.proCreateButton, { backgroundColor: theme.colors.primary }]}
+                testID="tutorial-training-open"
                 onPress={openCrearModal}
                 activeOpacity={0.85}
               >

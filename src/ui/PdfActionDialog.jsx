@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { toast } from '@/ui/toast';
 import { isNative, platform } from '@/platform/capacitor';
+import { safePdfName } from '@/utils/pdfFilename';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -345,7 +346,7 @@ function createActionBtn(primary, label, desc, iconName, onClick, autoFocus) {
 
 export function showPdfActions(blob, fileName) {
   injectAnimations();
-  const fullFileName = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+  const fullFileName = safePdfName(fileName);
   const canShare = isNative || (typeof navigator !== 'undefined' &&
     typeof navigator.share === 'function' &&
     typeof navigator.canShare === 'function');

@@ -24,6 +24,10 @@ export async function initNativeApp() {
 
   try {
     await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+      if (document.body.dataset.guidedTutorial) {
+        document.querySelector('[data-skip-tutorial]')?.focus();
+        return;
+      }
       if (canGoBack || window.history.length > 1) window.history.back();
       else CapacitorApp.exitApp();
     });

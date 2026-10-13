@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import Modal from '@/ui/Modal';
 import { Button, Muted } from '@/ui/primitives';
 import { toast } from '@/ui/toast';
+import { useTutorial } from './TutorialProvider';
 
 export const XTRAMYS_COMMUNITY_URL = 'https://chat.whatsapp.com/GWeYRmBJ7pP4VzkR4ZKhax';
 
@@ -165,6 +166,7 @@ export function XtramysCommunityCard({ compact = false }) {
 }
 
 export default function XtramysCommunityInvite({ userId }) {
+  const { tutorialActive } = useTutorial();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -190,7 +192,7 @@ export default function XtramysCommunityInvite({ userId }) {
 
   return (
     <Modal
-      open={open}
+      open={open && !tutorialActive}
       onClose={close}
       title={t('community.modalTitle', 'Comunidad Xtramys')}
       width={560}

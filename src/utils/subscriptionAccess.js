@@ -1,14 +1,19 @@
-export function hasDemoAccess(user) {
-  if (!user) return false;
-  if (user.role === 'admin' || user.role === 'club_admin') return false;
-  if (user.clubId && user.clubMemberStatus === 'active') return false;
-  return user?.accessMode === 'demo' || (user?.plan === 'demo' && !user?.clubId);
+export function hasDemoAccess() {
+  return false;
+}
+
+export function hasTrialAccess(user, now = Date.now()) {
+  return Boolean(!user?.clubId && user?.emailVerificado && user?.trialStartedAt && user?.trialEndsAt
+    && new Date(user.trialStartedAt).getTime() <= now
+    && new Date(user.trialEndsAt).getTime() > now);
 }
 
 export function hasFullAccess(user, subscriptionStatus) {
   if (!user) return false;
   if (user.role === 'admin' || user.role === 'club_admin') return true;
   if (user.clubId && user.clubMemberStatus === 'active') return true;
+  if (hasTrialAccess(user)) return true;
+  if (user.trialStartedAt && ['free', 'demo'].includes(user.plan) && user.subscriptionStatus !== 'active') return false;
   if (user.accessMode === 'full') return true;
   if (hasDemoAccess(user) || user.plan === 'demo' || user.plan === 'free') return false;
   if (user.plan === 'pro' || user.plan === 'club') return true;
@@ -41,7 +46,8 @@ export function getAccessMode(user, subscriptionStatus) {
   return 'none';
 }
 
-export const hasPaidSubscriptionAccess = hasFullAccess;
+export const hasPaidSubscriptionAccess = (user, status) =>
+  hasFullAccess(user?.trialStartedAt ? { ...user, trialStartedAt: null, trialEndsAt: null, accessMode: user.accessMode === 'trial' ? 'none' : user.accessMode } : user, status);
 
 export function isSubscriptionScheduledToCancel(user, subscriptionStatus) {
   if (!user) return false;

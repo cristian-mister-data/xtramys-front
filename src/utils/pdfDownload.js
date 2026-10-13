@@ -1,3 +1,4 @@
+import { safePdfName } from '@/utils/pdfFilename';
 import { Platform, NativeModules } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -120,12 +121,6 @@ const blobToBase64 = (blob) =>
     reader.onload = () => resolve(String(reader.result || '').split(',')[1]);
     reader.readAsDataURL(blob);
   });
-
-const safePdfName = (fileName) => {
-  const name = String(fileName || 'Xtramys').replace(/[\\/:*?"<>|]+/g, '-').trim();
-  const safeName = name || 'Xtramys';
-  return safeName.toLowerCase().endsWith('.pdf') ? safeName : `${safeName}.pdf`;
-};
 
 export const savePdfToDownloads = async (sourceUri, fileName) => {
   const fullFileName = safePdfName(fileName);

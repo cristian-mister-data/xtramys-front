@@ -2482,6 +2482,7 @@
       "scored": "Marcados",
       "conceded": "Encajados",
       "rivalGoalStats": "Estadísticas de Goles Rivales",
+      "ownGoalStats": "Estadísticas de goles a favor",
       "avgFirstGoalAgainst": "Media minuto 1er gol encajado",
       "mostCommonRivalGoalMinutes": "Minutos más frecuentes de goles rivales",
       "rivalGoalsPerHalf": "Goles rivales por parte",
@@ -2582,10 +2583,14 @@
     "assistsAbbr": "A",
     "yellowCardsAbbr": "TA",
     "redCardsAbbr": "TR",
-    "pdfPrefixTeam": "Estadisticas_Equipo",
-    "pdfPrefixPlayers": "Estadisticas_Jugadores",
-    "pdfPrefixInjuries": "Estadisticas_Lesiones",
-    "pdfPrefixCombined": "Reporte_Estadisticas_Completo"
+    "minFirstGoalScored": "Min. 1º gol a favor",
+    "bestScoringPeriod": "Más efectivo",
+    "noGoalMinutes": "No hay minutos de gol registrados en las fichas de partido.",
+    "recordedGoalMinutes": "Minutos registrados: {{recorded}} de {{total}} goles.",
+    "pdfPrefixTeam": "Estadísticas_Equipo",
+    "pdfPrefixPlayers": "Estadísticas_Jugadores",
+    "pdfPrefixInjuries": "Estadísticas_Lesiones",
+    "pdfPrefixCombined": "Reporte_Estadísticas_Completo"
   },
   "pdf": {
     "title": "PDF",

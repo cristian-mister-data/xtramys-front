@@ -25,7 +25,7 @@ export default function TacticalBoardPage({ route }) {
   const params = route?.params || routeFromHook?.params || {};
   const isSpecialMode = !!(params.isStrategyMode || params.setPieceMode);
   return (
-    <MobileSafeWrap>
+    <MobileSafeWrap data-tutorial="exercise-board">
       <RotatePrompt />
       <SafeAreaProvider style={fillStyle}>
         <GestureHandlerRootView style={fillStyle}>

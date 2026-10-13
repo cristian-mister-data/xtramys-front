@@ -471,6 +471,7 @@ export default function CreateExerciseForm({
         }]}
       >
         <TouchableOpacity
+          testID="tutorial-exit"
           onPress={handleCancelPress}
           style={styles.backButton}
           accessibilityRole="button"
@@ -778,6 +779,7 @@ export default function CreateExerciseForm({
         {!isNativeForm && (
           <TouchableOpacity
             style={styles.cancelButton}
+            testID="tutorial-exit"
             onPress={handleCancelPress}
             accessibilityRole="button"
           >

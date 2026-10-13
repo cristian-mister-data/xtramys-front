@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { getAccessMode } from '@/utils/subscriptionAccess';
+import { hasTrialAccess, hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
+import { openExternalWeb, websiteUrl } from '@/platform/externalWeb';
 import { isNative } from '@/platform/capacitor';
 
 const GateContainer = styled.div`
@@ -56,35 +58,26 @@ const SubscribeButton = styled.button`
   }
 `;
 
-export default function DemoSubscribeGate({ children }) {
-  const { t } = useTranslation();
+export default function DemoSubscribeGate({ children, feature }) {
+  const { i18n } = useTranslation();
+  const es = !i18n.language?.startsWith("en");
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const user = useSelector((s) => s.usuario.user);
   const subscriptionStatus = useSelector((s) => s.usuario.subscriptionStatus);
 
-  if (getAccessMode(user, subscriptionStatus) !== 'demo') return children;
+  if (!feature || !hasTrialAccess(user) || hasPaidSubscriptionAccess(user, subscriptionStatus)) return children;
 
   const showOptions = () => {
-    navigate('/subscribe');
+    if (isNative) openExternalWeb(websiteUrl(i18n.language, es ? '/precios' : '/pricing')).catch(() => setError(es ? 'No se pudo abrir el enlace a los planes.' : 'Could not open the plans link.'));
+    else navigate('/subscribe?intent=payment');
   };
-
-  return (
-    <GateContainer>
-      <GateCard>
-        <GateTitle>
-          {isNative
-            ? t('subscription.demoUnavailableTitle', 'Contenido no disponible en la demo')
-            : t('subscription.requiredToView', 'Tienes que estar suscrito para verlo')}
-        </GateTitle>
-        <GateDescription>
-          {isNative
-            ? t('subscription.demoAppNotice', 'Esta sección no forma parte de tu acceso actual.')
-            : t('subscription.demoNotice', 'Esta sección no está incluida en la demo. Suscríbete para desbloquear todo el contenido.')}
-        </GateDescription>
-        {!isNative && <SubscribeButton type="button" onClick={showOptions}>
-          {t('subscription.viewSubscription', 'Ver suscripción')}
-        </SubscribeButton>}
-      </GateCard>
-    </GateContainer>
-  );
+  return <GateContainer><GateCard>
+    <GateTitle>{es ? 'Desbloquea esta sección con un plan' : 'Unlock this section with a plan'}</GateTitle>
+    <GateDescription>{es
+      ? 'Nutrición, metodología y metodología de porteros están reservadas a los planes de pago. Tu prueba sigue disponible en el resto de la aplicación.'
+      : 'Nutrition, methodology and goalkeeper methodology are reserved for paid plans. Your trial remains available in the rest of the app.'}</GateDescription>
+    <SubscribeButton type="button" onClick={showOptions}>{es ? 'Ver planes y comprar' : 'View plans and buy'}</SubscribeButton>
+    {error && <p role="alert">{error}</p>}
+  </GateCard></GateContainer>;
 }

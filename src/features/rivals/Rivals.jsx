@@ -512,7 +512,7 @@ export default function Rivals() {
         actions={(
           <CanMutate>
             <Row $gap={8}>
-            <Button $variant="primary" onClick={openCreate}>
+            <Button data-tutorial="rival-open" $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />
                 {t('rivals.add', 'Añadir rival')}
@@ -621,6 +621,7 @@ export default function Rivals() {
 
       {/* Modal crear/editar */}
       <Modal
+        tutorialId={!editing ? 'rival-form' : undefined}
         open={modalOpen}
         onClose={closeModal}
         title={
@@ -631,7 +632,7 @@ export default function Rivals() {
         width={FORM_MODAL_WIDTH}
         footer={
           <Row $gap={8}>
-            <Button $variant="secondary" onClick={closeModal} disabled={saving}>
+            <Button data-tutorial-exit $variant="secondary" onClick={closeModal} disabled={saving}>
               {t('common.cancel', 'Cancelar')}
             </Button>
             <Button $variant="primary" onClick={handleSave} disabled={saving || !canMutate}>

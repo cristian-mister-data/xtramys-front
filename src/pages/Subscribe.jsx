@@ -15,6 +15,7 @@ import { checkSubscription, logoutThunk } from '@/store/slices/user/userThunks';
 import { useThemeMode } from '@/theme/ThemeContext';
 import { captureAttributionFromLocation, getStoredAttribution } from '@/utils/attribution';
 import { hasPaidSubscriptionAccess } from '@/utils/subscriptionAccess';
+import TrialOffer from '@/components/subscription/TrialOffer';
 
 const CLUB_MIN_QUANTITY = 5;
 const INDIVIDUAL_MONTHLY_PRICE = 9.99;
@@ -29,6 +30,8 @@ const Page = styled.div`
   padding: 0 24px 32px;
   background: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.text};
+  button { touch-action: manipulation; }
+  svg { flex-shrink: 0; }
 
   @media (max-width: 700px) {
     padding: 0 14px 24px;
@@ -120,11 +123,12 @@ const CheckoutGrid = styled.main`
 
 const Panel = styled.section`
   width: 100%;
+  min-width: 0;
   padding: 28px;
   border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
-  border-radius: 8px;
+  border-radius: 20px;
   background: ${({ theme }) => theme.colors.surface};
-  box-shadow: ${({ theme }) => theme.shadows.md};
+  box-shadow: 0 12px 36px rgba(15, 23, 42, .06);
   overflow: hidden;
 
   @media (max-width: 700px) {
@@ -146,6 +150,8 @@ const PanelHeader = styled.div`
   padding: 18px 28px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.surfaceAlt};
+  letter-spacing: .08em;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -161,7 +167,8 @@ const PlanBox = styled.div`
   padding: 24px 28px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
+  background: ${({ theme }) => theme.colors.primarySoft};
+  color: ${({ theme }) => theme.colors.text};
 
   @media (max-width: 700px) {
     margin-inline: -18px;
@@ -176,17 +183,17 @@ const PlanTabs = styled.div`
   margin-bottom: 22px;
   padding: 4px;
   border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
-  border-radius: 8px;
+  border-radius: 12px;
   background: ${({ theme }) => theme.colors.backgroundAlt};
 `;
 
 const PlanTab = styled.button`
-  min-height: 40px;
+  min-height: 46px;
   padding: 9px 12px;
   border: 0;
-  border-radius: 6px;
-  background: ${({ $active, theme }) => ($active ? theme.colors.surface : 'transparent')};
-  color: ${({ $active, theme }) => ($active ? theme.colors.text : theme.colors.textSecondary)};
+  border-radius: 9px;
+  background: ${({ $active, theme }) => ($active ? theme.colors.primary : 'transparent')};
+  color: ${({ $active, theme }) => ($active ? theme.colors.onPrimary : theme.colors.textSecondary)};
   font: inherit;
   font-size: 13px;
   font-weight: 800;
@@ -195,8 +202,8 @@ const PlanTab = styled.button`
   transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
 
   &:hover:not(:disabled) {
-    color: ${({ theme }) => theme.colors.text};
-    background: ${({ theme }) => theme.colors.surface};
+    color: ${({ $active, theme }) => $active ? theme.colors.onPrimary : theme.colors.text};
+    background: ${({ $active, theme }) => $active ? theme.colors.primaryHover : theme.colors.surface};
   }
 
   &:focus-visible {
@@ -209,9 +216,9 @@ const Badge = styled.span`
   display: inline-flex;
   margin-bottom: 12px;
   padding: 5px 9px;
-  border-radius: 5px;
-  background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.onPrimary || '#fff'};
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.primary};
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -219,7 +226,8 @@ const Badge = styled.span`
 
 const PlanTitle = styled.h1`
   margin: 0 0 6px;
-  font-size: 22px;
+  font-size: clamp(26px, 3vw, 32px);
+  letter-spacing: -.035em;
   font-weight: 800;
   line-height: 1.2;
 `;
@@ -227,8 +235,8 @@ const PlanTitle = styled.h1`
 const PlanSubtitle = styled.p`
   margin: 0 0 18px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.65;
 `;
 
 const PriceRow = styled.div`
@@ -239,7 +247,9 @@ const PriceRow = styled.div`
 `;
 
 const Amount = styled.span`
-  font-size: 38px;
+  font-size: clamp(44px, 5vw, 56px);
+  letter-spacing: -.05em;
+  font-variant-numeric: tabular-nums;
   font-weight: 900;
   line-height: 1;
 `;
@@ -251,8 +261,9 @@ const Period = styled.span`
 
 const PriceNote = styled.p`
   margin: 9px 0 0;
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  line-height: 1.6;
 `;
 
 const Savings = styled.div`
@@ -262,14 +273,14 @@ const Savings = styled.div`
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.successSoft};
   color: ${({ theme }) => theme.colors.successSoftText || theme.colors.success};
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.45;
 `;
 
 const Features = styled.div`
   display: grid;
-  gap: 11px;
+  gap: 14px;
 `;
 
 const Feature = styled.div`
@@ -277,19 +288,21 @@ const Feature = styled.div`
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: start;
   gap: 9px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.45;
 
   svg {
     margin-top: 1px;
-    color: ${({ theme }) => theme.colors.success};
+    color: ${({ theme }) => theme.colors.primary};
+    width: 20px; height: 20px;
   }
 `;
 
 const IncludedTitle = styled.p`
   margin: 0 0 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
+  font-size: 12px;
+  letter-spacing: .06em;
   font-weight: 800;
   text-transform: uppercase;
 `;
@@ -352,6 +365,8 @@ const Steps = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 26px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const Step = styled.div`
@@ -360,15 +375,15 @@ const Step = styled.div`
   justify-items: center;
   gap: 6px;
   color: ${({ $active, theme }) => ($active ? theme.colors.text : theme.colors.textMuted)};
-  font-size: 11px;
+  font-size: 13px;
   font-weight: ${({ $active }) => ($active ? 800 : 600)};
 
   &:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 13px;
-    left: calc(50% + 16px);
-    width: calc(100% - 32px);
+    top: 17px;
+    left: calc(50% + 22px);
+    width: calc(100% - 44px);
     height: 2px;
     background: ${({ $complete, theme }) => ($complete ? theme.colors.primary : theme.colors.border)};
   }
@@ -379,19 +394,20 @@ const StepNumber = styled.span`
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   border: 2px solid ${({ $active, $complete, theme }) => ($active || $complete ? theme.colors.primary : theme.colors.border)};
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ $active, $complete, theme }) => ($active || $complete ? theme.colors.primary : theme.colors.textMuted)};
+  background: ${({ $active, $complete, theme }) => $active || $complete ? theme.colors.primary : theme.colors.surface};
+  color: ${({ $active, $complete, theme }) => ($active || $complete ? theme.colors.onPrimary : theme.colors.textMuted)};
   font-size: 12px;
   font-weight: 800;
 `;
 
 const SectionTitle = styled.h2`
   margin: 0 0 6px;
-  font-size: 21px;
+  font-size: clamp(23px, 3vw, 28px);
+  letter-spacing: -.03em;
   font-weight: 800;
   line-height: 1.25;
 `;
@@ -411,11 +427,17 @@ const AccountInfo = styled.div`
   background: ${({ theme }) => theme.colors.backgroundAlt};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  strong { color: ${({ theme }) => theme.colors.text}; }
 `;
 
 const PaymentArea = styled.div`
   display: grid;
-  gap: 14px;
+  gap: 18px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const PrimaryButton = styled.button`
@@ -449,13 +471,13 @@ const CardButton = styled(PrimaryButton)`
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
-  background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
-  color: ${({ theme }) => theme.colors.text};
+  border: 1px solid ${({ theme }) => theme.colors.primary};
+  background: ${({ theme }) => theme.colors.primary};
+  color: ${({ theme }) => theme.colors.onPrimary};
 
   &:hover:not(:disabled) {
     border-color: ${({ theme }) => theme.colors.primary};
-    background: ${({ theme }) => theme.colors.surface};
+    background: ${({ theme }) => theme.colors.primaryHover};
   }
 `;
 
@@ -492,7 +514,7 @@ const DemoButton = styled.button`
 const Note = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.5;
   text-align: center;
 `;
@@ -522,10 +544,10 @@ const PayPalBox = styled.div`
 
 const Message = styled.div`
   padding: 11px 13px;
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  border: 1px solid ${({ theme }) => theme.colors.error};
   border-radius: 8px;
-  background: rgba(239, 68, 68, 0.08);
-  color: ${({ theme }) => theme.colors.error};
+  background: ${({ theme }) => theme.colors.errorSoft};
+  color: ${({ theme }) => theme.colors.errorSoftText};
   font-size: 13px;
   line-height: 1.45;
 `;
@@ -536,7 +558,7 @@ const SecondaryButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 46px;
   margin-top: 14px;
   padding: 10px 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderStrong || theme.colors.border};
@@ -544,7 +566,7 @@ const SecondaryButton = styled.button`
   background: ${({ theme }) => theme.colors.surfaceAlt || theme.colors.backgroundAlt};
   color: ${({ theme }) => theme.colors.textSecondary};
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 
@@ -601,6 +623,8 @@ const TrustBar = styled.div`
   @media (max-width: 700px) {
     margin: 22px -18px -20px;
     padding: 14px 12px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 `;
 
@@ -610,7 +634,8 @@ const TrustItem = styled.div`
   justify-content: center;
   gap: 6px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 1.5;
   font-weight: 700;
   text-align: center;
 
@@ -625,18 +650,18 @@ const LogoutButton = styled.button`
   min-height: 40px;
   margin: 20px auto 0;
   padding: 10px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.error};
+  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
   border-radius: 8px;
-  background: ${({ theme }) => theme.colors.errorSoft};
-  color: ${({ theme }) => theme.colors.error};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textSecondary};
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.error};
-    color: ${({ theme }) => theme.colors.onError || '#fff'};
+    background: ${({ theme }) => theme.colors.backgroundAlt};
+    color: ${({ theme }) => theme.colors.text};
   }
   &:focus-visible {
     outline: 3px solid ${({ theme }) => theme.colors.focusRing};
@@ -679,7 +704,7 @@ export default function Subscribe() {
   const [quantity, setQuantity] = useState(initialQuantity >= CLUB_MIN_QUANTITY ? initialQuantity : CLUB_MIN_QUANTITY);
   const [billingCycle, setBillingCycle] = useState(initialBillingCycle);
   const [activeStep, setActiveStep] = useState('account');
-  const [accountIntent, setAccountIntent] = useState('payment');
+  const [accountIntent, setAccountIntent] = useState(isClubPlan || params.get('intent') === 'payment' ? 'payment' : 'trial');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const paypalMountKey = useRef(Date.now()).current;
@@ -760,8 +785,8 @@ export default function Subscribe() {
   const handleBack = () => window.location.assign(websiteUrl(i18n.language));
 
   const handleAuthenticated = () => {
-    if (accountIntent === 'demo') {
-      navigate('/app', { replace: true });
+    if (accountIntent === 'trial') {
+      setActiveStep('payment');
       return;
     }
     setActiveStep('payment');
@@ -953,40 +978,39 @@ export default function Subscribe() {
           ) : !user || activeStep === 'account' ? (
             <>
               <SectionTitle>
-                {accountIntent === 'demo'
-                  ? t('subscription.demoAccountTitle', 'Crea tu cuenta demo')
+                {accountIntent === 'trial'
+                  ? (isEs ? 'Prueba Xtramys gratis durante 7 días' : 'Try Xtramys free for 7 days')
                   : t('subscription.checkoutAccountTitle', 'Tu cuenta')}
               </SectionTitle>
               <SectionIntro>
-                {accountIntent === 'demo'
-                  ? t('subscription.demoAccountSubtitle', 'Crea tu cuenta o inicia sesión para acceder directamente a la demo.')
+                {accountIntent === 'trial'
+                  ? (isEs ? 'Crea tu cuenta y valida tu correo. Confirma el enlace de activación para empezar los 7 días, sin tarjeta ni cobros automáticos.' : 'Create your account and verify your email. Confirm the activation link to start your 7 days, without a card or automatic charges.')
                   : t('subscription.checkoutAccountSubtitle', 'Crea una cuenta o inicia sesión antes de realizar ningún pago.')}
               </SectionIntro>
               {!isClubPlan && (
                 <DemoButton
                   type="button"
-                  onClick={() => setAccountIntent((current) => current === 'demo' ? 'payment' : 'demo')}
+                  onClick={() => setAccountIntent((current) => current === 'trial' ? 'payment' : 'trial')}
                 >
                   <FiCheckCircle aria-hidden="true" />
-                  {accountIntent === 'demo'
+                  {accountIntent === 'trial'
                     ? t('subscription.backToSubscription', 'Quiero suscribirme')
-                    : t('subscription.tryDemo', 'Probar la demo gratis')}
+                    : (isEs ? 'Probar gratis durante 7 días' : 'Try free for 7 days')}
                 </DemoButton>
               )}
               <SubscribeAccountStep returnPath={returnPath} intent={accountIntent} onAuthenticated={handleAuthenticated} />
             </>
           ) : (
             <>
-              <SectionTitle>{t('subscription.paymentTitle', 'Completa el pago')}</SectionTitle>
-              <SectionIntro>{t('subscription.paymentSubtitle', 'Elige el método de pago para activar tu plan.')}</SectionIntro>
+              <SectionTitle>{!isClubPlan && user.trialEligible
+                ? (isEs ? 'Empieza con 7 días gratis' : 'Start with 7 free days')
+                : t('subscription.paymentTitle', 'Completa el pago')}</SectionTitle>
+              <SectionIntro>{!isClubPlan && user.trialEligible
+                ? (isEs ? 'Activa la prueba sin tarjeta o, si lo prefieres, contrata un plan.' : 'Start your trial without a card or choose a paid plan.')
+                : t('subscription.paymentSubtitle', 'Elige el método de pago para activar tu plan.')}</SectionIntro>
               <AccountInfo>{t('subscription.account', 'Cuenta')}: <strong>{user.correo}</strong></AccountInfo>
 
-              {user.plan === 'demo' && !isClubPlan && (
-                <DemoButton type="button" onClick={() => navigate('/app')}>
-                  <FiCheckCircle aria-hidden="true" />
-                  {t('subscription.demoMode', 'Entrar en modo demo')}
-                </DemoButton>
-              )}
+              {!isClubPlan && <TrialOffer />}
 
               <PaymentArea>
                 {error && <Message>{error}</Message>}

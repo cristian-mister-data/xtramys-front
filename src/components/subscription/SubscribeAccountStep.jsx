@@ -135,7 +135,7 @@ export default function SubscribeAccountStep({ returnPath, intent = 'payment', o
 
   const handleGoogle = () => {
     const lang = i18n.language?.startsWith('es') ? 'es' : 'en';
-    const nextPath = intent === 'demo' ? '/app' : paymentReturnPath(returnPath);
+    const nextPath = paymentReturnPath(returnPath);
     window.location.href = getGoogleOAuthURL(lang, nextPath);
   };
 
@@ -377,10 +377,10 @@ export default function SubscribeAccountStep({ returnPath, intent = 'payment', o
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
         <PrimaryButton type="submit" disabled={loading}>
-          {loading ? '...' : intent === 'demo'
+          {loading ? '...' : intent === 'trial'
             ? mode === 'login'
-              ? t('subscription.enterDemo', 'Entrar en la demo')
-              : t('subscription.createDemoAccount', 'Crear cuenta y entrar en la demo')
+              ? (i18n.language?.startsWith('es') ? 'Entrar para solicitar la prueba' : 'Sign in to request the trial')
+              : (i18n.language?.startsWith('es') ? 'Crear cuenta para probar 7 días' : 'Create account for a 7-day trial')
             : t('subscription.continueToPayment', 'Continuar al pago')}
         </PrimaryButton>
       </Form>

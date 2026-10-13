@@ -1,6 +1,7 @@
 // store/store.js
 import { configureStore } from '@reduxjs/toolkit';
 import rootReducer from './rootReducer';
+import { tutorialCreationMiddleware } from '@/components/shared/tutorialSteps';
 
 const store = configureStore({
   reducer: rootReducer,
@@ -8,7 +9,7 @@ const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: false,
       immutableCheck: false,
-    }),
+    }).concat(tutorialCreationMiddleware),
   devTools: import.meta.env.DEV,
 });
 

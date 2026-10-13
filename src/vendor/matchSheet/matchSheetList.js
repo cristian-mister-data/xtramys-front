@@ -718,6 +718,7 @@ export default function MatchSheetList({ canMutate }) {
               {canMutate !== false && Platform.OS !== 'web' && (
                 <TouchableOpacity
                   onPress={openCreateModal}
+                  testID="tutorial-match-open"
                   style={styles.headerCreateBtn}
                 >
                   <Ionicons name="add" size={20} color={theme.colors.onPrimary} />

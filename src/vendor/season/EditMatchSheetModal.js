@@ -2731,11 +2731,11 @@ export default function EditMatchSheetModal({
         onRequestClose={handleMatchSheetRequestClose}
       >
       <View style={styles.modalBg}>
-        <View style={styles.modalContent}>
+        <View testID={!matchSheet?._id ? 'tutorial-match-form' : undefined} style={styles.modalContent}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{matchSheet?._id ? t('matchSheet.editMatch') : t('matchSheet.fields.createMatchSheet')}</Text>
-            <TouchableOpacity style={styles.closeBtn} onPress={handleMatchSheetRequestClose}>
+            <TouchableOpacity testID="tutorial-exit" style={styles.closeBtn} onPress={handleMatchSheetRequestClose}>
               <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -3631,6 +3631,7 @@ export default function EditMatchSheetModal({
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={styles.cancelBtn}
+                testID="tutorial-exit"
                 onPress={handleCancel}
               >
                 <Text style={styles.cancelBtnText}>{t('schedule.cancel')}</Text>

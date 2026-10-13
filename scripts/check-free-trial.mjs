@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { hasTrialAccess, hasFullAccess, hasAppAccess, hasPaidSubscriptionAccess } from '../src/utils/subscriptionAccess.js';
+const now = Date.now();
+const user = { role: 'user', plan: 'free', emailVerificado: true, accessMode: 'trial', trialStartedAt: new Date(now - 1000).toISOString(), trialEndsAt: new Date(now + 1000).toISOString() };
+assert(hasTrialAccess(user));
+assert(hasFullAccess(user));
+assert(hasAppAccess(user));
+assert(!hasPaidSubscriptionAccess(user));
+assert(!hasTrialAccess({ ...user, emailVerificado: false }));
+assert(!hasFullAccess({ ...user, trialEndsAt: new Date(now - 1).toISOString() }));
+assert(!hasAppAccess({ role: 'user', plan: 'demo', accessMode: 'demo' }));
+assert(hasPaidSubscriptionAccess({ ...user, plan: 'pro', subscriptionStatus: 'active', accessMode: 'full' }));
+console.log('Trial frontend access, expiration and paid-plan distinction passed');

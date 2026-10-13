@@ -1,4 +1,5 @@
 import React from 'react';
+import { normalizePdfText } from '@/utils/pdfFilename';
 import {
   Document, Page, Text, View,
   baseStyles, COLORS, SPACING, FONT_SIZE,
@@ -273,6 +274,54 @@ const translatePosition = (position, t) => {
 
 // ── Components ─────────────────────────────────────────────────────
 
+const GoalStatsCard = ({ goalStats = {}, own = false, t }) => {
+  const buckets = goalStats.buckets || {};
+  const maxBucketCount = Math.max(...Object.values(buckets), 1);
+  return (
+          <View wrap={false} style={[s.halfColumn, s.card]}>
+            <Text style={s.cardTitle}>{own ? t('statistics.team.ownGoalStats', 'Estadísticas de goles a favor') : t('statistics.team.rivalGoalStats', 'Estadísticas de goles rivales')}</Text>
+            {goalStats.hasData ? (
+              <>
+                <View style={[s.grid3, { marginBottom: SPACING.md }]}>
+                  <View style={[s.col3, s.metricBox, { backgroundColor: own ? '#f0fdf4' : '#fef2f2', borderColor: own ? '#bbf7d0' : '#fecaca', padding: 4 }]}>
+                    <Text style={[s.metricVal, { color: own ? '#15803d' : '#dc2626', fontSize: 16 }]}>{goalStats.avgFirstGoal}'</Text>
+                    <Text style={[s.metricLbl, { color: own ? '#166534' : '#991b1b', fontSize: 6 }]}>{own ? t('statistics.minFirstGoalScored', 'Min. 1º gol a favor') : t('statistics.minFirstGoalConceded', 'Min. 1º gol')}</Text>
+                  </View>
+                  <View style={[s.col3, s.metricBox, { backgroundColor: COLORS.bgSoft, borderColor: COLORS.border, padding: 4 }]}>
+                    <Text style={[s.metricVal, { color: COLORS.primary, fontSize: 16 }]}>{goalStats.avgPerMatch}</Text>
+                    <Text style={[s.metricLbl, { fontSize: 6 }]}>{t('statistics.goalsPerMatch', 'Goles / P')}</Text>
+                  </View>
+                  <View style={[s.col3, s.metricBox, { backgroundColor: '#fffbeb', borderColor: '#fde68a', padding: 4 }]}>
+                    <Text style={[s.metricVal, { color: '#d97706', fontSize: 16 }]}>{goalStats.mostDangerousPeriod}'</Text>
+                    <Text style={[s.metricLbl, { color: '#b45309', fontSize: 6 }]}>{own ? t('statistics.bestScoringPeriod', 'Más efectivo') : t('statistics.criticalPeriod', 'Crítico')}</Text>
+                  </View>
+                </View>
+                
+                {Object.entries(buckets).map(([period, count], i) => (
+                  <View style={s.barListItem} key={i}>
+                    <Text style={s.barListLabel}>{period}'</Text>
+                    <View style={s.barListTrack}>
+                      <View style={[s.barListFill, { width: `${Math.max((count / maxBucketCount) * 100, count > 0 ? 5 : 0)}%`, backgroundColor: period === goalStats.mostDangerousPeriod ? (own ? COLORS.success : COLORS.danger) : COLORS.textMuted }]} />
+                    </View>
+                    <Text style={s.barListVal}>{count}</Text>
+                  </View>
+                ))}
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: COLORS.border, marginTop: 8, paddingTop: 6 }}>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.firstHalfAbbr', '1ª')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{goalStats.firstHalfGoals}</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.secondHalfAbbr', '2ª')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{goalStats.secondHalfGoals}</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.minAbbr', 'Min')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{goalStats.earliest}'</Text></Text>
+                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.maxAbbr', 'Max')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{goalStats.latest}'</Text></Text>
+                </View>
+              </>
+            ) : <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, fontStyle: 'italic' }}>{t('statistics.noGoalMinutes', 'No hay minutos de gol registrados en las fichas de partido.')}</Text>}
+            {goalStats.totalTimedGoals < goalStats.totalGoals && <Text style={{ fontSize: 7, color: COLORS.textSecondary, marginTop: 8 }}>
+              {t('statistics.recordedGoalMinutes', {defaultValue: 'Minutos registrados: {{recorded}} de {{total}} goles.', recorded: goalStats.totalTimedGoals, total: goalStats.totalGoals})}
+            </Text>}
+          </View>
+  );
+};
+
 const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
   if (!stats) return null;
   const team = stats.team;
@@ -280,11 +329,6 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
   // Formations
   const formationsList = Object.entries(team.formations || {}).sort((a, b) => b[1] - a[1]);
   const maxFormationCount = formationsList.length > 0 ? Math.max(...formationsList.map((f) => f[1]), 1) : 1;
-
-  // Rival Goal Stats
-  let rivalStats = team.rivalGoalStats || {};
-  let buckets = rivalStats.buckets || {};
-  const maxBucketCount = Object.keys(buckets).length > 0 ? Math.max(...Object.values(buckets), 1) : 1;
 
   return (
     <Page size="A4" style={baseStyles.page}>
@@ -343,10 +387,10 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
           </View>
         </View>
 
-        {/* Second Row: Formations & Rival Goals */}
+        {/* Formation summary and matching goal distributions */}
         <View style={s.grid2}>
           {/* Formations */}
-          <View style={[s.halfColumn, s.card]}>
+          <View style={[s.card, { width: '100%' }]}>
             <Text style={s.cardTitle}>{t('statistics.preferredFormation', 'Formaciones Utilizadas')}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', backgroundColor: COLORS.bgSoft, padding: 8, borderRadius: 6, marginBottom: 12 }}>
               <View>
@@ -370,45 +414,10 @@ const TeamStatsPage = ({ stats, t, title, date, hideHeader = false }) => {
             )) : <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, fontStyle: 'italic' }}>{t('statistics.noData')}</Text>}
           </View>
 
-          {/* Rival Goals */}
-          <View style={[s.halfColumn, s.card]}>
-            <Text style={s.cardTitle}>{t('statistics.team.rivalGoalStats', 'Goles del Rival por Periodos')}</Text>
-            {rivalStats.hasData ? (
-              <>
-                <View style={[s.grid3, { marginBottom: SPACING.md }]}>
-                  <View style={[s.col3, s.metricBox, { backgroundColor: '#fef2f2', borderColor: '#fecaca', padding: 4 }]}>
-                    <Text style={[s.metricVal, { color: '#dc2626', fontSize: 16 }]}>{rivalStats.avgFirstGoal}'</Text>
-                    <Text style={[s.metricLbl, { color: '#991b1b', fontSize: 6 }]}>{t('statistics.minFirstGoalConceded', 'Min. 1º Gol')}</Text>
-                  </View>
-                  <View style={[s.col3, s.metricBox, { backgroundColor: COLORS.bgSoft, borderColor: COLORS.border, padding: 4 }]}>
-                    <Text style={[s.metricVal, { color: COLORS.primary, fontSize: 16 }]}>{rivalStats.avgPerMatch}</Text>
-                    <Text style={[s.metricLbl, { fontSize: 6 }]}>{t('statistics.goalsPerMatch', 'Goles / P')}</Text>
-                  </View>
-                  <View style={[s.col3, s.metricBox, { backgroundColor: '#fffbeb', borderColor: '#fde68a', padding: 4 }]}>
-                    <Text style={[s.metricVal, { color: '#d97706', fontSize: 16 }]}>{rivalStats.mostDangerousPeriod}'</Text>
-                    <Text style={[s.metricLbl, { color: '#b45309', fontSize: 6 }]}>{t('statistics.criticalPeriod', 'Crítico')}</Text>
-                  </View>
-                </View>
-                
-                {Object.entries(buckets).map(([period, count], i) => (
-                  <View style={s.barListItem} key={i}>
-                    <Text style={s.barListLabel}>{period}'</Text>
-                    <View style={s.barListTrack}>
-                      <View style={[s.barListFill, { width: `${Math.max((count / maxBucketCount) * 100, count > 0 ? 5 : 0)}%`, backgroundColor: period === rivalStats.mostDangerousPeriod ? COLORS.danger : COLORS.textMuted }]} />
-                    </View>
-                    <Text style={s.barListVal}>{count}</Text>
-                  </View>
-                ))}
-                
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: COLORS.border, marginTop: 8, paddingTop: 6 }}>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.firstHalfAbbr', '1ª')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.firstHalfGoals}</Text></Text>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.secondHalfAbbr', '2ª')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.secondHalfGoals}</Text></Text>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.minAbbr', 'Min')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.earliest}'</Text></Text>
-                  <Text style={{ fontSize: 8, color: COLORS.textSecondary }}>{t('statistics.maxAbbr', 'Max')}: <Text style={{ color: COLORS.primary, fontFamily: 'Helvetica-Bold' }}>{rivalStats.latest}'</Text></Text>
-                </View>
-              </>
-            ) : <Text style={{ fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, fontStyle: 'italic' }}>{t('statistics.noData')}</Text>}
-          </View>
+        </View>
+        <View style={s.grid2} wrap={false}>
+          <GoalStatsCard goalStats={team.ownGoalStats} own t={t} />
+          <GoalStatsCard goalStats={team.rivalGoalStats} t={t} />
         </View>
 
       </PdfSection>
@@ -698,8 +707,8 @@ const CombinedStatsDocument = ({ stats, injuries, players, t, title, date }) => 
 // ── Public API ─────────────────────────────────────────────────────
 
 export async function generateTeamStatsPdf(stats, teamName, dateStr, t) {
-  const prefix = t('statistics.pdfPrefixTeam', 'Estadisticas_Equipo');
-  const title = `${prefix} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixTeam', 'Estadísticas_Equipo');
+  const title = normalizePdfText(`${prefix.replace(/_/g, ' ')} - ${teamName}`);
   await renderPdf(
     <Document>
       <TeamStatsPage stats={stats} t={t} title={title} date={dateStr} hideHeader={false} />
@@ -709,8 +718,8 @@ export async function generateTeamStatsPdf(stats, teamName, dateStr, t) {
 }
 
 export async function generatePlayersStatsPdf(stats, teamName, dateStr, t) {
-  const prefix = t('statistics.pdfPrefixPlayers', 'Estadisticas_Jugadores');
-  const title = `${prefix} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixPlayers', 'Estadísticas_Jugadores');
+  const title = normalizePdfText(`${prefix.replace(/_/g, ' ')} - ${teamName}`);
   await renderPdf(
     <Document>
       <PlayersStatsPage stats={stats} t={t} title={title} date={dateStr} hideHeader={false} />
@@ -720,8 +729,8 @@ export async function generatePlayersStatsPdf(stats, teamName, dateStr, t) {
 }
 
 export async function generateInjuriesStatsPdf(injuries, players, teamName, dateStr, t) {
-  const prefix = t('statistics.pdfPrefixInjuries', 'Estadisticas_Lesiones');
-  const title = `${prefix} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixInjuries', 'Estadísticas_Lesiones');
+  const title = normalizePdfText(`${prefix.replace(/_/g, ' ')} - ${teamName}`);
   await renderPdf(
     <Document>
       <InjuriesStatsPage injuries={injuries} players={players} t={t} title={title} date={dateStr} hideHeader={false} />
@@ -731,8 +740,8 @@ export async function generateInjuriesStatsPdf(injuries, players, teamName, date
 }
 
 export async function generateCombinedStatsPdf(stats, injuries, players, teamName, dateStr, t) {
-  const prefix = t('statistics.pdfPrefixCombined', 'Reporte_Estadisticas_Completo');
-  const title = `${prefix} - ${teamName}`;
+  const prefix = t('statistics.pdfPrefixCombined', 'Reporte_Estadísticas_Completo');
+  const title = normalizePdfText(`${prefix.replace(/_/g, ' ')} - ${teamName}`);
   await renderPdf(
     <CombinedStatsDocument stats={stats} injuries={injuries} players={players} t={t} title={title} date={dateStr} />,
     `${prefix.replace(/\s+/g, '_')}_${teamName.replace(/\s+/g, '_')}`

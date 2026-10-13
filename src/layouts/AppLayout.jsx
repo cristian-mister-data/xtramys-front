@@ -6,10 +6,10 @@ import { MdClose, MdDescription, MdHome, MdLock, MdPeople, MdPerson, MdShield, M
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { fetchEquiposTemporada } from '@/store/slices/team/teamThunks';
-import { TutorialProvider } from '@/components/shared/TutorialProvider';
 import XtramysCommunityInvite from '@/components/shared/XtramysCommunityInvite';
 import { useTranslation } from 'react-i18next';
 import { isSeasonReadOnly } from '@/hooks/useSupervision';
+import TrialStatus from '@/components/subscription/TrialStatus';
 
 const Shell = styled.div`
   height: 100dvh;
@@ -195,7 +195,6 @@ export default function AppLayout() {
   }, [dispatch, seasonId, userId]);
 
   return (
-    <TutorialProvider>
       <Shell>
         <Sidebar open={drawerOpen} onClose={() => setDrawerOpen(false)} />
         <Header onMenu={() => setDrawerOpen((v) => !v)} hideSearch={hideSearch} />
@@ -233,6 +232,7 @@ export default function AppLayout() {
           </SupervisionBanner>
         )}
         <Main>
+          <TrialStatus />
           <Outlet />
         </Main>
         <BottomNav $count={bottomItems.length} aria-label={t('common.mobileNavigation', 'Navegación móvil')}>
@@ -245,6 +245,5 @@ export default function AppLayout() {
         </BottomNav>
         <XtramysCommunityInvite userId={userId} />
       </Shell>
-    </TutorialProvider>
   );
 }

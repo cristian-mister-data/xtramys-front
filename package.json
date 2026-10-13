@@ -1,7 +1,7 @@
 {
   "name": "xtramys-front-web",
   "private": true,
-  "version": "1.0.35",
+  "version": "1.0.36",
   "type": "module",
   "description": "Xtramys web application",
   "scripts": {
@@ -13,6 +13,9 @@
     "check:set-piece-migration": "node scripts/check-set-piece-migration.mjs",
     "check:mobile-subscriptions": "node scripts/check-mobile-subscriptions.mjs",
     "check:subscription-flow": "node scripts/check-subscription-flow.mjs",
+    "check:free-trial": "node scripts/check-free-trial.mjs",
+    "check:trial-ui": "node scripts/check-trial-ui.mjs",
+    "check:tutorial": "node scripts/check-tutorial.mjs",
     "check:ios-native-flows": "node scripts/check-ios-native-flows.mjs",
     "check:video-frame-roundtrip": "node scripts/check-video-frame-roundtrip.mjs",
     "check:training-pdf-mobile": "node scripts/check-training-pdf-mobile.mjs",
@@ -20,6 +23,7 @@
     "check:tactical-board-performance": "node scripts/check-tactical-board-performance.mjs",
     "check:content-visuals": "node scripts/check-content-visuals.mjs",
     "check:match-player-stats": "node scripts/check-match-player-stats.mjs",
+    "check:statistics-pdf": "node scripts/check-statistics-pdf.mjs",
     "check:image-zoom": "node scripts/check-image-zoom.mjs",
     "preview": "vite preview --port 4173",
     "mobile": "npm run build && npx cap sync",

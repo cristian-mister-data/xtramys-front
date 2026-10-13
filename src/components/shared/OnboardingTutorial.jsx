@@ -1,902 +1,266 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import styled from 'styled-components';
-import {
-  MdAccessibility,
-  MdAnalytics,
-  MdArrowBack,
-  MdArrowForward,
-  MdBarChart,
-  MdCalendarMonth,
-  MdCheckCircle,
-  MdDescription,
-  MdEmojiEvents,
-  MdFavorite,
-  MdFitnessCenter,
-  MdHealthAndSafety,
-  MdHome,
-  MdLibraryBooks,
-  MdLightbulbOutline,
-  MdMap,
-  MdMedicalServices,
-  MdMenu,
-  MdOutlineAssignment,
-  MdPeople,
-  MdRestaurant,
-  MdRocketLaunch,
-  MdShield,
-  MdSportsHandball,
-  MdTimer,
-  MdTouchApp,
-  MdVideoLibrary,
-} from 'react-icons/md';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import styled, { createGlobalStyle } from 'styled-components';
+import { TUTORIAL_TASKS, PLAYER_FIELDS, advanceTask } from './tutorialSteps';
+import { toast } from '@/ui/toast';
+import { FiCompass, FiArrowRight, FiCheck, FiMinus, FiLock } from 'react-icons/fi';
 
-const menuItems = [
-  { id: 'home', labelKey: 'menu.home', Icon: MdHome, color: '#1a237e' },
-  { id: 'season', labelKey: 'menu.season', Icon: MdCalendarMonth, color: '#f97316' },
-  { id: 'tournaments', labelKey: 'menu.tournaments', Icon: MdEmojiEvents, color: '#f59e0b' },
-  { id: 'players', labelKey: 'menu.players', Icon: MdPeople, color: '#10b981' },
-  { id: 'tacticalBoard', labelKey: 'menu.tacticalBoard', Icon: MdMap, color: '#8b5cf6' },
-  { id: 'exercises', labelKey: 'menu.exercises', Icon: MdFitnessCenter, color: '#3b82f6' },
-  { id: 'strategies', labelKey: 'menu.strategies', Icon: MdOutlineAssignment, color: '#a855f7' },
-  { id: 'videos', labelKey: 'menu.myVideos', Icon: MdVideoLibrary, color: '#ef4444' },
-  { id: 'methodology', labelKey: 'menu.methodology', Icon: MdLibraryBooks, color: '#06b6d4' },
-  {
-    id: 'goalkeeperMethodology',
-    labelKey: 'menu.goalkeeperMethodology',
-    Icon: MdSportsHandball,
-    color: '#0ea5e9',
-  },
-  { id: 'training', labelKey: 'menu.training', Icon: MdTimer, color: '#f97316' },
-  { id: 'wellness', labelKey: 'menu.wellness', Icon: MdFavorite, color: '#ec4899' },
-  { id: 'rivals', labelKey: 'menu.rivals', Icon: MdShield, color: '#14b8a6' },
-  { id: 'matchSheets', labelKey: 'menu.matchSheets', Icon: MdDescription, color: '#64748b' },
-  { id: 'injuries', labelKey: 'menu.injuries', Icon: MdMedicalServices, color: '#ef4444' },
-  { id: 'rivalAnalysis', labelKey: 'menu.rivalAnalysis', Icon: MdAnalytics, color: '#8b5cf6' },
-  { id: 'anthropometry', labelKey: 'menu.anthropometry', Icon: MdAccessibility, color: '#f59e0b' },
-  { id: 'statistics', labelKey: 'menu.statistics', Icon: MdBarChart, color: '#3b82f6' },
-  { id: 'nutrition', labelKey: 'menu.nutrition', Icon: MdRestaurant, color: '#10b981' },
-  {
-    id: 'injuryPrevention',
-    labelKey: 'menu.injuryPrevention',
-    Icon: MdHealthAndSafety,
-    color: '#ef4444',
-  },
-];
+const GuideStyles = createGlobalStyle`
+  body[data-guided-tutorial] [data-tutorial-highlight] {
+    outline: 3px solid ${({theme}) => theme.colors.primary}; outline-offset: 4px;
+  }
+  body[data-guided-tutorial] #root { padding-right: 350px; }
+  body[data-guided-tutorial] [role="dialog"]:not([data-tutorial-panel]) { margin-right: 350px; max-width: calc(100vw - 380px); }
+  body[data-guided-tutorial] [data-testid$="-form"] { max-width: calc(100vw - 390px); }
+  body[data-guided-tutorial] [data-tutorial-exit], body[data-guided-tutorial] [data-testid="tutorial-exit"] { opacity: .4; }
+  body[data-guided-tutorial] [inert] button, body[data-guided-tutorial] button[inert] { opacity: .4; }
+  @media(max-width: 800px) {
+    body[data-guided-tutorial] #root { padding-right: 0; padding-bottom: 260px; }
+    body[data-guided-tutorial] [role="dialog"]:not([data-tutorial-panel]) { margin-right: 0; max-width: 100vw; min-height: 0; height: calc(100dvh - 260px); max-height: calc(100dvh - 260px); align-self: flex-start; }
+    body[data-guided-tutorial] [data-testid$="-form"] { max-width: 100vw; max-height: calc(100dvh - 260px); }
+  }
+  @media(prefers-reduced-motion: reduce) { body[data-guided-tutorial] * { scroll-behavior: auto !important; } }
+`;
+const Panel = styled.aside`
+  position: fixed; top: 20px; right: 16px; width: 318px; max-height: calc(100dvh - 40px);
+  overflow-y: auto; z-index: 2147483647; border-radius: 22px;
+  border: 1px solid ${({theme}) => theme.colors.border};
+  background: ${({theme}) => theme.colors.surface}; color: ${({theme}) => theme.colors.text};
+  box-shadow: 0 24px 64px rgba(15,23,42,.22);
+  .guide-header { display: flex; align-items: center; gap: 12px; padding: 16px;
+    background: ${({theme}) => theme.colors.primarySoft}; color: ${({theme}) => theme.colors.primarySoftText};
+    border-bottom: 1px solid ${({theme}) => theme.colors.border}; }
+  .guide-mark { width: 36px; height: 36px; display: grid; place-items: center; flex-shrink: 0;
+    border-radius: 13px; background: ${({theme}) => theme.colors.primary}; color: ${({theme}) => theme.colors.onPrimary}; }
+  .guide-header strong { display: block; font-size: 15px; letter-spacing: -.02em; }
+  .guide-header small { display: block; margin-top: 4px; font-size: 12px; }
+  .guide-content { padding: 16px; }
+  .guide-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    font-size: 12px; font-weight: 600; color: ${({theme}) => theme.colors.textSecondary}; }
+  progress { display: block; width: 100%; height: 6px; margin: 0 0 12px; border: 0; border-radius: 99px;
+    overflow: hidden; appearance: none; background: ${({theme}) => theme.colors.backgroundAlt}; }
+  progress::-webkit-progress-bar { background: ${({theme}) => theme.colors.backgroundAlt}; }
+  progress::-webkit-progress-value { background: ${({theme}) => theme.colors.primary}; border-radius: 99px; }
+  progress::-moz-progress-bar { background: ${({theme}) => theme.colors.primary}; }
+  .guide-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+    letter-spacing: .07em; text-transform: uppercase; color: ${({theme}) => theme.colors.primary}; }
+  h2 { margin: 8px 0 12px; font-size: 23px; letter-spacing: -.035em; line-height: 1.2; }
+  p { margin: 12px 0; font-size: 14px; line-height: 1.65; color: ${({theme}) => theme.colors.textSecondary}; }
+  .guide-instruction { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; padding: 12px;
+    border-radius: 12px; border: 1px solid ${({theme}) => theme.colors.border}; background: ${({theme}) => theme.colors.surfaceAlt}; }
+  .guide-instruction svg { flex-shrink: 0; margin-top: 3px; color: ${({theme}) => theme.colors.primary}; }
+  .guide-instruction p { margin: 0; font-size: 13px; }
+  button { width: 100%; min-height: 44px; margin: 0; padding: 11px 10px; border-radius: 10px;
+    border: 1px solid ${({theme}) => theme.colors.borderStrong}; background: ${({theme}) => theme.colors.surface};
+    color: ${({theme}) => theme.colors.textSecondary}; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  button[data-primary] { background: ${({theme}) => theme.colors.primary}; color: ${({theme}) => theme.colors.onPrimary}; border-color: ${({theme}) => theme.colors.primary}; }
+  button:hover:not(:disabled) { background: ${({theme}) => theme.colors.backgroundAlt}; }
+  button[data-primary]:hover:not(:disabled) { background: ${({theme}) => theme.colors.primaryHover}; }
+  button:focus-visible, summary:focus-visible { outline: 3px solid ${({theme}) => theme.colors.focusRing}; outline-offset: 3px; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
+  [data-tutorial-actions] { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+  button[data-primary], [data-has-field] button[data-skip-tutorial] { grid-column: 1 / -1; }
+  button[data-skip-tutorial] { border-color: transparent; background: transparent; color: ${({theme}) => theme.colors.textMuted}; }
+  details { margin-top: 12px; padding-top: 12px; border-top: 1px solid ${({theme}) => theme.colors.border}; }
+  summary { cursor: pointer; font-size: 13px; font-weight: 700; color: ${({theme}) => theme.colors.text}; }
+  ol { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 4px; }
+  li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 11px;
+    border: 1px solid transparent; }
+  li[aria-current="step"] { background: ${({theme}) => theme.colors.primarySoft}; border-color: ${({theme}) => theme.colors.border}; }
+  .step-marker { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px;
+    border-radius: 50%; background: ${({theme}) => theme.colors.backgroundAlt}; color: ${({theme}) => theme.colors.textSecondary}; font-size: 12px; font-weight: 700; }
+  li[aria-current="step"] .step-marker { background: ${({theme}) => theme.colors.primary}; color: ${({theme}) => theme.colors.onPrimary}; }
+  li[data-status="completed"] .step-marker { background: ${({theme}) => theme.colors.successSoft}; color: ${({theme}) => theme.colors.successSoftText}; }
+  .step-copy { flex: 1; min-width: 0; }
+  .step-copy strong { display: block; font-size: 12px; font-weight: 600; line-height: 1.4; }
+  .step-copy small { display: block; margin-top: 3px; font-size: 11px; color: ${({theme}) => theme.colors.textMuted}; }
+  li[aria-current="step"] .step-copy small { color: ${({theme}) => theme.colors.primarySoftText}; }
+  .guide-note { display: flex; gap: 8px; padding: 12px 16px; background: ${({theme}) => theme.colors.surfaceAlt};
+    border-top: 1px solid ${({theme}) => theme.colors.border}; }
+  .guide-note svg { margin-top: 3px; flex-shrink: 0; color: ${({theme}) => theme.colors.textMuted}; }
+  .guide-note p { margin: 0; font-size: 12px; line-height: 1.6; }
+  @media(max-width: 800px) { top: auto; bottom: 0; right: 0; width: 100%; max-height: 250px; border-radius: 20px 20px 0 0;
+    .guide-header, .guide-progress, progress, .guide-eyebrow { display: none; }
+    .guide-content { padding: 14px 18px; } h2 { margin: 0 0 10px; font-size: 20px; }
+    .guide-instruction { padding: 10px; margin-bottom: 12px; }
+    button { min-height: 44px; } button[data-primary] { grid-column: auto; }
+    [data-has-field] button[data-skip-tutorial], button[data-skip-tutorial] { grid-column: auto; }
+    button[data-skip-tutorial]:nth-child(3) { grid-column: 1 / -1; }
+    .guide-note { padding-bottom: max(16px,env(safe-area-inset-bottom)); }
+  }
+`;
+const focusable = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], summary, [tabindex]:not([tabindex="-1"])';
+const selector = id => `[data-tutorial="${id}"], [data-testid="tutorial-${id}"]`;
 
-const getTutorialMenuItems = () => menuItems;
-
-const getSectionLabel = (item) => {
-  if (item.id === 'tacticalBoard') return 'menu.tools';
-  if (item.id === 'methodology') return 'menu.management';
-  if (item.id === 'injuries') return 'menu.analysis';
-  return '';
-};
-
-const buildTutorialSteps = (items) => [
-  {
-    id: 'welcome',
-    type: 'fullscreen',
-    Icon: MdRocketLaunch,
-    color: '#6366f1',
-    gradient: 'linear-gradient(135deg, #4f46e5 0%, #2563eb 48%, #0891b2 100%)',
-    bullets: ['b1', 'b2', 'b3', 'b4'],
-  },
-  {
-    id: 'drawer',
-    type: 'drawer',
-    Icon: MdMenu,
-    color: '#1a237e',
-    titleKey: 'tutorial.drawer.title',
-    descriptionKey: 'tutorial.drawer.description',
-  },
-  ...items.map((item, menuIndex) => ({
-    ...item,
-    type: 'menu',
-    menuIndex,
-  })),
-  {
-    id: 'ready',
-    type: 'fullscreen',
-    Icon: MdCheckCircle,
-    color: '#10b981',
-    gradient: 'linear-gradient(135deg, #047857 0%, #059669 52%, #0891b2 100%)',
-  },
-];
-
-function useHydratedSteps() {
-  const { t } = useTranslation();
-  const items = useMemo(() => getTutorialMenuItems(), []);
-
-  return useMemo(
-    () =>
-      buildTutorialSteps(items).map((step) => {
-        const baseKey = `tutorial.steps.${step.id}`;
-        return {
-          ...step,
-          title: t(step.titleKey || `${baseKey}.title`),
-          description: t(step.descriptionKey || `${baseKey}.description`),
-          tip: step.type === 'menu' || step.id === 'welcome' ? t(`${baseKey}.tip`, '') : '',
-          bullets: step.bullets?.map((key) => t(`${baseKey}.${key}`)) || [],
-        };
-      }),
-    [t, items],
-  );
-}
-
-export default function OnboardingTutorial({ visible, onComplete }) {
-  const { t } = useTranslation();
-  const steps = useHydratedSteps();
-  const drawerItems = useMemo(() => getTutorialMenuItems(), []);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const drawerScrollRef = useRef(null);
-  const itemRefs = useRef({});
-  const currentStep = steps[currentIndex] || steps[0];
-  const isFirst = currentIndex === 0;
-  const isLast = currentIndex === steps.length - 1;
+export default function OnboardingTutorial({session, onChange, onComplete}) {
+  const {i18n} = useTranslation();
+  const es = !i18n.language?.startsWith('en');
+  const text = (spanish, english) => es ? spanish : english;
+  const lang = es ? 0 : 1;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const panel = useRef(null);
+  const [targets, setTargets] = useState([]);
+  const [validation, setValidation] = useState('');
+  const task = TUTORIAL_TASKS[session.task];
+  const field = task?.id === 'player' && session.phase > 0 ? PLAYER_FIELDS[session.phase - 1] : null;
+  const saving = task?.id === 'player' && session.phase === PLAYER_FIELDS.length + 1;
+  const editingBoard = task?.id === 'exercise' && session.phase > 0 && location.pathname === '/tactical-board';
+  const targetId = editingBoard ? 'exercise-board' : session.phase === 0 ? `${task?.id}-open` : task?.id === 'player'
+    ? saving ? 'player-save' : `player-${field?.[0]}` : `${task?.id}-form`;
 
   useEffect(() => {
-    if (visible) setCurrentIndex(0);
-  }, [visible]);
-
+    if (!task) { onComplete(); return; }
+    if (location.pathname !== task.path && !editingBoard) navigate(task.path, {replace: true});
+  }, [task, location.pathname, editingBoard, navigate, onComplete]);
   useEffect(() => {
-    if (!visible) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
+    if (!task) return;
+    setValidation('');
+    const update = () => {
+      const found = [...document.querySelectorAll(selector(targetId))].filter(node => node.getClientRects().length);
+      setTargets(previous => previous.length === found.length && previous.every((node,index) => node === found[index]) ? previous : found);
+      if (session.phase === 0 && document.querySelector(selector(`${task?.id}-form`))) onChange({...session, phase: 1});
+      // A refresh can close an unfinished form. Reopen it through the same guided create button.
+      if (session.phase > 0 && !document.querySelector(selector(`${task?.id}-form`)) && document.querySelector(selector(`${task?.id}-open`))) onChange({...session, phase: 0});
     };
-  }, [visible]);
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.body, {childList: true, subtree: true});
+    return () => observer.disconnect();
+  }, [targetId, session, task, onChange]);
+  useEffect(() => {
+    const created = event => { if (event.detail === task?.id) onChange(advanceTask(session, 'completed')); };
+    window.addEventListener('xtramys:tutorial-created', created);
+    return () => window.removeEventListener('xtramys:tutorial-created', created);
+  }, [session, task, onChange]);
+  useEffect(() => toast.subscribe(message => {
+    if (message.type === 'error') setValidation(message.message);
+  }), []);
 
   useEffect(() => {
-    if (!visible || currentStep?.type !== 'menu') return;
-    itemRefs.current[currentStep.menuIndex]?.scrollIntoView({ block: 'center' });
-  }, [visible, currentStep]);
+    const previousFocus = document.activeElement;
+    document.body.dataset.guidedTutorial = 'true';
+    return () => {
+      delete document.body.dataset.guidedTutorial;
+      if (previousFocus?.isConnected) previousFocus.focus?.();
+    };
+  }, []);
+  useEffect(() => {
+    if (!task) return;
+    const modified = new Map();
+    const described = new Map();
+    const dialogs = new Map();
+    const highlighted = new Set();
+    let allowed = [];
+    const restore = () => {
+      modified.forEach((wasInert,node) => { node.inert = wasInert; }); modified.clear();
+      described.forEach((value,node) => value === null ? node.removeAttribute('aria-describedby') : node.setAttribute('aria-describedby',value)); described.clear();
+      dialogs.forEach((value,node) => value === null ? node.removeAttribute('aria-modal') : node.setAttribute('aria-modal',value)); dialogs.clear();
+      highlighted.forEach(node => node.removeAttribute('data-tutorial-highlight')); highlighted.clear();
+    };
+    const protect = () => {
+      restore();
+      const form = document.querySelector(selector(`${task?.id}-form`));
+      const canUseAuxiliary = session.phase > 0 && form && (task?.id !== 'player' || field?.[0] === 'photo');
+      const auxiliary = canUseAuxiliary ? [...document.querySelectorAll('[role="dialog"], [data-tutorial="image-cropper"]')]
+        .filter(node => !node.contains(form) && !node.contains(panel.current)) : [];
+      allowed = [panel.current, ...targets, ...auxiliary].filter(Boolean);
+      const readable = [...allowed, ...document.querySelectorAll('[role="alert"]')];
+      document.querySelectorAll('[role="dialog"]').forEach(node => {
+        dialogs.set(node,node.getAttribute('aria-modal')); node.setAttribute('aria-modal','false');
+      });
+      const walk = node => {
+        if (readable.some(root => root === node || root.contains(node))) return;
+        if (readable.some(root => node.contains(root))) { [...node.children].forEach(walk); return; }
+        if (node instanceof HTMLElement && !['STYLE','SCRIPT','LINK'].includes(node.tagName)) {
+          modified.set(node, node.inert); node.inert = true;
+        }
+      };
+      [...document.body.children].forEach(walk);
+      document.querySelectorAll('[data-tutorial-exit], [data-testid="tutorial-exit"]').forEach(node => {
+        if (!node.closest('[inert]')) {modified.set(node,node.inert); node.inert = true;}
+      });
+      targets.forEach(node => {
+        node.setAttribute('data-tutorial-highlight',''); highlighted.add(node);
+        const controls = [node, ...node.querySelectorAll(focusable)].filter(control => control.matches(focusable));
+        controls.forEach(control => {described.set(control,control.getAttribute('aria-describedby')); control.setAttribute('aria-describedby', `${control.getAttribute('aria-describedby') || ''} tutorial-instruction`.trim());});
+      });
+    };
+    const permitted = node => node instanceof Element && !node.closest('[data-tutorial-exit], [data-testid="tutorial-exit"]') && allowed.some(root => root.contains(node));
+    const block = event => {
+      if (!permitted(event.target)) {event.preventDefault(); event.stopImmediatePropagation();}
+    };
+    const keys = event => {
+      if (event.key === 'Escape') {event.preventDefault(); event.stopImmediatePropagation(); panel.current?.querySelector('[data-skip-tutorial]')?.focus(); return;}
+      if (event.key === 'Tab') {
+        const controls = [...document.querySelectorAll(focusable)].filter(node => permitted(node) && !node.closest('[inert]') && node.getClientRects().length);
+        const index = controls.indexOf(document.activeElement);
+        if (controls.length) {event.preventDefault(); event.stopImmediatePropagation(); controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length].focus();}
+      } else if (!permitted(event.target)) block(event);
+    };
+    const focus = event => {if (!permitted(event.target)) panel.current?.focus();};
+    protect();
+    if (panel.current) panel.current.scrollTop = 0;
+    const observer = new MutationObserver(protect);
+    observer.observe(document.body, {childList: true, subtree: true});
+    for (const name of ['click','pointerdown','submit']) document.addEventListener(name, block, true);
+    document.addEventListener('keydown', keys, true);
+    document.addEventListener('focusin', focus, true);
+    const first = targets[0];
+    first?.scrollIntoView({block: 'center', behavior: 'instant'});
+    (first?.matches(focusable) ? first : first?.querySelector(focusable))?.focus();
+    if (!first) panel.current?.focus();
+    return () => {
+      observer.disconnect(); restore();
+      for (const name of ['click','pointerdown','submit']) document.removeEventListener(name, block, true);
+      document.removeEventListener('keydown', keys, true); document.removeEventListener('focusin', focus, true);
+    };
+  }, [targets, session.phase, task, field]);
 
-  if (!visible || typeof document === 'undefined') return null;
-
-  const finish = () => {
-    onComplete?.();
-  };
-
-  const next = () => {
-    if (isLast) finish();
-    else setCurrentIndex((value) => Math.min(value + 1, steps.length - 1));
-  };
-
-  const back = () => {
-    setCurrentIndex((value) => Math.max(value - 1, 0));
-  };
-
-  const content =
-    currentStep.type === 'fullscreen' ? (
-      <FullscreenStep
-        step={currentStep}
-        t={t}
-        currentIndex={currentIndex}
-        totalSteps={steps.length}
-        isFirst={isFirst}
-        isLast={isLast}
-        onBack={back}
-        onNext={next}
-        onSkip={finish}
-      />
-    ) : (
-      <SpotlightStep
-        step={currentStep}
-        t={t}
-        currentIndex={currentIndex}
-        totalSteps={steps.length}
-        isFirst={isFirst}
-        isLast={isLast}
-        onBack={back}
-        onNext={next}
-        onSkip={finish}
-        drawerScrollRef={drawerScrollRef}
-        itemRefs={itemRefs}
-        drawerItems={drawerItems}
-      />
-    );
-
-  return createPortal(content, document.body);
-}
-
-function FullscreenStep({
-  step,
-  t,
-  currentIndex,
-  totalSteps,
-  isFirst,
-  isLast,
-  onBack,
-  onNext,
-  onSkip,
-}) {
-  const Icon = step.Icon;
-  return (
-    <FullscreenOverlay
-      $gradient={step.gradient}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="tutorial-title"
-      data-theme-aware="true"
-    >
-      <FullscreenContent>
-        <HeroIcon>
-          <Icon size={54} />
-        </HeroIcon>
-        <FullscreenTitle id="tutorial-title">{step.title}</FullscreenTitle>
-        <FullscreenDescription>{step.description}</FullscreenDescription>
-        {step.bullets.length > 0 ? (
-          <BulletList>
-            {step.bullets.map((bullet) => (
-              <BulletRow key={bullet}>
-                <MdCheckCircle size={18} />
-                <span>{bullet}</span>
-              </BulletRow>
-            ))}
-          </BulletList>
-        ) : null}
-        {step.tip ? (
-          <Tip $light>
-            <MdLightbulbOutline size={18} />
-            {step.tip}
-          </Tip>
-        ) : null}
-      </FullscreenContent>
-      <FooterNav>
-        <ProgressLabel>
-          {currentIndex + 1}/{totalSteps}
-        </ProgressLabel>
-        <ProgressTrack>
-          <ProgressFill $value={(currentIndex + 1) / totalSteps} />
-        </ProgressTrack>
-        <ButtonRow>
-          <IconButton
-            type="button"
-            onClick={onBack}
-            disabled={isFirst}
-            aria-label={t('tutorial.back')}
-          >
-            <MdArrowBack size={20} />
-          </IconButton>
-          {!isLast ? (
-            <TextButton type="button" style={{ color: '#ffffff' }} onClick={onSkip}>
-              {t('tutorial.skip')}
-            </TextButton>
-          ) : (
-            <span />
-          )}
-          <PrimaryButton type="button" onClick={onNext} $finish={isLast}>
-            {isLast ? t('tutorial.start') : t('tutorial.next')}
-            {isLast ? <MdCheckCircle size={18} /> : <MdArrowForward size={18} />}
-          </PrimaryButton>
-        </ButtonRow>
-      </FooterNav>
-    </FullscreenOverlay>
-  );
-}
-
-function SpotlightStep({
-  step,
-  t,
-  currentIndex,
-  totalSteps,
-  isFirst,
-  isLast,
-  onBack,
-  onNext,
-  onSkip,
-  drawerScrollRef,
-  itemRefs,
-  drawerItems,
-}) {
-  return (
-    <SpotlightOverlay role="dialog" aria-modal="true" aria-labelledby="tutorial-title" data-theme-aware="true">
-      <TutorialScene>
-        <DrawerPreview t={t} step={step} drawerScrollRef={drawerScrollRef} itemRefs={itemRefs} items={drawerItems} />
-        <PagePreview aria-hidden="true">
-          <PageHeader>
-            <MdMenu size={24} />
-            <span>Xtramys</span>
-          </PageHeader>
-          <PreviewContent>
-            <PreviewLine $wide />
-            <PreviewLine />
-            <PreviewGrid>
-              <PreviewCard />
-              <PreviewCard />
-              <PreviewCard $wide />
-            </PreviewGrid>
-          </PreviewContent>
-        </PagePreview>
-      </TutorialScene>
-      <TooltipCard>
-        <TooltipHeader>
-          <StepIcon $color={step.color}>
-            {step.Icon ? <step.Icon size={22} /> : <MdMenu size={22} />}
-          </StepIcon>
-          <TooltipTitle id="tutorial-title">{step.title}</TooltipTitle>
-          <Counter>
-            {currentIndex + 1}/{totalSteps}
-          </Counter>
-        </TooltipHeader>
-        <TooltipDescription>{step.description}</TooltipDescription>
-        {step.tip ? (
-          <Tip>
-            <MdLightbulbOutline size={16} />
-            {step.tip}
-          </Tip>
-        ) : null}
-        <TooltipButtons>
-          <SecondaryButton type="button" onClick={onBack} disabled={isFirst}>
-            <MdArrowBack size={18} />
-            {t('tutorial.back')}
-          </SecondaryButton>
-          <ButtonSpacer />
-          {!isLast ? (
-            <TextButton type="button" onClick={onSkip}>
-              {t('tutorial.skip')}
-            </TextButton>
-          ) : null}
-          <PrimaryButton type="button" onClick={onNext} $finish={isLast}>
-            {isLast ? t('tutorial.start') : t('tutorial.next')}
-            {isLast ? <MdCheckCircle size={18} /> : <MdArrowForward size={18} />}
-          </PrimaryButton>
-        </TooltipButtons>
-        <ProgressTrack $compact>
-          <ProgressFill $value={(currentIndex + 1) / totalSteps} $color={step.color} />
-        </ProgressTrack>
-      </TooltipCard>
-    </SpotlightOverlay>
-  );
-}
-
-function DrawerPreview({ t, step, drawerScrollRef, itemRefs, items }) {
-  const highlightIndex = step.type === 'menu' ? step.menuIndex : -1;
-  return (
-    <DrawerShell $highlightDrawer={step.type === 'drawer'}>
-      <DrawerHeader>
-        <AvatarCircle>{t('tutorial.drawer.yourAccount').charAt(0)}</AvatarCircle>
-        <span>{t('tutorial.drawer.yourAccount')}</span>
-      </DrawerHeader>
-      <DrawerScroll ref={drawerScrollRef}>
-        {items.map((item, index) => {
-          const Icon = item.Icon;
-          const active = index === highlightIndex;
-          const sectionLabel = getSectionLabel(item);
-          return (
-            <MenuFragment key={item.id}>
-              {sectionLabel ? (
-                <SectionDivider>{t(sectionLabel)}</SectionDivider>
-              ) : null}
-              <DrawerItem
-                ref={(node) => {
-                  itemRefs.current[index] = node;
-                }}
-                $active={active}
-                $color={item.color}
-              >
-                <IconBox $active={active} $color={item.color}>
-                  <Icon size={19} />
-                </IconBox>
-                <span>{t(item.labelKey)}</span>
-                {active ? <MdTouchApp size={18} /> : null}
-              </DrawerItem>
-            </MenuFragment>
-          );
-        })}
-      </DrawerScroll>
-    </DrawerShell>
-  );
-}
-
-const FullscreenOverlay = styled.div.attrs({ 'data-theme-aware': 'true' })`
-  position: fixed;
-  inset: 0;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-  display: grid;
-  grid-template-rows: 1fr auto;
-  background: ${({ $gradient }) => $gradient};
-  color: #fff;
-  padding: 28px clamp(18px, 4vw, 48px);
-  overflow: auto;
-
-  @media (max-width: 760px) {
-    padding: 18px 14px;
-  }
-`;
-
-const FullscreenContent = styled.div`
-  width: min(720px, 100%);
-  margin: auto;
-  text-align: center;
-  display: grid;
-  justify-items: center;
-  gap: 18px;
-`;
-
-const HeroIcon = styled.div`
-  width: 118px;
-  height: 118px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
-
-  @media (max-height: 680px) {
-    width: 88px;
-    height: 88px;
-  }
-
-  @media (max-width: 480px) {
-    width: 78px;
-    height: 78px;
-  }
-`;
-
-const FullscreenTitle = styled.h2`
-  margin: 0;
-  font-size: clamp(30px, 4vw, 48px);
-  line-height: 1.08;
-  font-weight: 800;
-
-  @media (max-height: 680px) {
-    font-size: clamp(26px, 5vw, 34px);
-  }
-`;
-
-const FullscreenDescription = styled.p`
-  margin: 0;
-  width: min(620px, 100%);
-  font-size: clamp(16px, 2vw, 20px);
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.88);
-
-  @media (max-width: 480px) {
-    font-size: 15px;
-  }
-`;
-
-const BulletList = styled.div`
-  width: min(560px, 100%);
-  display: grid;
-  gap: 10px;
-  margin-top: 4px;
-`;
-
-const BulletRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  padding: 11px 14px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.13);
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
-`;
-
-const SpotlightOverlay = styled.div.attrs({ 'data-theme-aware': 'true' })`
-  position: fixed;
-  inset: 0;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-  overflow: hidden;
-  background: rgba(15, 23, 42, 0.72);
-
-  @media (max-width: 760px) {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    padding: 10px;
-    gap: 10px;
-  }
-`;
-
-const TutorialScene = styled.div`
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: minmax(260px, 300px) 1fr;
-  background: ${({ theme }) => theme.colors.background};
-
-  @media (max-width: 760px) {
-    position: relative;
-    inset: auto;
-    min-height: 0;
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr);
-    border-radius: 8px;
-    overflow: hidden;
-  }
-`;
-
-const DrawerShell = styled.aside`
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: ${({ theme }) => theme.colors.sidebarBg};
-  border-right: 1px solid ${({ theme }) => theme.colors.sidebarBorder};
-  box-shadow: ${({ $highlightDrawer }) =>
-    $highlightDrawer
-      ? '0 0 0 3px rgba(255,255,255,0.9), 0 0 0 7px rgba(37, 99, 235, 0.8)'
-      : 'none'};
-
-  @media (max-width: 760px) {
-    width: min(100%, 380px);
-    height: 100%;
-    max-height: none;
-    justify-self: center;
-    margin-top: 0;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid ${({ theme }) => theme.colors.sidebarBorder};
-  }
-`;
-
-const DrawerHeader = styled.div`
-  padding: 20px;
-  color: #fff;
-  background: linear-gradient(135deg, #1a237e 0%, #2563eb 58%, #0891b2 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  font-size: 13px;
-  font-weight: 600;
-`;
-
-const AvatarCircle = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.92);
-  color: #1d4ed8;
-  font-weight: 800;
-`;
-
-const DrawerScroll = styled.div`
-  flex: 1;
-  overflow: hidden auto;
-  padding: 8px 10px 18px;
-`;
-
-const MenuFragment = styled.div``;
-
-const SectionDivider = styled.div`
-  padding: 14px 8px 6px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.sidebarSection};
-`;
-
-const DrawerItem = styled.div`
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 2px 0;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: ${({ $active }) => ($active ? 800 : 600)};
-  color: ${({ $active, $color, theme }) => ($active ? $color : theme.colors.sidebarText)};
-  background: ${({ $active, $color, theme }) => ($active ? `${$color}18` : theme.colors.sidebarBg)};
-  border: 1px solid ${({ $active, $color }) => ($active ? $color : 'transparent')};
-  box-shadow: ${({ $active, $color }) =>
-    $active ? `0 0 0 3px ${$color}26, 0 18px 34px rgba(15, 23, 42, 0.3)` : 'none'};
-  position: relative;
-  z-index: ${({ $active }) => ($active ? 4 : 1)};
-  opacity: ${({ $active }) => ($active ? 1 : 0.52)};
-`;
-
-const IconBox = styled.span`
-  width: 31px;
-  height: 31px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  color: ${({ $active }) => ($active ? '#fff' : 'currentColor')};
-  background: ${({ $active, $color, theme }) => ($active ? $color : theme.colors.sidebarItemHover)};
-`;
-
-const PagePreview = styled.div`
-  min-width: 0;
-  opacity: 0.4;
-
-  @media (max-width: 760px) {
-    display: none;
-  }
-`;
-
-const PageHeader = styled.div`
-  height: 60px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 22px;
-  background: ${({ theme }) => theme.colors.headerBg};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.headerBorder};
-  color: ${({ theme }) => theme.colors.headerText};
-  font-weight: 800;
-`;
-
-const PreviewContent = styled.div`
-  padding: 28px;
-`;
-
-const PreviewLine = styled.div`
-  width: ${({ $wide }) => ($wide ? 'min(560px, 72%)' : 'min(380px, 50%)')};
-  height: ${({ $wide }) => ($wide ? '26px' : '14px')};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.border};
-  margin-bottom: 14px;
-`;
-
-const PreviewGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(160px, 280px));
-  gap: 16px;
-  margin-top: 24px;
-`;
-
-const PreviewCard = styled.div`
-  height: 130px;
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  grid-column: ${({ $wide }) => ($wide ? '1 / -1' : 'auto')};
-`;
-
-const TooltipCard = styled.div`
-  position: absolute;
-  z-index: 5;
-  left: min(332px, calc(82vw + 24px));
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(420px, calc(100vw - 360px));
-  padding: 18px;
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.text};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.35);
-
-  @media (max-width: 760px) {
-    position: relative;
-    left: auto;
-    right: auto;
-    bottom: auto;
-    top: auto;
-    transform: none;
-    width: 100%;
-    max-height: none;
-    overflow: visible;
-    display: grid;
-    grid-template-rows: auto auto auto auto;
-    padding: 14px;
-  }
-`;
-
-const TooltipHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-`;
-
-const StepIcon = styled.span`
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  color: #fff;
-  background: ${({ $color }) => $color};
-`;
-
-const TooltipTitle = styled.h3`
-  flex: 1;
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.25;
-`;
-
-const Counter = styled.span`
-  padding: 4px 9px;
-  border-radius: 999px;
-  background: ${({ theme }) => theme.colors.backgroundAlt};
-  color: ${({ theme }) => theme.colors.textMuted};
-  font-size: 12px;
-  font-weight: 800;
-`;
-
-const TooltipDescription = styled.p`
-  margin: 0 0 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 14px;
-  line-height: 1.55;
-
-  @media (max-width: 760px) {
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
-  }
-`;
-
-const Tip = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin-top: 4px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: ${({ $light, theme }) => 
-    $light 
-      ? 'rgba(255, 255, 255, 0.16)' 
-      : theme.mode === 'dark' 
-        ? 'rgba(245, 158, 11, 0.12)' 
-        : '#fffbeb'};
-  color: ${({ $light, theme }) => 
-    $light 
-      ? 'rgba(255, 255, 255, 0.92)' 
-      : theme.mode === 'dark' 
-        ? '#f59e0b' 
-        : '#92400e'};
-  font-size: 13px;
-  line-height: 1.45;
-`;
-
-const TooltipButtons = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-
-  @media (max-width: 480px) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: stretch;
-
-    > button {
-      width: 100%;
-      min-width: 0;
+  if (!task) return null;
+  const nextField = () => {
+    if (document.querySelector('[data-tutorial="image-cropper"]')) {
+      setValidation(text('Guarda o cancela el recorte de la foto antes de continuar.', 'Save or cancel photo cropping before continuing.')); return;
     }
-
-    > button:nth-of-type(2) {
-      grid-column: 1 / -1;
-      order: 3;
+    if (field?.[3] && !targets[0]?.querySelector('input')?.value.trim()) {
+      setValidation(text('Completa este campo obligatorio o salta la tarea de crear jugador.', 'Complete this required field or skip the create-player task.'));
+      targets[0]?.querySelector('input')?.focus(); return;
     }
-  }
-`;
-
-const ButtonSpacer = styled.div`
-  flex: 1;
-
-  @media (max-width: 480px) {
-    display: none;
-  }
-`;
-
-const PrimaryButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 8px;
-  border: 0;
-  color: ${({ $finish }) => ($finish ? '#052e16' : '#fff')};
-  background: ${({ $finish }) => ($finish ? '#86efac' : '#1d4ed8')};
-  font-weight: 800;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 3px solid rgba(255, 255, 255, 0.5);
-    outline-offset: 2px;
-  }
-`;
-
-const SecondaryButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.text};
-  background: ${({ theme }) => theme.colors.surface};
-  font-weight: 700;
-  cursor: pointer;
-
-  &:disabled {
-    visibility: hidden;
-  }
-`;
-
-const TextButton = styled.button`
-  min-height: 40px;
-  padding: 0 10px;
-  border: 0;
-  color: ${({ theme }) => theme.colors.textMuted};
-  background: transparent;
-  font-weight: 800;
-  cursor: pointer;
-`;
-
-const IconButton = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #fff;
-  background: rgba(255, 255, 255, 0.13);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0;
-    pointer-events: none;
-  }
-`;
-
-const FooterNav = styled.div`
-  width: min(720px, 100%);
-  margin: 0 auto;
-`;
-
-const ButtonRow = styled.div`
-  display: grid;
-  grid-template-columns: 48px 1fr auto;
-  align-items: center;
-  gap: 14px;
-  margin-top: 16px;
-
-  @media (max-width: 480px) {
-    grid-template-columns: 44px minmax(0, 1fr) minmax(104px, auto);
-    gap: 10px;
-
-    > button {
-      min-width: 0;
-      padding-left: 10px;
-      padding-right: 10px;
-    }
-  }
-`;
-
-const ProgressLabel = styled.div`
-  text-align: right;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.78);
-`;
-
-const ProgressTrack = styled.div`
-  height: ${({ $compact }) => ($compact ? '4px' : '6px')};
-  border-radius: 999px;
-  overflow: hidden;
-  background: ${({ $compact, theme }) =>
-    $compact ? theme.colors.border : 'rgba(255,255,255,0.22)'};
-`;
-
-const ProgressFill = styled.div`
-  height: 100%;
-  width: ${({ $value }) => `${Math.round($value * 100)}%`};
-  background: ${({ $color }) => $color || '#fff'};
-  transition: width 180ms ease;
-`;
+    onChange({...session, phase: session.phase + 1});
+  };
+  return createPortal(<><GuideStyles /><Panel ref={panel} data-tutorial-panel tabIndex={-1} aria-label={text('Tutorial guiado', 'Guided tutorial')}>
+    <header className="guide-header">
+      <span className="guide-mark"><FiCompass size={22} aria-hidden="true" /></span>
+      <div><strong>{text('Tutorial de Xtramys', 'Xtramys tutorial')}</strong><small>{text('Aprende creando, paso a paso', 'Learn by creating, step by step')}</small></div>
+    </header>
+    <div className="guide-content">
+    <div className="guide-progress"><span>{text('Tu recorrido', 'Your journey')}</span><span>{session.task} / {TUTORIAL_TASKS.length}</span></div>
+    <progress value={session.task} max={TUTORIAL_TASKS.length} aria-label={text('Tareas terminadas o saltadas', 'Completed or skipped tasks')} />
+    <div aria-live="polite" aria-atomic="true">
+      <span className="guide-eyebrow">{text(`Paso ${session.task + 1} de ${TUTORIAL_TASKS.length}`, `Step ${session.task + 1} of ${TUTORIAL_TASKS.length}`)}</span>
+      <h2>{task.title[lang]}</h2>
+      <div className="guide-instruction"><FiArrowRight size={17} aria-hidden="true" /><p id="tutorial-instruction">{editingBoard ? text('Diseña tu ejercicio y pulsa Guardar para volver al formulario. También puedes cancelar el dibujo y continuar sin imagen.', 'Design your exercise and select Save to return to the form. You can also cancel the drawing and continue without an image.') : session.phase === 0 ? text('Pulsa el botón resaltado para abrir el formulario.', 'Select the highlighted button to open the form.')
+        : field ? text(`Completa: ${field[1]}. Después pulsa Continuar.`, `Enter: ${field[2]}. Then select Continue.`)
+        : saving ? text('Pulsa Crear en el formulario. Avanzaremos cuando el jugador se guarde correctamente.', 'Select Create in the form. We will continue after the player is saved successfully.') : task.hint[lang]}</p></div>
+    </div>
+    {validation && <p role="alert">{validation}</p>}
+    {!targets.length && <p role="status">{text('Esperando el formulario. Si no está disponible, puedes saltar esta tarea o salir del tutorial.', 'Waiting for the form. If it is unavailable, skip this task or exit the tutorial.')}</p>}
+    <div data-tutorial-actions data-has-field={field || saving ? 'true' : undefined}>
+    {saving && <button onClick={() => onChange({...session, phase: 1})}>{text('Revisar datos del jugador', 'Review player details')}</button>}
+    {field && <button data-primary onClick={nextField} disabled={!targets.length}>{text('Continuar', 'Continue')}</button>}
+    {field && !field[3] && <button onClick={nextField}>{text('Saltar este campo', 'Skip this field')}</button>}
+    <button onClick={() => onChange(advanceTask(session,'skipped'))}>{text('Saltar esta tarea', 'Skip this task')}</button>
+    <button data-skip-tutorial onClick={onComplete}>{text('Saltar tutorial y salir', 'Skip tutorial and exit')}</button>
+    </div>
+    <details open><summary>{text('Tu progreso y tareas pendientes', 'Your progress and remaining tasks')}</summary><ol role="list">
+      {TUTORIAL_TASKS.map((item,index) => <li role="listitem" key={item.id} data-status={session.outcomes[index]} aria-current={session.task === index ? 'step' : undefined}>
+        <span className="step-marker" aria-hidden="true">{session.outcomes[index] === 'completed' ? <FiCheck size={15} /> : session.outcomes[index] === 'skipped' ? <FiMinus size={15} /> : index + 1}</span>
+        <span className="step-copy"><strong>{item.title[lang]}</strong><small>{session.outcomes[index] === 'completed' ? text('Realizada', 'Completed') : session.outcomes[index] === 'skipped' ? text('Saltada', 'Skipped') : session.task === index ? text('En curso', 'In progress') : text('Pendiente', 'Pending')}</small></span>
+      </li>)}
+    </ol></details>
+    </div>
+    <footer className="guide-note"><FiLock size={14} aria-hidden="true" /><p>{text('Sigue el paso resaltado. Puedes saltar la guía; lo que guardes quedará en tu cuenta.', 'Follow the highlighted step. You can skip the guide; saved data stays in your account.')}</p></footer>
+  </Panel></>, document.body);
+}
