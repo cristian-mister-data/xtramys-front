@@ -1121,6 +1121,12 @@ function StrategyCard({ strategy, onPress, onLongPress, IS_MOBILE, isGrid = fals
             )}
           </View>
 
+          {(strategy.hasAssociatedVideo) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, backgroundColor: '#FCE7F3', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, marginTop: 4 }}>
+              <Feather name="video" size={12} color="#BE185D" />
+              <Text style={{ color: '#BE185D', fontSize: 11, fontWeight: '600' }}>{t('common.hasVideo', 'Vídeo asociado')}</Text>
+            </View>
+          )}
           {strategy.sharedByFriend && (
             <Text style={styles.cardSubtitle} numberOfLines={1}>
               {t('friends.sharedBy', { name: strategy.sharedByFriend.nombre })}

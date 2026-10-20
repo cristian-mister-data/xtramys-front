@@ -77,3 +77,7 @@ AuthKey_*.p8
 # Generated video roundtrip comparisons
 /release/video-qa/
 
+# Generated session PDF checks and previews
+/tmp/pdfs/session-print/
+/tmp/match-sheet-ui/
+

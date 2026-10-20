@@ -39,7 +39,8 @@ import {
 import { generateSetPiecesPdf } from '@/vendor/strategy/pdf';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { createMatchSheetSetPiecesShareLink } from '@/utils/api';
-import { getMatchSheet, updateMatchSheet } from '@/api/matchSheet';
+import { getMatchSheet, updateMatchSheet, createFullMatchSheetShareLink } from '@/api/matchSheet';
+import MatchRivalReports from '@/components/season/MatchRivalReports';
 import { getScoutingReports, deleteScoutingReport } from '@/api/scouting';
 import ScoutingDetailModal from '@/components/scouting/ScoutingDetailModal';
 import MatchStatisticsModal from '@/components/season/MatchStatisticsModal';
@@ -281,6 +282,8 @@ export default function MatchSheetDetailModal({
   const [videoGenerationProgress, setVideoGenerationProgress] = useState(0);
   const [videoGenerationPhase, setVideoGenerationPhase] = useState('');
   const [activeDetailTab, setActiveDetailTab] = useState('data');
+  const [sharingMatch, setSharingMatch] = useState(false);
+  const [matchShareUrl, setMatchShareUrl] = useState('');
   const [statisticsMatchSheet, setStatisticsMatchSheet] = useState(matchSheet);
   const [detailSetPieces, setDetailSetPieces] = useState(() => matchSheet?.setPieces || []);
   const [fullscreenSetPiece, setFullscreenSetPiece] = useState(null);
@@ -300,6 +303,7 @@ export default function MatchSheetDetailModal({
     if (!visible || !matchSheet?._id) return;
     let mounted = true;
     setStatisticsMatchSheet(matchSheet);
+    setMatchShareUrl('');
     const matchSheetId = String(matchSheet._id);
     if (detailMatchSheetIdRef.current !== matchSheetId) {
       const initialSetPieces = matchSheet.setPieces || [];
@@ -609,6 +613,27 @@ export default function MatchSheetDetailModal({
     }
   };
 
+  const shareFullMatch = async () => {
+    setSharingMatch(true);
+    try {
+      const { data } = await createFullMatchSheetShareLink(matchSheet._id);
+      setMatchShareUrl(data.url);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(data.url);
+        Alert.alert(t('message.success'), t('common.copied', 'Copiado'));
+      }
+    } catch {
+      Alert.alert(t('message.error'), t('setPieces.shareError'));
+    } finally {
+      setSharingMatch(false);
+    }
+  };
+
+  const headerActionProps = (label) => ({
+    accessibilityRole: 'button', accessibilityLabel: label,
+    ref: node => node?.setAttribute?.('title', label),
+  });
+
   const getVideoId = (setPiece) => {
     const video = setPiece?.videoId || (Array.isArray(setPiece?.videos) ? setPiece.videos[0] : null);
     return typeof video === 'object' ? video?._id : video;
@@ -824,9 +849,14 @@ export default function MatchSheetDetailModal({
                 generatingPDFType={generatingPDFType}
                 compact={true}
               />
+              <button type="button" className="match-header-action" title={t('matchPresentation.share')} aria-label={t('matchPresentation.share')} onClick={shareFullMatch} disabled={sharingMatch}
+                style={{ '--match-surface': theme.colors.surface, '--match-text': theme.colors.text, '--match-border': theme.colors.border, '--match-hover': theme.colors.primarySoft }}>
+                <Ionicons name="share-social-outline" size={20} color={theme.colors.text} />
+              </button>
               <TouchableOpacity
                 style={styles.modalEditButton}
                 onPress={openScouting}
+                {...headerActionProps(t('matchSheet.actions.scouting', 'Abrir scouting'))}
                 title={t('matchSheet.actions.scouting', 'Abrir scouting')}
               >
                 <Ionicons name="person-add-outline" size={20} color={theme.colors.text} />
@@ -835,6 +865,7 @@ export default function MatchSheetDetailModal({
                 <TouchableOpacity
                   style={styles.modalEditButton}
                   onPress={() => setStatisticsVisible(true)}
+                  {...headerActionProps(t('matchSheet.statistics.add', 'Añadir estadísticas'))}
                   accessibilityLabel={t('matchSheet.statistics.add', 'Añadir estadísticas')}
                   title={t('matchSheet.statistics.add', 'Añadir estadísticas')}
                 >
@@ -845,6 +876,7 @@ export default function MatchSheetDetailModal({
                 <TouchableOpacity
                   style={styles.modalEditButton}
                   onPress={() => onEdit(matchSheet)}
+                  {...headerActionProps(t('edition.edit', 'Editar ficha'))}
                   title={t('edition.edit', 'Editar ficha')}
                 >
                   <Ionicons name="pencil" size={20} color={theme.colors.text} />
@@ -853,6 +885,7 @@ export default function MatchSheetDetailModal({
               <TouchableOpacity
                 style={styles.modalCloseBtn}
                 onPress={onClose}
+                {...headerActionProps(t('common.close', 'Cerrar'))}
               >
                 <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
@@ -867,6 +900,13 @@ export default function MatchSheetDetailModal({
             keyboardShouldPersistTaps="handled"
           >
             {/* Card principal con rival y resultado */}
+            {matchShareUrl && (
+              <div role="status" style={{ padding: 16, border: `1px solid ${theme.colors.border}`, borderRadius: 12, marginBottom: 16, color: theme.colors.text }}>
+                <strong>{t('matchPresentation.shareReady')}</strong>
+                <p style={{ margin: '6px 0', fontSize: 13 }}>{t('matchPresentation.shareHint')}</p>
+                <a href={matchShareUrl} target="_blank" rel="noopener noreferrer" style={{ color: theme.colors.primary, overflowWrap: 'anywhere' }}>{matchShareUrl}</a>
+              </div>
+            )}
             <View style={styles.matchSheetDetailCard}>
               <View style={styles.matchSheetDetailHeader}>
                 <Ionicons name="football" size={24} color={theme.colors.primary} />
@@ -890,17 +930,27 @@ export default function MatchSheetDetailModal({
               {[
                 ['data', t('matchSheet.tabs.data', 'Datos'), 'document-text-outline'],
                 ['abp', t('matchSheet.tabs.abp'), 'football-outline'],
+                ['rival', t('matchPresentation.rivalReport'), 'analytics-outline'],
               ].map(([key, label, icon]) => (
                 <TouchableOpacity
                   key={key}
                   style={[styles.detailTab, activeDetailTab === key && styles.detailTabActive]}
                   onPress={() => setActiveDetailTab(key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                  accessibilityState={{ selected: activeDetailTab === key }}
                 >
                   <Ionicons name={icon} size={16} color={activeDetailTab === key ? '#fff' : theme.colors.textSecondary} />
                   <Text style={[styles.detailTabText, activeDetailTab === key && styles.detailTabTextActive]}>{label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
+
+            {activeDetailTab === 'rival' && (
+              <div style={{ '--match-surface': theme.colors.surface, '--match-text': theme.colors.text, '--match-muted': theme.colors.textSecondary, '--match-border': theme.colors.border, '--match-hover': theme.colors.primarySoft }}>
+                <MatchRivalReports reports={statisticsMatchSheet?.rivalAnalyses || []} />
+              </div>
+            )}
 
             {activeDetailTab === 'abp' && (
               <View style={styles.detailCard}>

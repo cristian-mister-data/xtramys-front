@@ -192,9 +192,9 @@ try {
   }
   const result = await encoder.finish();
   assert.equal(result.mimeType, 'video/mp4');
-  assert.equal(largestBatch, 1);
+  assert.equal(largestBatch, 8);
   assert.equal(maxPending, 1, 'No deben acumularse subidas en paralelo');
-  assert.equal(frameRequests, 11, 'Un envío por frame más un reintento');
+  assert.equal(frameRequests, 3, 'Dos bloques más un reintento');
   const stride = 1920 * 1080 * 3;
   assert.equal(
     decoded.length,
@@ -238,7 +238,7 @@ try {
   URL.revokeObjectURL(result.outputPath);
   await cleanup;
   console.log(
-    `Roundtrip 1920x1080 OK: 20 frames, envío unitario, reintento sin duplicados; error medio ${(totalError / stride).toFixed(3)}/255; texto conservado ${((preservedBright / brightPixels) * 100).toFixed(2)}%.`,
+    `Roundtrip 1920x1080 OK: 20 frames, envío por bloques, reintento sin duplicados; error medio ${(totalError / stride).toFixed(3)}/255; texto conservado ${((preservedBright / brightPixels) * 100).toFixed(2)}%.`,
   );
 } finally {
   encoder.abort();

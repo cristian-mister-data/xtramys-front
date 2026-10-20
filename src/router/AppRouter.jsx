@@ -65,6 +65,7 @@ const WellnessForm = lazy(() => import('@/pages/public/WellnessForm'));
 const PreWellnessForm = lazy(() => import('@/pages/public/PreWellnessForm'));
 const TrainingSessionShare = lazy(() => import('@/pages/public/TrainingSessionShare'));
 const SetPieceShare = lazy(() => import('@/pages/public/SetPieceShare'));
+const MatchSheetShare = lazy(() => import('@/pages/public/MatchSheetShare'));
 const FriendshipAccept = lazy(() => import('@/pages/public/FriendshipAccept'));
 const StrengthExercises = lazy(() => import('@/pages/StrengthExercises'));
 const CoachSetup = lazy(() => import('@/pages/CoachSetup'));
@@ -120,6 +121,7 @@ export default function AppRouter() {
       <Route path="/public/training-session/:token" element={lazy_(<TrainingSessionShare />)} />
       <Route path="/public/set-piece/:token" element={lazy_(<SetPieceShare />)} />
       <Route path="/public/match-sheet-abp/:token" element={lazy_(<SetPieceShare />)} />
+      <Route path="/public/match-sheet/:token" element={lazy_(<MatchSheetShare />)} />
       <Route path="/friendship/accept/:token" element={lazy_(<FriendshipAccept />)} />
       <Route path="/ops" element={lazy_(<OpsDashboard />)} />
       {/* Web checkout is public; native apps keep subscriptions disabled. */}

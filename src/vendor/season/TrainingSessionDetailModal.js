@@ -23,13 +23,22 @@ import { useNavigate } from 'react-router-dom';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { generateSessionPDF } from '@/vendor/training/SessionPDF';
+import TrainingSessionPdfFormatPicker from '@/components/season/TrainingSessionPdfFormatPicker';
 import { normalizeImageSource } from '@/vendor/tacticalBoard/imagePreview';
 import { getContentImage } from '@/utils/contentVisual';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { createTrainingSessionShareLink, getVideosByExercise, getVideoStreamUrl, getVideoDownloadUrl, regenerateVideoWithField, getSessionWellnessStats, getSessionPreWellnessStats } from '@/utils/api';
+import {
+  createTrainingSessionShareLink,
+  getVideosByExercise,
+  getVideoStreamUrl,
+  getVideoDownloadUrl,
+  regenerateVideoWithField,
+  getSessionWellnessStats,
+  getSessionPreWellnessStats,
+} from '@/utils/api';
 import { downloadResolvedVideo, resolvePlayableVideoUrl } from '@/utils/videoPlayback';
 import { toast } from '@/ui/toast';
 import { getFieldById } from '@/utils/fieldTypes';
@@ -37,17 +46,15 @@ import ImageZoom from 'react-native-image-pan-zoom';
 import WellnessDetailModal from './WellnessDetailModal';
 import PreWellnessDetailModal from './PreWellnessDetailModal';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import { STRENGTH_EXERCISES, getStrengthExerciseImage, getStrengthExerciseVideoUrl, getSectionForExercise } from '@/data/strengthExercises';
+import {
+  STRENGTH_EXERCISES,
+  getStrengthExerciseImage,
+  getStrengthExerciseVideoUrl,
+  getSectionForExercise,
+} from '@/data/strengthExercises';
 import StrengthExerciseViewer from '@/vendor/shared/StrengthExerciseViewer';
-import {
-  getEntityId,
-  getSessionExerciseIds,
-  getSessionExercises,
-} from '@/utils/sessionExercises';
-import {
-  saveFormDraft,
-  STORAGE_KEYS,
-} from '@/utils/formPersistence';
+import { getEntityId, getSessionExerciseIds, getSessionExercises } from '@/utils/sessionExercises';
+import { saveFormDraft, STORAGE_KEYS } from '@/utils/formPersistence';
 import { mergeOrderedSessionTasks } from '@/utils/sessionCustomTasks';
 
 // Tema consistente con el resto de la aplicación
@@ -55,7 +62,16 @@ import { mergeOrderedSessionTasks } from '@/utils/sessionCustomTasks';
 // TEAM_COLORS se mantiene literal porque son datos semánticos (identidad de equipo).
 
 // Colores para los equipos
-const TEAM_COLORS = ['#3578e5', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+const TEAM_COLORS = [
+  '#3578e5',
+  '#ef4444',
+  '#10b981',
+  '#f59e0b',
+  '#8b5cf6',
+  '#ec4899',
+  '#06b6d4',
+  '#84cc16',
+];
 const getTeamColor = (teamNumber) => TEAM_COLORS[(teamNumber - 1) % TEAM_COLORS.length];
 
 export default function TrainingSessionDetailModal({
@@ -77,25 +93,29 @@ export default function TrainingSessionDetailModal({
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
-  const user = useSelector(state => state.usuario.user);
-  const idUsuario = user?._id || user?.id || "";
+  const user = useSelector((state) => state.usuario.user);
+  const idUsuario = user?._id || user?.id || '';
   const styles = useMemo(() => makeStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const IS_MOBILE = screenWidth < 430;
   const IS_TABLET = screenWidth > 700;
-  
+
   const openExternalUrl = (url) => {
     if (!url) return;
-    Linking.openURL(url).catch((err) => console.error("Error opening URL:", err));
+    Linking.openURL(url).catch((err) => console.error('Error opening URL:', err));
   };
-  
+
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [pdfFormatVisible, setPdfFormatVisible] = useState(false);
+  useEffect(() => {
+    if (!visible) setPdfFormatVisible(false);
+  }, [visible]);
   const [sharingSession, setSharingSession] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedImageExercise, setSelectedImageExercise] = useState(null);
-  
+
   // Estados para video
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -104,12 +124,12 @@ export default function TrainingSessionDetailModal({
   const [exerciseForVideo, setExerciseForVideo] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [exerciseVideoAvailability, setExerciseVideoAvailability] = useState({});
-  
+
   // Estados para wellness
   const [showWellnessDetail, setShowWellnessDetail] = useState(false);
   const [wellnessStats, setWellnessStats] = useState(null);
   const [loadingWellness, setLoadingWellness] = useState(false);
-  
+
   // Estados para pre-wellness
   const [showPreWellnessDetail, setShowPreWellnessDetail] = useState(false);
   const [preWellnessStats, setPreWellnessStats] = useState(null);
@@ -117,9 +137,9 @@ export default function TrainingSessionDetailModal({
   const [attendanceEditing, setAttendanceEditing] = useState(false);
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [absentPlayerIds, setAbsentPlayerIds] = useState(new Set());
-  
+
   // Video player para el modal
-  const videoPlayer = useVideoPlayer(videoUrl, player => {
+  const videoPlayer = useVideoPlayer(videoUrl, (player) => {
     if (videoUrl) {
       player.loop = false;
       player.play();
@@ -168,7 +188,7 @@ export default function TrainingSessionDetailModal({
       if (ejerciciosIds.length === 0) return;
 
       const availability = {};
-      
+
       await Promise.all(
         ejerciciosIds.map(async (ejercicioId) => {
           try {
@@ -177,23 +197,26 @@ export default function TrainingSessionDetailModal({
           } catch (error) {
             availability[ejercicioId] = false;
           }
-        })
+        }),
       );
       setExerciseVideoAvailability(availability);
     };
-    
+
     if (visible && session) {
       loadVideoAvailability();
     }
   }, [visible, session]);
 
-  const sessionExercises = useMemo(() => getSessionExercises(session, exercises), [session, exercises]);
+  const sessionExercises = useMemo(
+    () => getSessionExercises(session, exercises),
+    [session, exercises],
+  );
 
   // Mapa de observaciones
   const observacionesMap = useMemo(() => {
     if (!session?.observaciones) return {};
     return Object.fromEntries(
-      session.observaciones.map(o => [getEntityId(o.ejercicioId || o.ejercicio), o.observacion])
+      session.observaciones.map((o) => [getEntityId(o.ejercicioId || o.ejercicio), o.observacion]),
     );
   }, [session?.observaciones]);
 
@@ -201,13 +224,13 @@ export default function TrainingSessionDetailModal({
   const detalleMap = useMemo(() => {
     if (!session?.ejerciciosDetalle) return {};
     const map = {};
-    session.ejerciciosDetalle.forEach(det => {
+    session.ejerciciosDetalle.forEach((det) => {
       const ejercicioId = getEntityId(det.ejercicio);
       if (ejercicioId) {
-        map[ejercicioId] = { 
-          orden: det.orden || 0, 
+        map[ejercicioId] = {
+          orden: det.orden || 0,
           tiempoDescanso: det.tiempoDescanso || 0,
-          teamAssignments: det.teamAssignments || []
+          teamAssignments: det.teamAssignments || [],
         };
       }
     });
@@ -222,16 +245,18 @@ export default function TrainingSessionDetailModal({
   // Ejercicios de fuerza de la sesión
   const sessionStrengthExercises = useMemo(() => {
     if (!session?.ejerciciosFuerza || session.ejerciciosFuerza.length === 0) return [];
-    return session.ejerciciosFuerza.map(ef => {
-      const exerciseData = STRENGTH_EXERCISES.find(e => e.id === ef.id);
-      if (!exerciseData) return null;
-      return {
-        ...exerciseData,
-        observacion: ef.observacion || '',
-        tiempoDescanso: ef.tiempoDescanso || 0,
-        orden: ef.orden || 0,
-      };
-    }).filter(Boolean);
+    return session.ejerciciosFuerza
+      .map((ef) => {
+        const exerciseData = STRENGTH_EXERCISES.find((e) => e.id === ef.id);
+        if (!exerciseData) return null;
+        return {
+          ...exerciseData,
+          observacion: ef.observacion || '',
+          tiempoDescanso: ef.tiempoDescanso || 0,
+          orden: ef.orden || 0,
+        };
+      })
+      .filter(Boolean);
   }, [session?.ejerciciosFuerza]);
   const totalExerciseCount = orderedExercises.length + sessionStrengthExercises.length;
 
@@ -242,18 +267,14 @@ export default function TrainingSessionDetailModal({
   const sessionExtraPlayers = useMemo(() => {
     if (!session?.jugadoresExtras || !players.length) return [];
     const extraIds = new Set(session.jugadoresExtras.map(getEntityId).filter(Boolean));
-    return players.filter(p => 
-      extraIds.has(getEntityId(p))
-    );
+    return players.filter((p) => extraIds.has(getEntityId(p)));
   }, [session?.jugadoresExtras, players]);
 
   // Obtener jugadores de la sesión
   const sessionPlayers = useMemo(() => {
     if (!session?.jugadores || !players.length) return [];
     const playerIds = new Set(session.jugadores.map(getEntityId).filter(Boolean));
-    return players.filter(p => 
-      playerIds.has(getEntityId(p))
-    );
+    return players.filter((p) => playerIds.has(getEntityId(p)));
   }, [session?.jugadores, players]);
 
   const attendancePlayers = useMemo(
@@ -271,9 +292,11 @@ export default function TrainingSessionDetailModal({
 
   useEffect(() => {
     const rosterIds = new Set(attendancePlayers.map(getEntityId));
-    setAbsentPlayerIds(new Set(
-      (session?.jugadoresAusentes || []).map(getEntityId).filter((id) => rosterIds.has(id)),
-    ));
+    setAbsentPlayerIds(
+      new Set(
+        (session?.jugadoresAusentes || []).map(getEntityId).filter((id) => rosterIds.has(id)),
+      ),
+    );
     setAttendanceEditing(false);
   }, [visible, session?._id, session?.jugadoresAusentes, attendancePlayers]);
 
@@ -308,13 +331,13 @@ export default function TrainingSessionDetailModal({
     if (!dateStr) return t('session.noDate');
     const fecha = new Date(dateStr);
     if (isNaN(fecha.getTime())) return t('session.invalidDate');
-    
+
     const locale = currentLang === 'en' ? 'en-US' : 'es-ES';
     return fecha.toLocaleDateString(locale, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -326,12 +349,16 @@ export default function TrainingSessionDetailModal({
   };
 
   // Generar PDF de la sesión usando la función compartida
-  const handleGeneratePDF = async () => {
+  const handleGeneratePDF = async (format = 'complete', blackAndWhite = false) => {
+    if (generatingPDF) return;
+    setPdfFormatVisible(false);
     try {
       setGeneratingPDF(true);
 
       // Usar la función compartida de SessionPDF.js
       await generateSessionPDF({
+        format,
+        blackAndWhite,
         session,
         exercises: sessionExercises,
         strengthExercises: sessionStrengthExercises,
@@ -409,20 +436,20 @@ export default function TrainingSessionDetailModal({
     setSelectedImageExercise(null);
     navigate('/exercises');
   };
-  
+
   // Función para ver videos del ejercicio
   const handlePlayExerciseVideo = async (exercise) => {
     setExerciseForVideo(exercise);
     setShowVideoModal(true);
     setIsGeneratingVideo(true);
-    
+
     try {
       const videos = await getVideosByExercise(exercise._id);
-      
+
       if (videos && videos.length > 0) {
         const video = videos[0];
         setSelectedVideo(video);
-        
+
         const resolvedUrl = await resolvePlayableVideoUrl(video);
         if (!resolvedUrl) throw new Error('No se pudo resolver la URL del vídeo');
         setVideoUrl(resolvedUrl);
@@ -438,7 +465,7 @@ export default function TrainingSessionDetailModal({
       setIsGeneratingVideo(false);
     }
   };
-  
+
   const closeVideoModal = () => {
     setShowVideoModal(false);
     setSelectedVideo(null);
@@ -457,7 +484,7 @@ export default function TrainingSessionDetailModal({
   // Función para descargar video
   const downloadVideo = async () => {
     if (!selectedVideo) return;
-    
+
     try {
       setIsDownloading(true);
       toast.success(t('myVideos.downloadingStarted', 'Preparando el video para guardarlo...'));
@@ -473,18 +500,19 @@ export default function TrainingSessionDetailModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-     
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalBg}>
+        <TrainingSessionPdfFormatPicker
+          visible={visible && pdfFormatVisible}
+          onClose={() => setPdfFormatVisible(false)}
+          onSelect={handleGeneratePDF}
+        />
         <View style={IS_TABLET ? styles.viewModalContentTablet : styles.viewModalContent}>
           {/* Header - igual que training.js */}
           <View style={[styles.modalHeader, IS_MOBILE && { padding: 14 }]}>
-            <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 16 }]}>{t('session.detailsTitle')}</Text>
+            <Text style={[styles.modalTitle, IS_MOBILE && { fontSize: 16 }]}>
+              {t('session.detailsTitle')}
+            </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {/* Botón PDF */}
               <TouchableOpacity
@@ -501,7 +529,7 @@ export default function TrainingSessionDetailModal({
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerSecondaryButton}
-                onPress={handleGeneratePDF}
+                onPress={() => setPdfFormatVisible(true)}
                 disabled={generatingPDF}
                 title={t('session.downloadPdf', 'Descargar PDF')}
               >
@@ -530,22 +558,24 @@ export default function TrainingSessionDetailModal({
                   <MaterialIcons name="replay" size={20} color={theme.colors.text} />
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={onClose}
-              >
+              <TouchableOpacity style={styles.modalCloseBtn} onPress={onClose}>
                 <MaterialIcons name="close" size={24} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <ScrollView style={[styles.modalBody, IS_MOBILE && { padding: 14 }]} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={[styles.modalBody, IS_MOBILE && { padding: 14 }]}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Session Detail Card - Header con fecha */}
             <View style={styles.sessionDetailCard}>
               <View style={styles.sessionDetailHeader}>
                 <MaterialIcons name="event" size={24} color={theme.colors.primary} />
                 <Text style={styles.sessionDetailTitle}>
-                  {formatDate(session.fecha)} • {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
+                  {formatDate(session.fecha)} • {session.horaInicio || '--:--'} -{' '}
+                  {session.horaFin || '--:--'}
                 </Text>
               </View>
             </View>
@@ -556,7 +586,9 @@ export default function TrainingSessionDetailModal({
                   <MaterialIcons name="picture-as-pdf" size={22} color={theme.colors.error} />
                 </View>
                 <View style={styles.pdfSectionInfo}>
-                  <Text style={styles.pdfSectionTitle}>{t('session.pdfSectionTitle', 'Sesión personalizada')}</Text>
+                  <Text style={styles.pdfSectionTitle}>
+                    {t('session.pdfSectionTitle', 'Sesión personalizada')}
+                  </Text>
                   <Text style={styles.pdfSectionSubtitle} numberOfLines={1}>
                     {session.pdf?.originalName || t('session.noPdf', 'Aún no hay un PDF guardado')}
                   </Text>
@@ -565,20 +597,33 @@ export default function TrainingSessionDetailModal({
               <Text style={styles.pdfSectionStatus}>
                 {session.pdf?.uploadedAt
                   ? t('session.pdfSaved', 'PDF guardado correctamente')
-                  : t('session.pdfUploadDescription', 'Guarda aquí el documento personalizado de esta sesión')}
+                  : t(
+                      'session.pdfUploadDescription',
+                      'Guarda aquí el documento personalizado de esta sesión',
+                    )}
               </Text>
               <View style={styles.pdfSectionActions}>
                 {session.pdf?.key && onViewPdf && (
-                  <TouchableOpacity style={styles.pdfActionSecondary} onPress={() => onViewPdf(session)}>
+                  <TouchableOpacity
+                    style={styles.pdfActionSecondary}
+                    onPress={() => onViewPdf(session)}
+                  >
                     <MaterialIcons name="visibility" size={18} color={theme.colors.primary} />
-                    <Text style={styles.pdfActionSecondaryText}>{t('session.viewPdf', 'Ver PDF')}</Text>
+                    <Text style={styles.pdfActionSecondaryText}>
+                      {t('session.viewPdf', 'Ver PDF')}
+                    </Text>
                   </TouchableOpacity>
                 )}
                 {canMutate && onUploadPdf && (
-                  <TouchableOpacity style={styles.pdfActionPrimary} onPress={() => onUploadPdf(session)}>
+                  <TouchableOpacity
+                    style={styles.pdfActionPrimary}
+                    onPress={() => onUploadPdf(session)}
+                  >
                     <MaterialIcons name="upload-file" size={18} color={theme.colors.onPrimary} />
                     <Text style={styles.pdfActionPrimaryText}>
-                      {session.pdf?.key ? t('session.replacePdf', 'Reemplazar PDF') : t('session.uploadPdf', 'Subir PDF')}
+                      {session.pdf?.key
+                        ? t('session.replacePdf', 'Reemplazar PDF')
+                        : t('session.uploadPdf', 'Subir PDF')}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -588,7 +633,7 @@ export default function TrainingSessionDetailModal({
             {/* Información General - igual que training.js */}
             <View style={styles.detailSection}>
               <Text style={styles.detailSectionTitle}>{t('session.generalInformation')}</Text>
-              
+
               <View style={styles.detailRow}>
                 <MaterialIcons name="schedule" size={20} color={theme.colors.textSecondary} />
                 <Text style={styles.detailLabel}>{t('session.scheduleLabel')}:</Text>
@@ -596,43 +641,53 @@ export default function TrainingSessionDetailModal({
                   {session.horaInicio || '--:--'} - {session.horaFin || '--:--'}
                 </Text>
               </View>
-              
+
               {totalExerciseCount > 0 && (
                 <View style={styles.detailRow}>
-                  <MaterialIcons name="fitness-center" size={20} color={theme.colors.textSecondary} />
+                  <MaterialIcons
+                    name="fitness-center"
+                    size={20}
+                    color={theme.colors.textSecondary}
+                  />
                   <Text style={styles.detailLabel}>{t('session.exercisesLabel')}:</Text>
                   <Text style={styles.detailValue}>
                     {t('session.exercisesCount', { count: totalExerciseCount })}
                   </Text>
                 </View>
               )}
-              
-              {(sessionPlayers.length > 0 || (session.jugadoresExtras && session.jugadoresExtras.length > 0)) && (
+
+              {(sessionPlayers.length > 0 ||
+                (session.jugadoresExtras && session.jugadoresExtras.length > 0)) && (
                 <View style={styles.detailRow}>
                   <Ionicons name="people" size={20} color={theme.colors.textSecondary} />
                   <Text style={styles.detailLabel}>{t('session.playersLabel')}:</Text>
                   <Text style={styles.detailValue}>
-                    {sessionPlayers.length + (session.jugadoresExtras?.length || 0)} {t('session.availableCount', { count: sessionPlayers.length + (session.jugadoresExtras?.length || 0) })}
+                    {sessionPlayers.length + (session.jugadoresExtras?.length || 0)}{' '}
+                    {t('session.availableCount', {
+                      count: sessionPlayers.length + (session.jugadoresExtras?.length || 0),
+                    })}
                   </Text>
                 </View>
               )}
-              
+
               {/* Lista de jugadores del equipo */}
               {sessionPlayers.length > 0 && (
                 <View style={styles.detailPlayersRow}>
-                  <Text style={styles.detailPlayersLabel}>{t('session.availablePlayersLabel')}:</Text>
+                  <Text style={styles.detailPlayersLabel}>
+                    {t('session.availablePlayersLabel')}:
+                  </Text>
                   <Text style={styles.detailPlayersText}>
-                    {sessionPlayers.map(j => getPlayerFullName(j)).join(', ')}
+                    {sessionPlayers.map((j) => getPlayerFullName(j)).join(', ')}
                   </Text>
                 </View>
               )}
-              
+
               {/* Lista de jugadores extras */}
               {sessionExtraPlayers.length > 0 && (
                 <View style={styles.detailPlayersRow}>
                   <Text style={styles.detailPlayersLabelExtra}>{t('session.extrasLabel')}:</Text>
                   <Text style={styles.detailPlayersText}>
-                    {sessionExtraPlayers.map(j => getPlayerFullName(j)).join(', ')}
+                    {sessionExtraPlayers.map((j) => getPlayerFullName(j)).join(', ')}
                   </Text>
                 </View>
               )}
@@ -666,17 +721,36 @@ export default function TrainingSessionDetailModal({
                         accessibilityLabel={`${t('session.presentPlayers')}: ${presentPlayers.map(getPlayerFullName).join(', ') || t('session.none')}`}
                       >
                         <View style={styles.attendanceSummaryHeader}>
-                          <Ionicons name="checkmark-circle" size={19} color={theme.colors.success} />
-                          <Text style={[styles.attendanceSummaryTitle, { color: theme.colors.success }]}>
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={19}
+                            color={theme.colors.success}
+                          />
+                          <Text
+                            style={[styles.attendanceSummaryTitle, { color: theme.colors.success }]}
+                          >
                             {t('session.presentPlayers')} ({presentPlayers.length})
                           </Text>
                         </View>
-                        {presentPlayers.length > 0 ? presentPlayers.map((player) => (
-                          <View key={getEntityId(player)} style={styles.attendanceNameRow}>
-                            <View style={[styles.attendanceDot, { backgroundColor: theme.colors.success }]} />
-                            <Text style={styles.attendanceSummaryName}>{getPlayerFullName(player)}</Text>
-                          </View>
-                        )) : <Text style={styles.attendanceEmptyText}>{t('session.noPresentPlayers')}</Text>}
+                        {presentPlayers.length > 0 ? (
+                          presentPlayers.map((player) => (
+                            <View key={getEntityId(player)} style={styles.attendanceNameRow}>
+                              <View
+                                style={[
+                                  styles.attendanceDot,
+                                  { backgroundColor: theme.colors.success },
+                                ]}
+                              />
+                              <Text style={styles.attendanceSummaryName}>
+                                {getPlayerFullName(player)}
+                              </Text>
+                            </View>
+                          ))
+                        ) : (
+                          <Text style={styles.attendanceEmptyText}>
+                            {t('session.noPresentPlayers')}
+                          </Text>
+                        )}
                       </View>
 
                       <View
@@ -686,16 +760,31 @@ export default function TrainingSessionDetailModal({
                       >
                         <View style={styles.attendanceSummaryHeader}>
                           <Ionicons name="close-circle" size={19} color={theme.colors.error} />
-                          <Text style={[styles.attendanceSummaryTitle, { color: theme.colors.error }]}>
+                          <Text
+                            style={[styles.attendanceSummaryTitle, { color: theme.colors.error }]}
+                          >
                             {t('session.absentPlayers')} ({absentPlayers.length})
                           </Text>
                         </View>
-                        {absentPlayers.length > 0 ? absentPlayers.map((player) => (
-                          <View key={getEntityId(player)} style={styles.attendanceNameRow}>
-                            <View style={[styles.attendanceDot, { backgroundColor: theme.colors.error }]} />
-                            <Text style={styles.attendanceSummaryName}>{getPlayerFullName(player)}</Text>
-                          </View>
-                        )) : <Text style={styles.attendanceEmptyText}>{t('session.noAbsentPlayers')}</Text>}
+                        {absentPlayers.length > 0 ? (
+                          absentPlayers.map((player) => (
+                            <View key={getEntityId(player)} style={styles.attendanceNameRow}>
+                              <View
+                                style={[
+                                  styles.attendanceDot,
+                                  { backgroundColor: theme.colors.error },
+                                ]}
+                              />
+                              <Text style={styles.attendanceSummaryName}>
+                                {getPlayerFullName(player)}
+                              </Text>
+                            </View>
+                          ))
+                        ) : (
+                          <Text style={styles.attendanceEmptyText}>
+                            {t('session.noAbsentPlayers')}
+                          </Text>
+                        )}
                       </View>
                     </View>
                     {canMutate && onAttendanceUpdate && (
@@ -703,11 +792,17 @@ export default function TrainingSessionDetailModal({
                         style={styles.attendancePrimaryButton}
                         onPress={() => setAttendanceEditing(true)}
                         accessibilityRole="button"
-                        accessibilityLabel={session.asistenciaRegistrada ? t('session.editRollCall') : t('session.takeRollCall')}
+                        accessibilityLabel={
+                          session.asistenciaRegistrada
+                            ? t('session.editRollCall')
+                            : t('session.takeRollCall')
+                        }
                       >
                         <Ionicons name="checkmark-done" size={18} color={theme.colors.onPrimary} />
                         <Text style={styles.attendancePrimaryButtonText}>
-                          {session.asistenciaRegistrada ? t('session.editRollCall') : t('session.takeRollCall')}
+                          {session.asistenciaRegistrada
+                            ? t('session.editRollCall')
+                            : t('session.takeRollCall')}
                         </Text>
                       </TouchableOpacity>
                     )}
@@ -720,7 +815,9 @@ export default function TrainingSessionDetailModal({
                         accessibilityRole="button"
                         accessibilityLabel={t('session.markAllPresent')}
                       >
-                        <Text style={styles.attendanceQuickAction}>{t('session.markAllPresent')}</Text>
+                        <Text style={styles.attendanceQuickAction}>
+                          {t('session.markAllPresent')}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                     {attendancePlayers.map((player) => {
@@ -729,7 +826,10 @@ export default function TrainingSessionDetailModal({
                       return (
                         <TouchableOpacity
                           key={playerId}
-                          style={[styles.attendancePlayerRow, present && styles.attendancePlayerRowPresent]}
+                          style={[
+                            styles.attendancePlayerRow,
+                            present && styles.attendancePlayerRowPresent,
+                          ]}
                           onPress={() => toggleAttendance(playerId)}
                           accessibilityRole="checkbox"
                           accessibilityState={{ checked: present }}
@@ -740,8 +840,15 @@ export default function TrainingSessionDetailModal({
                             size={24}
                             color={present ? theme.colors.success : theme.colors.textMuted}
                           />
-                          <Text style={styles.attendancePlayerName}>{getPlayerFullName(player)}</Text>
-                          <Text style={[styles.attendanceState, present && styles.attendanceStatePresent]}>
+                          <Text style={styles.attendancePlayerName}>
+                            {getPlayerFullName(player)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.attendanceState,
+                              present && styles.attendanceStatePresent,
+                            ]}
+                          >
                             {present ? t('session.present') : t('session.absent')}
                           </Text>
                         </TouchableOpacity>
@@ -752,9 +859,13 @@ export default function TrainingSessionDetailModal({
                         style={styles.attendanceCancelButton}
                         onPress={() => {
                           const rosterIds = new Set(attendancePlayers.map(getEntityId));
-                          setAbsentPlayerIds(new Set(
-                            (session.jugadoresAusentes || []).map(getEntityId).filter((id) => rosterIds.has(id)),
-                          ));
+                          setAbsentPlayerIds(
+                            new Set(
+                              (session.jugadoresAusentes || [])
+                                .map(getEntityId)
+                                .filter((id) => rosterIds.has(id)),
+                            ),
+                          );
                           setAttendanceEditing(false);
                         }}
                         accessibilityRole="button"
@@ -770,10 +881,14 @@ export default function TrainingSessionDetailModal({
                         accessibilityLabel={t('session.saveRollCall')}
                         accessibilityState={{ disabled: attendanceSaving }}
                       >
-                        {attendanceSaving
-                          ? <ActivityIndicator size="small" color={theme.colors.onPrimary} />
-                          : <Ionicons name="save-outline" size={18} color={theme.colors.onPrimary} />}
-                        <Text style={styles.attendancePrimaryButtonText}>{t('session.saveRollCall')}</Text>
+                        {attendanceSaving ? (
+                          <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                        ) : (
+                          <Ionicons name="save-outline" size={18} color={theme.colors.onPrimary} />
+                        )}
+                        <Text style={styles.attendancePrimaryButtonText}>
+                          {t('session.saveRollCall')}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   </>
@@ -795,14 +910,16 @@ export default function TrainingSessionDetailModal({
                   onPress={() => setShowPreWellnessDetail(true)}
                 >
                   <MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />
-                  <Text style={styles.wellnessDetailBtnText}>
-                    {t('preWellness.manage')}
-                  </Text>
+                  <Text style={styles.wellnessDetailBtnText}>{t('preWellness.manage')}</Text>
                 </TouchableOpacity>
               </View>
-              
+
               {loadingPreWellness ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 12 }} />
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.primary}
+                  style={{ marginVertical: 12 }}
+                />
               ) : (
                 <View style={styles.wellnessStatsContainer}>
                   {/* Response Count */}
@@ -814,14 +931,12 @@ export default function TrainingSessionDetailModal({
                   </View>
                 </View>
               )}
-              
+
               {/* Link status indicator */}
               {preWellnessStats?.hasActiveLink && (
                 <View style={styles.wellnessLinkActive}>
                   <Ionicons name="link" size={14} color={theme.colors.success} />
-                  <Text style={styles.wellnessLinkActiveText}>
-                    {t('preWellness.linkActive')}
-                  </Text>
+                  <Text style={styles.wellnessLinkActiveText}>{t('preWellness.linkActive')}</Text>
                 </View>
               )}
             </View>
@@ -831,7 +946,9 @@ export default function TrainingSessionDetailModal({
               <View style={styles.wellnessSectionHeader}>
                 <View style={styles.preWellnessTitleRow}>
                   <Text style={styles.detailSectionTitle}>{t('session.wellness')}</Text>
-                  <View style={[styles.preWellnessBadge, { backgroundColor: theme.colors.success }]}>
+                  <View
+                    style={[styles.preWellnessBadge, { backgroundColor: theme.colors.success }]}
+                  >
                     <Text style={styles.preWellnessBadgeText}>{t('session.postBadge')}</Text>
                   </View>
                 </View>
@@ -840,14 +957,16 @@ export default function TrainingSessionDetailModal({
                   onPress={() => setShowWellnessDetail(true)}
                 >
                   <MaterialIcons name="open-in-new" size={16} color={theme.colors.onPrimary} />
-                  <Text style={styles.wellnessDetailBtnText}>
-                    {t('session.manageWellness')}
-                  </Text>
+                  <Text style={styles.wellnessDetailBtnText}>{t('session.manageWellness')}</Text>
                 </TouchableOpacity>
               </View>
-              
+
               {loadingWellness ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginVertical: 12 }} />
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.primary}
+                  style={{ marginVertical: 12 }}
+                />
               ) : (
                 <View style={styles.wellnessStatsContainer}>
                   {/* Expected Wellness */}
@@ -873,7 +992,7 @@ export default function TrainingSessionDetailModal({
                   </View>
                 </View>
               )}
-              
+
               {/* Link status indicator */}
               {wellnessStats?.hasActiveLink && (
                 <View style={styles.wellnessLinkActive}>
@@ -888,23 +1007,27 @@ export default function TrainingSessionDetailModal({
             {/* Sección de Ejercicios - igual que training.js */}
             {orderedExercises.length > 0 && (
               <View style={styles.detailSection}>
-              <Text style={styles.detailSectionTitle}>{t('session.trainingExercises')}</Text>
-              
-              {orderedExercises.map((ejercicio, index) => {
+                <Text style={styles.detailSectionTitle}>{t('session.trainingExercises')}</Text>
+
+                {orderedExercises.map((ejercicio, index) => {
                   const detalle = detalleMap[ejercicio._id] || {};
-                  const orden = detalle.orden || ejercicio.orden || (index + 1);
+                  const orden = detalle.orden || ejercicio.orden || index + 1;
                   const tiempoDescanso = detalle.tiempoDescanso || ejercicio.tiempoDescanso || 0;
                   const teamAssignments = detalle.teamAssignments || [];
                   const isLast = index === orderedExercises.length - 1;
-                  
+
                   // Helper para obtener nombre de jugador por ID o por nombre (para extras)
                   const getPlayerName = (playerIdOrName) => {
                     const id = getEntityId(playerIdOrName);
-                    const allPlayers = [...new Map(
-                      [...sessionPlayers, ...sessionExtraPlayers, ...players]
-                        .map((p) => [getEntityId(p), p])
-                    ).values()];
-                    const player = allPlayers.find(p => getEntityId(p) === id);
+                    const allPlayers = [
+                      ...new Map(
+                        [...sessionPlayers, ...sessionExtraPlayers, ...players].map((p) => [
+                          getEntityId(p),
+                          p,
+                        ]),
+                      ).values(),
+                    ];
+                    const player = allPlayers.find((p) => getEntityId(p) === id);
 
                     if (player) {
                       return getPlayerFullName(player) || id || '';
@@ -922,14 +1045,14 @@ export default function TrainingSessionDetailModal({
                     }
                     return '';
                   };
-                  
+
                   return (
                     <View key={ejercicio._id}>
                       <View style={styles.exerciseCard}>
                         <View style={styles.exerciseOrderBadge}>
                           <Text style={styles.exerciseOrderText}>{orden}</Text>
                         </View>
-                        
+
                         {getContentImage(ejercicio) && (
                           <TouchableOpacity
                             style={styles.exerciseImageContainer}
@@ -937,62 +1060,159 @@ export default function TrainingSessionDetailModal({
                           >
                             <Image
                               source={{
-                                uri: normalizeImageSource(getContentImage(ejercicio), { cacheBust: true })
+                                uri: normalizeImageSource(getContentImage(ejercicio), {
+                                  cacheBust: true,
+                                }),
                               }}
                               style={styles.exerciseImage}
                               resizeMode="cover"
                             />
                             <View style={styles.zoomBadgeWithText}>
-                              <MaterialIcons name="fullscreen" size={18} color={theme.colors.primary} />
+                              <MaterialIcons
+                                name="fullscreen"
+                                size={18}
+                                color={theme.colors.primary}
+                              />
                               <Text style={styles.zoomBadgeText}>{t('common.zoom')}</Text>
                             </View>
                           </TouchableOpacity>
                         )}
-                        
+
                         <View style={styles.exerciseInfo}>
                           <Text style={styles.exerciseName}>{ejercicio.nombre}</Text>
-                          
+
                           {/* Tags informativos - igual que en training.js */}
                           <View style={styles.exerciseTags}>
                             {ejercicio.isCustomTask && (
-                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.primarySoft }]}>
-                                <Ionicons name="image-outline" size={14} color={theme.colors.primary} />
-                                <Text style={[styles.exerciseTagText, { color: theme.colors.primary }]}>
+                              <View
+                                style={[
+                                  styles.exerciseTag,
+                                  { backgroundColor: theme.colors.primarySoft },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="image-outline"
+                                  size={14}
+                                  color={theme.colors.primary}
+                                />
+                                <Text
+                                  style={[styles.exerciseTagText, { color: theme.colors.primary }]}
+                                >
                                   {t('session.customTask', 'Tarea personalizada')}
                                 </Text>
                               </View>
                             )}
                             {getFolderName(ejercicio) && (
-                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.successSoft }]}>
-                                <Ionicons name="folder" size={14} color={theme.colors.successSoftText} />
-                                <Text style={[styles.exerciseTagText, { color: theme.colors.successSoftText }]}>{getFolderName(ejercicio)}</Text>
+                              <View
+                                style={[
+                                  styles.exerciseTag,
+                                  { backgroundColor: theme.colors.successSoft },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="folder"
+                                  size={14}
+                                  color={theme.colors.successSoftText}
+                                />
+                                <Text
+                                  style={[
+                                    styles.exerciseTagText,
+                                    { color: theme.colors.successSoftText },
+                                  ]}
+                                >
+                                  {getFolderName(ejercicio)}
+                                </Text>
                               </View>
                             )}
                             {ejercicio.numeroJugadores && (
-                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.infoSoft }]}>
-                                <Ionicons name="people" size={14} color={theme.colors.infoSoftText} />
-                                <Text style={[styles.exerciseTagText, { color: theme.colors.infoSoftText }]}>{ejercicio.numeroJugadores}</Text>
+                              <View
+                                style={[
+                                  styles.exerciseTag,
+                                  { backgroundColor: theme.colors.infoSoft },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="people"
+                                  size={14}
+                                  color={theme.colors.infoSoftText}
+                                />
+                                <Text
+                                  style={[
+                                    styles.exerciseTagText,
+                                    { color: theme.colors.infoSoftText },
+                                  ]}
+                                >
+                                  {ejercicio.numeroJugadores}
+                                </Text>
                               </View>
                             )}
                             {ejercicio.equipos && (
-                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.purpleSoft }]}>
-                                <Ionicons name="flag" size={14} color={theme.colors.purpleSoftText} />
-                                <Text style={[styles.exerciseTagText, { color: theme.colors.purpleSoftText }]}>{ejercicio.equipos}</Text>
+                              <View
+                                style={[
+                                  styles.exerciseTag,
+                                  { backgroundColor: theme.colors.purpleSoft },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="flag"
+                                  size={14}
+                                  color={theme.colors.purpleSoftText}
+                                />
+                                <Text
+                                  style={[
+                                    styles.exerciseTagText,
+                                    { color: theme.colors.purpleSoftText },
+                                  ]}
+                                >
+                                  {ejercicio.equipos}
+                                </Text>
                               </View>
                             )}
                             {ejercicio.dimensiones && (
-                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.purpleSoft }]}>
-                                <Ionicons name="resize-outline" size={14} color={theme.colors.purpleSoftText} />
-                                <Text style={[styles.exerciseTagText, { color: theme.colors.purpleSoftText }]}>{ejercicio.dimensiones}</Text>
+                              <View
+                                style={[
+                                  styles.exerciseTag,
+                                  { backgroundColor: theme.colors.purpleSoft },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="resize-outline"
+                                  size={14}
+                                  color={theme.colors.purpleSoftText}
+                                />
+                                <Text
+                                  style={[
+                                    styles.exerciseTagText,
+                                    { color: theme.colors.purpleSoftText },
+                                  ]}
+                                >
+                                  {ejercicio.dimensiones}
+                                </Text>
                               </View>
                             )}
                             {tiempoDescanso > 0 && (
-                              <View style={[styles.exerciseTag, { backgroundColor: theme.colors.successSoft }]}>
-                                <Ionicons name="time-outline" size={14} color={theme.colors.successSoftText} />
-                                <Text style={[styles.exerciseTagText, { color: theme.colors.successSoftText }]}>{t('session.restTimeShort')}: {tiempoDescanso}min</Text>
+                              <View
+                                style={[
+                                  styles.exerciseTag,
+                                  { backgroundColor: theme.colors.successSoft },
+                                ]}
+                              >
+                                <Ionicons
+                                  name="time-outline"
+                                  size={14}
+                                  color={theme.colors.successSoftText}
+                                />
+                                <Text
+                                  style={[
+                                    styles.exerciseTagText,
+                                    { color: theme.colors.successSoftText },
+                                  ]}
+                                >
+                                  {t('session.restTimeShort')}: {tiempoDescanso}min
+                                </Text>
                               </View>
                             )}
-                            
+
                             {/* Botón de video - solo mostrar si hay videos disponibles */}
                             {exerciseVideoAvailability[ejercicio._id] && (
                               <TouchableOpacity
@@ -1000,10 +1220,12 @@ export default function TrainingSessionDetailModal({
                                 onPress={() => handlePlayExerciseVideo(ejercicio)}
                               >
                                 <Feather name="play-circle" size={14} color="#fff" />
-                                <Text style={styles.exerciseVideoBtnText}>{t('exercise.video')}</Text>
+                                <Text style={styles.exerciseVideoBtnText}>
+                                  {t('exercise.video')}
+                                </Text>
                               </TouchableOpacity>
                             )}
-                            
+
                             {/* Botón de video externo (link) - solo mostrar si tiene videoUrl */}
                             {!!ejercicio.videoUrl && (
                               <TouchableOpacity
@@ -1011,139 +1233,212 @@ export default function TrainingSessionDetailModal({
                                 onPress={() => openExternalUrl(ejercicio.videoUrl)}
                               >
                                 <Ionicons name="logo-youtube" size={14} color="#fff" />
-                                <Text style={styles.exerciseVideoBtnText}>{t('exercise.videoLink', 'Video')}</Text>
+                                <Text style={styles.exerciseVideoBtnText}>
+                                  {t('exercise.videoLink', 'Video')}
+                                </Text>
                               </TouchableOpacity>
                             )}
                           </View>
-                          
+
                           {/* Información detallada - igual que en training.js */}
                           <View style={styles.exerciseDetailsSection}>
                             {ejercicio.descripcion && (
                               <Text style={styles.exerciseDetailText}>
-                                <Text style={styles.exerciseDetailLabel}>{t('exercise.description')}: </Text>
+                                <Text style={styles.exerciseDetailLabel}>
+                                  {t('exercise.description')}:{' '}
+                                </Text>
                                 <Text>{ejercicio.descripcion}</Text>
                               </Text>
                             )}
                             {ejercicio.objetivo && (
                               <Text style={styles.exerciseDetailText}>
-                                <Text style={styles.exerciseDetailLabel}>{t('exercise.objective')}: </Text>
+                                <Text style={styles.exerciseDetailLabel}>
+                                  {t('exercise.objective')}:{' '}
+                                </Text>
                                 <Text>{ejercicio.objetivo}</Text>
                               </Text>
                             )}
                             {ejercicio.tiempo && (
                               <Text style={styles.exerciseDetailText}>
-                                <Text style={styles.exerciseDetailLabel}>{t('session.duration')}: </Text>
-                                <Text>{/(?:min|['’])$/i.test(String(ejercicio.tiempo).trim()) ? ejercicio.tiempo : `${ejercicio.tiempo} min`}</Text>
+                                <Text style={styles.exerciseDetailLabel}>
+                                  {t('session.duration')}:{' '}
+                                </Text>
+                                <Text>
+                                  {/(?:min|['’])$/i.test(String(ejercicio.tiempo).trim())
+                                    ? ejercicio.tiempo
+                                    : `${ejercicio.tiempo} min`}
+                                </Text>
                               </Text>
                             )}
                             {ejercicio.materialNecesario && (
                               <Text style={styles.exerciseDetailText}>
-                                <Text style={styles.exerciseDetailLabel}>{t('exercise.materialNeeded')}: </Text>
-                                <Text>{i18n.language === 'en' && ejercicio.translations?.en?.materialNecesario ? ejercicio.translations.en.materialNecesario : ejercicio.materialNecesario}</Text>
+                                <Text style={styles.exerciseDetailLabel}>
+                                  {t('exercise.materialNeeded')}:{' '}
+                                </Text>
+                                <Text>
+                                  {i18n.language === 'en' &&
+                                  ejercicio.translations?.en?.materialNecesario
+                                    ? ejercicio.translations.en.materialNecesario
+                                    : ejercicio.materialNecesario}
+                                </Text>
                               </Text>
                             )}
                           </View>
-                          
+
                           {/* Observación específica de la sesión */}
                           {observacionesMap[ejercicio._id] && (
                             <View style={styles.observacionContainer}>
-                              <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.textSecondary} />
+                              <Ionicons
+                                name="chatbubble-ellipses"
+                                size={14}
+                                color={theme.colors.textSecondary}
+                              />
                               <Text style={styles.observacionText}>
-                                <Text style={{ fontWeight: 'bold' }}>{t('session.observation')}: </Text>
+                                <Text style={{ fontWeight: 'bold' }}>
+                                  {t('session.observation')}:{' '}
+                                </Text>
                                 {observacionesMap[ejercicio._id]}
                               </Text>
                             </View>
                           )}
                           {ejercicio.observacionesPersonalizadas?.length > 0 && (
                             <View style={styles.observacionContainer}>
-                              <Ionicons name="chatbubble-ellipses" size={14} color={theme.colors.textSecondary} />
+                              <Ionicons
+                                name="chatbubble-ellipses"
+                                size={14}
+                                color={theme.colors.textSecondary}
+                              />
                               <Text style={styles.observacionText}>
-                                <Text style={{ fontWeight: 'bold' }}>{t('session.observations', 'Observaciones')}: </Text>
-                                {ejercicio.observacionesPersonalizadas.map((item) => `• ${item}`).join('\n')}
+                                <Text style={{ fontWeight: 'bold' }}>
+                                  {t('session.observations', 'Observaciones')}:{' '}
+                                </Text>
+                                {ejercicio.observacionesPersonalizadas
+                                  .map((item) => `• ${item}`)
+                                  .join('\n')}
                               </Text>
                             </View>
                           )}
-                          
+
                           {/* Equipos asignados al ejercicio */}
-                          {teamAssignments && teamAssignments.length > 0 && teamAssignments.some(ta => (ta.players?.length > 0 || ta.extraPlayers?.length > 0 || (ta.comodines || 0) > 0)) && (
-                            <View style={styles.teamAssignmentsContainer}>
-                              <View style={styles.teamAssignmentsHeader}>
-                                <Ionicons name="people" size={16} color={theme.colors.primary} />
-                                <Text style={styles.teamAssignmentsTitle}>
-                                  {t('session.teamAssignments')}
-                                </Text>
+                          {teamAssignments &&
+                            teamAssignments.length > 0 &&
+                            teamAssignments.some(
+                              (ta) =>
+                                ta.players?.length > 0 ||
+                                ta.extraPlayers?.length > 0 ||
+                                (ta.comodines || 0) > 0,
+                            ) && (
+                              <View style={styles.teamAssignmentsContainer}>
+                                <View style={styles.teamAssignmentsHeader}>
+                                  <Ionicons name="people" size={16} color={theme.colors.primary} />
+                                  <Text style={styles.teamAssignmentsTitle}>
+                                    {t('session.teamAssignments')}
+                                  </Text>
+                                </View>
+                                <View style={styles.teamsGrid}>
+                                  {teamAssignments
+                                    .filter(
+                                      (team) =>
+                                        team.teamNumber === 0 &&
+                                        ((team.comodines || 0) > 0 ||
+                                          team.players?.length > 0 ||
+                                          team.extraPlayers?.length > 0),
+                                    )
+                                    .map((team, teamIdx) => {
+                                      const teamPlayers = (team.players || [])
+                                        .map((id) => getPlayerName(id))
+                                        .filter((n) => n);
+                                      const teamExtras = (team.extraPlayers || [])
+                                        .map((id) => getPlayerName(id))
+                                        .filter((n) => n);
+                                      const allNames = [...teamPlayers, ...teamExtras];
+                                      const totalCount = allNames.length + (team.comodines || 0);
+
+                                      return (
+                                        <View key={`comodines-${teamIdx}`} style={styles.teamBox}>
+                                          <View
+                                            style={[
+                                              styles.teamBoxHeader,
+                                              { backgroundColor: '#0f766e' },
+                                            ]}
+                                          >
+                                            <Text style={styles.teamBoxTitle}>
+                                              {t('session.comodines', 'Comodines')}
+                                            </Text>
+                                            <Text style={styles.teamBoxCount}>{totalCount}</Text>
+                                          </View>
+                                          <View style={styles.teamBoxPlayers}>
+                                            {allNames.map((name, nameIdx) => (
+                                              <Text key={nameIdx} style={styles.teamPlayerName}>
+                                                • {name}
+                                              </Text>
+                                            ))}
+                                            {(team.comodines || 0) > 0 && (
+                                              <Text style={styles.teamPlayerName}>
+                                                • {t('session.comodines', 'Comodines')}:{' '}
+                                                {team.comodines}
+                                              </Text>
+                                            )}
+                                          </View>
+                                        </View>
+                                      );
+                                    })}
+                                  {teamAssignments
+                                    .filter((team) => team.teamNumber > 0)
+                                    .map((team, teamIdx) => {
+                                      const teamPlayers = (team.players || [])
+                                        .map((id) => getPlayerName(id))
+                                        .filter((n) => n);
+                                      // extraPlayers almacena IDs de jugadores extras (ObjectId ref a Player)
+                                      const teamExtras = (team.extraPlayers || [])
+                                        .map((id) => getPlayerName(id))
+                                        .filter((n) => n);
+                                      const allNames = [...teamPlayers, ...teamExtras];
+
+                                      if (allNames.length === 0) return null;
+
+                                      return (
+                                        <View key={teamIdx} style={styles.teamBox}>
+                                          <View
+                                            style={[
+                                              styles.teamBoxHeader,
+                                              { backgroundColor: getTeamColor(team.teamNumber) },
+                                            ]}
+                                          >
+                                            <Text style={styles.teamBoxTitle}>
+                                              {t('session.team')} {team.teamNumber}
+                                            </Text>
+                                            <Text style={styles.teamBoxCount}>
+                                              {allNames.length}
+                                            </Text>
+                                          </View>
+                                          <View style={styles.teamBoxPlayers}>
+                                            {allNames.map((name, nameIdx) => (
+                                              <Text key={nameIdx} style={styles.teamPlayerName}>
+                                                • {name}
+                                              </Text>
+                                            ))}
+                                          </View>
+                                        </View>
+                                      );
+                                    })}
+                                </View>
                               </View>
-                              <View style={styles.teamsGrid}>
-                                {teamAssignments.filter(team => team.teamNumber === 0 && ((team.comodines || 0) > 0 || team.players?.length > 0 || team.extraPlayers?.length > 0)).map((team, teamIdx) => {
-                                  const teamPlayers = (team.players || []).map(id => getPlayerName(id)).filter(n => n);
-                                  const teamExtras = (team.extraPlayers || []).map(id => getPlayerName(id)).filter(n => n);
-                                  const allNames = [...teamPlayers, ...teamExtras];
-                                  const totalCount = allNames.length + (team.comodines || 0);
-                                  
-                                  return (
-                                    <View key={`comodines-${teamIdx}`} style={styles.teamBox}>
-                                      <View style={[styles.teamBoxHeader, { backgroundColor: '#0f766e' }]}>
-                                        <Text style={styles.teamBoxTitle}>
-                                          {t('session.comodines', 'Comodines')}
-                                        </Text>
-                                        <Text style={styles.teamBoxCount}>
-                                          {totalCount}
-                                        </Text>
-                                      </View>
-                                      <View style={styles.teamBoxPlayers}>
-                                        {allNames.map((name, nameIdx) => (
-                                          <Text key={nameIdx} style={styles.teamPlayerName}>
-                                            • {name}
-                                          </Text>
-                                        ))}
-                                        {(team.comodines || 0) > 0 && (
-                                          <Text style={styles.teamPlayerName}>
-                                            • {t('session.comodines', 'Comodines')}: {team.comodines}
-                                          </Text>
-                                        )}
-                                      </View>
-                                    </View>
-                                  );
-                                })}
-                                {teamAssignments.filter(team => team.teamNumber > 0).map((team, teamIdx) => {
-                                  const teamPlayers = (team.players || []).map(id => getPlayerName(id)).filter(n => n);
-                                  // extraPlayers almacena IDs de jugadores extras (ObjectId ref a Player)
-                                  const teamExtras = (team.extraPlayers || []).map(id => getPlayerName(id)).filter(n => n);
-                                  const allNames = [...teamPlayers, ...teamExtras];
-                                  
-                                  if (allNames.length === 0) return null;
-                                  
-                                  return (
-                                    <View key={teamIdx} style={styles.teamBox}>
-                                      <View style={[styles.teamBoxHeader, { backgroundColor: getTeamColor(team.teamNumber) }]}>
-                                        <Text style={styles.teamBoxTitle}>
-                                          {t('session.team')} {team.teamNumber}
-                                        </Text>
-                                        <Text style={styles.teamBoxCount}>
-                                          {allNames.length}
-                                        </Text>
-                                      </View>
-                                      <View style={styles.teamBoxPlayers}>
-                                        {allNames.map((name, nameIdx) => (
-                                          <Text key={nameIdx} style={styles.teamPlayerName}>
-                                            • {name}
-                                          </Text>
-                                        ))}
-                                      </View>
-                                    </View>
-                                  );
-                                })}
-                              </View>
-                            </View>
-                          )}
+                            )}
                         </View>
                       </View>
-                      
+
                       {/* Indicador de tiempo de descanso entre ejercicios */}
                       {!isLast && tiempoDescanso > 0 && (
                         <View style={styles.restTimeCard}>
-                          <Ionicons name="time-outline" size={16} color={theme.colors.warningSoftText} />
-                          <Text style={styles.restTimeText}>{t('session.restTime')}: {tiempoDescanso} min</Text>
+                          <Ionicons
+                            name="time-outline"
+                            size={16}
+                            color={theme.colors.warningSoftText}
+                          />
+                          <Text style={styles.restTimeText}>
+                            {t('session.restTime')}: {tiempoDescanso} min
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -1162,25 +1457,30 @@ export default function TrainingSessionDetailModal({
                     <Text style={styles.exerciseCountText}>{sessionStrengthExercises.length}</Text>
                   </View>
                 </View>
-                
+
                 {(() => {
                   // Calcular ancho disponible dentro del modal
-                  const modalWidth = IS_TABLET ? Math.min(screenWidth * 0.8, 700) : screenWidth * 0.95;
+                  const modalWidth = IS_TABLET
+                    ? Math.min(screenWidth * 0.8, 700)
+                    : screenWidth * 0.95;
                   const sectionPadding = 16 * 2; // padding del section
                   const modalPadding = 20 * 2; // padding del modalBody
                   const availableWidth = modalWidth - sectionPadding - modalPadding;
                   const gap = 10;
                   const minCardWidth = 120;
-                  const cols = Math.max(2, Math.min(4, Math.floor((availableWidth + gap) / (minCardWidth + gap))));
+                  const cols = Math.max(
+                    2,
+                    Math.min(4, Math.floor((availableWidth + gap) / (minCardWidth + gap))),
+                  );
                   const cardW = (availableWidth - gap * (cols - 1)) / cols;
-                  
+
                   return (
                     <View style={styles.strengthGrid}>
                       {sessionStrengthExercises.map((exercise, index) => {
                         const sectionInfo = getSectionForExercise(exercise.id);
-                        
+
                         return (
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             key={exercise.id}
                             style={[styles.strengthGridCard, { width: cardW }]}
                             onPress={() => setStrengthViewerExercise(exercise)}
@@ -1194,19 +1494,57 @@ export default function TrainingSessionDetailModal({
                               />
                             </View>
                             <View style={styles.strengthGridInfo}>
-                              <Text style={styles.strengthGridName} numberOfLines={2}>{t(exercise.i18nKey)}</Text>
+                              <Text style={styles.strengthGridName} numberOfLines={2}>
+                                {t(exercise.i18nKey)}
+                              </Text>
                               <View style={styles.strengthGridTagsRow}>
                                 {sectionInfo && (
-                                  <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.purpleSoft }]}>
-                                    <Text style={[styles.strengthGridTagText, { color: theme.colors.purpleSoftText }]}>{t(sectionInfo.section.i18nKey)}</Text>
+                                  <View
+                                    style={[
+                                      styles.strengthGridTag,
+                                      { backgroundColor: theme.colors.purpleSoft },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.strengthGridTagText,
+                                        { color: theme.colors.purpleSoftText },
+                                      ]}
+                                    >
+                                      {t(sectionInfo.section.i18nKey)}
+                                    </Text>
                                   </View>
                                 )}
-                                <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.infoSoft }]}>
-                                  <Text style={[styles.strengthGridTagText, { color: theme.colors.infoSoftText }]}>Nv {exercise.level}</Text>
+                                <View
+                                  style={[
+                                    styles.strengthGridTag,
+                                    { backgroundColor: theme.colors.infoSoft },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.strengthGridTagText,
+                                      { color: theme.colors.infoSoftText },
+                                    ]}
+                                  >
+                                    Nv {exercise.level}
+                                  </Text>
                                 </View>
                                 {exercise.tiempoDescanso > 0 && (
-                                  <View style={[styles.strengthGridTag, { backgroundColor: theme.colors.successSoft }]}>
-                                    <Text style={[styles.strengthGridTagText, { color: theme.colors.successSoftText }]}>{t('session.restTimeShort')}: {exercise.tiempoDescanso}m</Text>
+                                  <View
+                                    style={[
+                                      styles.strengthGridTag,
+                                      { backgroundColor: theme.colors.successSoft },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.strengthGridTagText,
+                                        { color: theme.colors.successSoftText },
+                                      ]}
+                                    >
+                                      {t('session.restTimeShort')}: {exercise.tiempoDescanso}m
+                                    </Text>
                                   </View>
                                 )}
                               </View>
@@ -1225,18 +1563,14 @@ export default function TrainingSessionDetailModal({
               <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => {
-                  Alert.alert(
-                    t('session.deleteSession'),
-                    t('session.confirmDeleteMessage'),
-                    [
-                      { text: t('message.cancel'), style: 'cancel' },
-                      {
-                        text: t('edition.delete'),
-                        style: 'destructive',
-                        onPress: () => onDelete(session),
-                      },
-                    ]
-                  );
+                  Alert.alert(t('session.deleteSession'), t('session.confirmDeleteMessage'), [
+                    { text: t('message.cancel'), style: 'cancel' },
+                    {
+                      text: t('edition.delete'),
+                      style: 'destructive',
+                      onPress: () => onDelete(session),
+                    },
+                  ]);
                 }}
               >
                 <Ionicons name="trash" size={20} color={theme.colors.error} />
@@ -1279,7 +1613,10 @@ export default function TrainingSessionDetailModal({
               cropHeight={modalImageHeight}
               imageWidth={modalImageWidth}
               imageHeight={modalImageHeight}
-              style={[styles.imageZoomWrapper, { width: modalImageWidth, height: modalImageHeight }]}
+              style={[
+                styles.imageZoomWrapper,
+                { width: modalImageWidth, height: modalImageHeight },
+              ]}
               enableCenterFocus={true}
               centerOn={modalImageCenter}
               minScale={1}
@@ -1290,7 +1627,7 @@ export default function TrainingSessionDetailModal({
             >
               <Image
                 source={{
-                  uri: normalizeImageSource(selectedImage, { cacheBust: true })
+                  uri: normalizeImageSource(selectedImage, { cacheBust: true }),
                 }}
                 style={[styles.fullImage, { width: modalImageWidth, height: modalImageHeight }]}
                 resizeMode="contain"
@@ -1303,18 +1640,19 @@ export default function TrainingSessionDetailModal({
               onPress={handleEditExerciseAsNew}
             >
               <Feather name="edit-3" size={18} color="#fff" />
-              <Text style={styles.editExerciseImageBtnText}>{t('session.editExerciseAsNew', 'Editar como nuevo')}</Text>
+              <Text style={styles.editExerciseImageBtnText}>
+                {t('session.editExerciseAsNew', 'Editar como nuevo')}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
       </Modal>
-      
+
       {/* Modal de Video */}
       <Modal
         visible={showVideoModal}
         transparent
         animationType="fade"
-       
         onRequestClose={closeVideoModal}
       >
         <View style={styles.videoModalBg}>
@@ -1327,7 +1665,7 @@ export default function TrainingSessionDetailModal({
                 <Feather name="x" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
-            
+
             {isGeneratingVideo ? (
               <View style={styles.videoGeneratingContainer}>
                 <ActivityIndicator size="large" color="#E91E63" />
@@ -1363,7 +1701,7 @@ export default function TrainingSessionDetailModal({
           </View>
         </View>
       </Modal>
-      
+
       {/* Pre-Wellness Detail Modal */}
       <PreWellnessDetailModal
         visible={showPreWellnessDetail}
@@ -1376,7 +1714,7 @@ export default function TrainingSessionDetailModal({
           loadPreWellnessStats(); // Recargar stats
         }}
       />
-      
+
       {/* Wellness Detail Modal */}
       <WellnessDetailModal
         visible={showWellnessDetail}
@@ -1401,978 +1739,979 @@ export default function TrainingSessionDetailModal({
   );
 }
 
-const makeStyles = (theme) => StyleSheet.create({
-  modalBg: {
-    flex: 1,
-    backgroundColor: theme.colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewModalContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    width: '95%',
-    maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  viewModalContentTablet: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    width: '80%',
-    maxWidth: 700,
-    maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  modalEditButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.background,
-  },
-  modalCloseBtn: {
-    padding: 4,
-  },
-  headerSecondaryButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.background,
-  },
-  modalBody: {
-    padding: 20,
-  },
-  
-  // Session Detail Card (header con fecha) - igual que training.js
-  sessionDetailCard: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sessionDetailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sessionDetailTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  pdfSection: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  pdfSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  pdfSectionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.errorSoft,
-  },
-  pdfSectionInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  pdfSectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  pdfSectionSubtitle: {
-    marginTop: 3,
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-  },
-  pdfSectionStatus: {
-    marginTop: 10,
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-  },
-  pdfSectionActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-  },
-  pdfActionPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: theme.colors.primary,
-  },
-  pdfActionPrimaryText: {
-    color: theme.colors.onPrimary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  pdfActionSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  pdfActionSecondaryText: {
-    color: theme.colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  
-  // Detail Section - igual que training.js
-  detailSection: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  detailSectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border + '50',
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    flex: 1,
-  },
-  detailValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  detailPlayersRow: {
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  detailPlayersLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.success,
-    marginBottom: 6,
-  },
-  detailPlayersLabelExtra: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.warning,
-    marginBottom: 6,
-  },
-  detailPlayersText: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-  },
-  attendanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  attendanceTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  attendanceTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  attendanceCountBadge: {
-    backgroundColor: theme.colors.primarySoft,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  attendanceCountText: {
-    color: theme.colors.primary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  attendanceHint: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-    marginBottom: 12,
-  },
-  attendanceSummaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 14,
-  },
-  attendanceSummaryCard: {
-    flex: 1,
-    minWidth: 210,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  attendancePresentCard: {
-    backgroundColor: theme.colors.successSoft,
-    borderColor: theme.colors.success,
-  },
-  attendanceAbsentCard: {
-    backgroundColor: theme.colors.errorSoft,
-    borderColor: theme.colors.error,
-  },
-  attendanceSummaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 8,
-  },
-  attendanceSummaryTitle: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  attendanceNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    minHeight: 25,
-  },
-  attendanceDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  attendanceSummaryName: {
-    flex: 1,
-    color: theme.colors.text,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  attendanceEmptyText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-  attendanceActionsRow: {
-    alignItems: 'flex-end',
-    marginBottom: 8,
-  },
-  attendanceQuickAction: {
-    color: theme.colors.primary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  attendancePlayerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: 7,
-  },
-  attendancePlayerRowPresent: {
-    borderColor: theme.colors.success,
-    backgroundColor: theme.colors.successSoft,
-  },
-  attendancePlayerName: {
-    flex: 1,
-    color: theme.colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  attendanceState: {
-    color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  attendanceStatePresent: {
-    color: theme.colors.success,
-  },
-  attendanceFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 8,
-  },
-  attendancePrimaryButton: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    minHeight: 44,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: theme.colors.primary,
-  },
-  attendancePrimaryButtonText: {
-    color: theme.colors.onPrimary,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  attendanceCancelButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  attendanceCancelText: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  
-  // Session Info Card
-  sessionInfoCard: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sessionInfoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  sessionInfoTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  sessionInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  sessionInfoItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  sessionInfoLabel: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-  },
-  sessionInfoValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  
-  // Section Card
-  sectionCard: {
-    backgroundColor: theme.colors.background,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  sectionContent: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  
-  // Exercise Card
-  exerciseCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  exerciseOrderBadge: {
-    position: 'absolute',
-    top: -8,
-    left: 12,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  exerciseOrderText: {
-    color: theme.colors.onPrimary,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  exerciseImageContainer: {
-    marginTop: 12,
-    marginBottom: 12,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  exerciseImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 10,
-  },
-  // Strength exercises grid
-  strengthGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 8,
-    justifyContent: 'center',
-  },
-  strengthGridCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    overflow: 'hidden',
-  },
-  strengthGridImageContainer: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    backgroundColor: '#1a1a2e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  strengthGridImage: {
-    width: '100%',
-    height: '100%',
-  },
-  strengthGridInfo: {
-    padding: 6,
-  },
-  strengthGridName: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: theme.colors.text,
-    lineHeight: 14,
-    marginBottom: 4,
-  },
-  strengthGridTagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  strengthGridTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  strengthGridTagText: {
-    fontSize: 9,
-    fontWeight: '600',
-  },
-  zoomBadge: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 12,
-    padding: 4,
-  },
-  zoomBadgeWithText: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 16,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    elevation: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  zoomBadgeText: {
-    color: theme.colors.primary,
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  exerciseInfo: {
-    marginTop: 8,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 8,
-  },
-  exerciseTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 8,
-  },
-  exerciseTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  exerciseTagText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  exerciseDescription: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    lineHeight: 18,
-  },
-  // Sección de detalles del ejercicio (descripción, objetivo, duración)
-  exerciseDetailsSection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  exerciseDetailText: {
-    fontSize: 13,
-    color: theme.colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 6,
-  },
-  exerciseDetailLabel: {
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  observacionContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 8,
-    padding: 10,
-    backgroundColor: theme.colors.warningSoft,
-    borderRadius: 8,
-  },
-  observacionText: {
-    flex: 1,
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    fontStyle: 'italic',
-  },
-  
-  // Rest Time Card
-  restTimeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 10,
-    marginBottom: 12,
-    backgroundColor: theme.colors.warningSoft,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.warning + '60',
-  },
-  restTimeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.colors.warningSoftText,
-  },
-  
-  // PDF Button
-  pdfButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  pdfButtonText: {
-    color: theme.colors.onPrimary,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  
-  // Delete Button
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: theme.colors.errorSoft,
-    borderWidth: 1,
-    borderColor: theme.colors.error + '30',
-    gap: 8,
-    marginTop: 24,
-    marginBottom: 20,
-  },
-  deleteButtonText: {
-    color: theme.colors.error,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  
-  // Image Modal (fullscreen image viewer - dark backdrop kept literal intentionally)
-  imageModalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeImageBtn: {
-    position: 'absolute',
-    zIndex: 10,
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-  },
-  closeImageText: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: '500',
-    lineHeight: 26,
-    textAlign: 'center',
-    verticalAlign: 'center',
-    includeFontPadding: false,
-  },
-  fullImage: {
-    overflow: 'hidden',
-  },
-  imageZoomWrapper: {
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: '#020617',
-  },
-  editExerciseImageBtn: {
-    position: 'absolute',
-    bottom: 28,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 24,
-    backgroundColor: theme.colors.primary,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  editExerciseImageBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  
-  // Estilos para botón de video en ejercicio (brand pink kept literal)
-  exerciseVideoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#E91E63',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  exerciseVideoBtnInactive: {
-    backgroundColor: theme.colors.textMuted,
-  },
-  exerciseVideoBtnText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  
-  // Modal de video (dark video player UI - colors kept literal intentionally)
-  videoModalBg: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoModalContent: {
-    width: '95%',
-    maxWidth: 800,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  videoModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#2a2a2a',
-  },
-  videoModalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    flex: 1,
-  },
-  videoModalCloseBtn: {
-    padding: 4,
-  },
-  videoGeneratingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoGeneratingText: {
-    marginTop: 12,
-    color: '#fff',
-    fontSize: 14,
-  },
-  videoPlayerContainer: {
-    aspectRatio: 16 / 9,
-    width: '100%',
-  },
-  videoPlayer: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  videoDownloadBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2196F3',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    borderRadius: 10,
-    gap: 8,
-  },
-  videoDownloadBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  
-  // Wellness styles
-  wellnessSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  wellnessDetailBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  wellnessDetailBtnText: {
-    color: theme.colors.onPrimary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  wellnessStatsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  wellnessStatBox: {
-    flex: 1,
-    backgroundColor: theme.colors.inputBg,
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  wellnessStatLabel: {
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    fontWeight: '500',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  wellnessStatValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-  },
-  wellnessLinkActive: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: theme.colors.successSoft,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  wellnessLinkActiveText: {
-    fontSize: 12,
-    color: theme.colors.success,
-    fontWeight: '500',
-  },
-  preWellnessTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  preWellnessBadge: {
-    backgroundColor: theme.colors.warning,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  preWellnessBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  
-  // Team Assignments styles
-  teamAssignmentsContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  teamAssignmentsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  teamAssignmentsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.primary,
-  },
-  teamsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  teamBox: {
-    minWidth: 160,
-    flex: 1,
-    maxWidth: '100%',
-    backgroundColor: theme.colors.background,
-    borderRadius: 10,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    marginBottom: 8,
-  },
-  teamBoxHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  teamBoxTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  teamBoxCount: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
-  },
-  teamBoxPlayers: {
-    padding: 10,
-  },
-  teamPlayerName: {
-    fontSize: 13,
-    color: theme.colors.text,
-    paddingVertical: 3,
-    lineHeight: 18,
-  },
-  exerciseCount: {
-    backgroundColor: theme.colors.purpleSoft,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  exerciseCountText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-});
+const makeStyles = (theme) =>
+  StyleSheet.create({
+    modalBg: {
+      flex: 1,
+      backgroundColor: theme.colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    viewModalContent: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      width: '95%',
+      maxHeight: '90%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 20,
+    },
+    viewModalContentTablet: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      width: '80%',
+      maxWidth: 700,
+      maxHeight: '90%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 20,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    modalEditButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+    },
+    modalCloseBtn: {
+      padding: 4,
+    },
+    headerSecondaryButton: {
+      padding: 8,
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+    },
+    modalBody: {
+      padding: 20,
+    },
+
+    // Session Detail Card (header con fecha) - igual que training.js
+    sessionDetailCard: {
+      backgroundColor: theme.colors.background,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+    },
+    sessionDetailHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    sessionDetailTitle: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    pdfSection: {
+      backgroundColor: theme.colors.background,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    pdfSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    pdfSectionIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.errorSoft,
+    },
+    pdfSectionInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    pdfSectionTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    pdfSectionSubtitle: {
+      marginTop: 3,
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    pdfSectionStatus: {
+      marginTop: 10,
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    pdfSectionActions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 12,
+    },
+    pdfActionPrimary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 9,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      backgroundColor: theme.colors.primary,
+    },
+    pdfActionPrimaryText: {
+      color: theme.colors.onPrimary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    pdfActionSecondary: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 9,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    pdfActionSecondaryText: {
+      color: theme.colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+
+    // Detail Section - igual que training.js
+    detailSection: {
+      backgroundColor: theme.colors.background,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+    },
+    detailSectionTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.colors.text,
+      marginBottom: 12,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border + '50',
+    },
+    detailLabel: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      flex: 1,
+    },
+    detailValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    detailPlayersRow: {
+      paddingTop: 12,
+      paddingBottom: 8,
+    },
+    detailPlayersLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.success,
+      marginBottom: 6,
+    },
+    detailPlayersLabelExtra: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.warning,
+      marginBottom: 6,
+    },
+    detailPlayersText: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    attendanceHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    attendanceTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    attendanceTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    attendanceCountBadge: {
+      backgroundColor: theme.colors.primarySoft,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+    },
+    attendanceCountText: {
+      color: theme.colors.primary,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    attendanceHint: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 19,
+      marginBottom: 12,
+    },
+    attendanceSummaryGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginBottom: 14,
+    },
+    attendanceSummaryCard: {
+      flex: 1,
+      minWidth: 210,
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+    },
+    attendancePresentCard: {
+      backgroundColor: theme.colors.successSoft,
+      borderColor: theme.colors.success,
+    },
+    attendanceAbsentCard: {
+      backgroundColor: theme.colors.errorSoft,
+      borderColor: theme.colors.error,
+    },
+    attendanceSummaryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      marginBottom: 8,
+    },
+    attendanceSummaryTitle: {
+      flex: 1,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    attendanceNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      minHeight: 25,
+    },
+    attendanceDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    attendanceSummaryName: {
+      flex: 1,
+      color: theme.colors.text,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    attendanceEmptyText: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      fontStyle: 'italic',
+    },
+    attendanceActionsRow: {
+      alignItems: 'flex-end',
+      marginBottom: 8,
+    },
+    attendanceQuickAction: {
+      color: theme.colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    attendancePlayerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: 7,
+    },
+    attendancePlayerRowPresent: {
+      borderColor: theme.colors.success,
+      backgroundColor: theme.colors.successSoft,
+    },
+    attendancePlayerName: {
+      flex: 1,
+      color: theme.colors.text,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    attendanceState: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    attendanceStatePresent: {
+      color: theme.colors.success,
+    },
+    attendanceFooter: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: 10,
+      marginTop: 8,
+    },
+    attendancePrimaryButton: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      minHeight: 44,
+      paddingHorizontal: 14,
+      borderRadius: 10,
+      backgroundColor: theme.colors.primary,
+    },
+    attendancePrimaryButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    attendanceCancelButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    attendanceCancelText: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+
+    // Session Info Card
+    sessionInfoCard: {
+      backgroundColor: theme.colors.background,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+    },
+    sessionInfoHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 16,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    sessionInfoTitle: {
+      flex: 1,
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    sessionInfoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    sessionInfoItem: {
+      alignItems: 'center',
+      gap: 4,
+    },
+    sessionInfoLabel: {
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+    },
+    sessionInfoValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+
+    // Section Card
+    sectionCard: {
+      backgroundColor: theme.colors.background,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 16,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 12,
+      paddingBottom: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    sectionContent: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: theme.colors.textMuted,
+      textAlign: 'center',
+      paddingVertical: 20,
+    },
+
+    // Exercise Card
+    exerciseCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    exerciseOrderBadge: {
+      position: 'absolute',
+      top: -8,
+      left: 12,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: theme.colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1,
+    },
+    exerciseOrderText: {
+      color: theme.colors.onPrimary,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    exerciseImageContainer: {
+      marginTop: 12,
+      marginBottom: 12,
+      borderRadius: 10,
+      overflow: 'hidden',
+    },
+    exerciseImage: {
+      width: '100%',
+      height: 180,
+      borderRadius: 10,
+    },
+    // Strength exercises grid
+    strengthGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginTop: 8,
+      justifyContent: 'center',
+    },
+    strengthGridCard: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      overflow: 'hidden',
+    },
+    strengthGridImageContainer: {
+      width: '100%',
+      aspectRatio: 4 / 3,
+      backgroundColor: '#1a1a2e',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    strengthGridImage: {
+      width: '100%',
+      height: '100%',
+    },
+    strengthGridInfo: {
+      padding: 6,
+    },
+    strengthGridName: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.text,
+      lineHeight: 14,
+      marginBottom: 4,
+    },
+    strengthGridTagsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+    },
+    strengthGridTag: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    strengthGridTagText: {
+      fontSize: 9,
+      fontWeight: '600',
+    },
+    zoomBadge: {
+      position: 'absolute',
+      bottom: 8,
+      right: 8,
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      borderRadius: 12,
+      padding: 4,
+    },
+    zoomBadgeWithText: {
+      position: 'absolute',
+      bottom: 10,
+      right: 10,
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      borderRadius: 16,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      elevation: 3,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    zoomBadgeText: {
+      color: theme.colors.primary,
+      fontWeight: 'bold',
+      fontSize: 12,
+    },
+    exerciseInfo: {
+      marginTop: 8,
+    },
+    exerciseName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 8,
+    },
+    exerciseTags: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: 8,
+    },
+    exerciseTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
+    },
+    exerciseTagText: {
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    exerciseDescription: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      lineHeight: 18,
+    },
+    // Sección de detalles del ejercicio (descripción, objetivo, duración)
+    exerciseDetailsSection: {
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    exerciseDetailText: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      lineHeight: 20,
+      marginBottom: 6,
+    },
+    exerciseDetailLabel: {
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    observacionContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+      marginTop: 8,
+      padding: 10,
+      backgroundColor: theme.colors.warningSoft,
+      borderRadius: 8,
+    },
+    observacionText: {
+      flex: 1,
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontStyle: 'italic',
+    },
+
+    // Rest Time Card
+    restTimeCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      padding: 10,
+      marginBottom: 12,
+      backgroundColor: theme.colors.warningSoft,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: theme.colors.warning + '60',
+    },
+    restTimeText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.warningSoftText,
+    },
+
+    // PDF Button
+    pdfButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 14,
+      borderRadius: 12,
+      gap: 8,
+      marginTop: 8,
+      marginBottom: 16,
+    },
+    pdfButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+
+    // Delete Button
+    deleteButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+      borderRadius: 12,
+      backgroundColor: theme.colors.errorSoft,
+      borderWidth: 1,
+      borderColor: theme.colors.error + '30',
+      gap: 8,
+      marginTop: 24,
+      marginBottom: 20,
+    },
+    deleteButtonText: {
+      color: theme.colors.error,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+
+    // Image Modal (fullscreen image viewer - dark backdrop kept literal intentionally)
+    imageModalBg: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.95)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    closeImageBtn: {
+      position: 'absolute',
+      zIndex: 10,
+      backgroundColor: 'rgba(15, 23, 42, 0.72)',
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.14)',
+    },
+    closeImageText: {
+      color: '#fff',
+      fontSize: 26,
+      fontWeight: '500',
+      lineHeight: 26,
+      textAlign: 'center',
+      verticalAlign: 'center',
+      includeFontPadding: false,
+    },
+    fullImage: {
+      overflow: 'hidden',
+    },
+    imageZoomWrapper: {
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      backgroundColor: '#020617',
+    },
+    editExerciseImageBtn: {
+      position: 'absolute',
+      bottom: 28,
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+      borderRadius: 24,
+      backgroundColor: theme.colors.primary,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    editExerciseImageBtnText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+
+    // Estilos para botón de video en ejercicio (brand pink kept literal)
+    exerciseVideoBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: '#E91E63',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
+    },
+    exerciseVideoBtnInactive: {
+      backgroundColor: theme.colors.textMuted,
+    },
+    exerciseVideoBtnText: {
+      color: '#fff',
+      fontSize: 11,
+      fontWeight: '600',
+    },
+
+    // Modal de video (dark video player UI - colors kept literal intentionally)
+    videoModalBg: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.95)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    videoModalContent: {
+      width: '95%',
+      maxWidth: 800,
+      backgroundColor: '#1a1a1a',
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    videoModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: '#2a2a2a',
+    },
+    videoModalTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#fff',
+      flex: 1,
+    },
+    videoModalCloseBtn: {
+      padding: 4,
+    },
+    videoGeneratingContainer: {
+      padding: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    videoGeneratingText: {
+      marginTop: 12,
+      color: '#fff',
+      fontSize: 14,
+    },
+    videoPlayerContainer: {
+      aspectRatio: 16 / 9,
+      width: '100%',
+    },
+    videoPlayer: {
+      flex: 1,
+      width: '100%',
+      height: '100%',
+    },
+    videoDownloadBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#2196F3',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      marginHorizontal: 16,
+      marginVertical: 12,
+      borderRadius: 10,
+      gap: 8,
+    },
+    videoDownloadBtnText: {
+      color: '#fff',
+      fontSize: 15,
+      fontWeight: '600',
+    },
+
+    // Wellness styles
+    wellnessSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    wellnessDetailBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    wellnessDetailBtnText: {
+      color: theme.colors.onPrimary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    wellnessStatsContainer: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    wellnessStatBox: {
+      flex: 1,
+      backgroundColor: theme.colors.inputBg,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    wellnessStatLabel: {
+      fontSize: 11,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+      marginBottom: 4,
+      textTransform: 'uppercase',
+    },
+    wellnessStatValue: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    wellnessLinkActive: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 10,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      backgroundColor: theme.colors.successSoft,
+      borderRadius: 8,
+      alignSelf: 'flex-start',
+    },
+    wellnessLinkActiveText: {
+      fontSize: 12,
+      color: theme.colors.success,
+      fontWeight: '500',
+    },
+    preWellnessTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    preWellnessBadge: {
+      backgroundColor: theme.colors.warning,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    preWellnessBadgeText: {
+      color: '#fff',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+
+    // Team Assignments styles
+    teamAssignmentsContainer: {
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    teamAssignmentsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 10,
+    },
+    teamAssignmentsTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.primary,
+    },
+    teamsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    teamBox: {
+      minWidth: 160,
+      flex: 1,
+      maxWidth: '100%',
+      backgroundColor: theme.colors.background,
+      borderRadius: 10,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      marginBottom: 8,
+    },
+    teamBoxHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    teamBoxTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#fff',
+    },
+    teamBoxCount: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.8)',
+    },
+    teamBoxPlayers: {
+      padding: 10,
+    },
+    teamPlayerName: {
+      fontSize: 13,
+      color: theme.colors.text,
+      paddingVertical: 3,
+      lineHeight: 18,
+    },
+    exerciseCount: {
+      backgroundColor: theme.colors.purpleSoft,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 12,
+    },
+    exerciseCountText: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: '#ffffff',
+    },
+  });

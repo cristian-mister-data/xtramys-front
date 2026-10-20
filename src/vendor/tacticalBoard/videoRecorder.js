@@ -1291,7 +1291,7 @@ function VideoRecorder({
           try {
             // Cede el hilo antes de la codificación PNG/subida para que iOS
             // pueda pintar el porcentaje sin requerir interacción táctil.
-            await yieldForGenerationPaint(true);
+            await yieldForGenerationPaint();
             if (frame._reusePreviousFrame && pendingFrameRun) {
               pendingFrameRun.durationFrames += 1;
             } else {

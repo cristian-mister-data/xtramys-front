@@ -18,6 +18,7 @@ import KeyboardAwareScrollView from '@/vendor/shared/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { getPlayerFullName } from '@/utils/playerHelpers';
+import '@/components/season/matchSheetPresentation.css';
 
 const isMobileDevice = () => {
   const { width, height } = Dimensions.get('window');
@@ -348,140 +349,37 @@ export default function MatchSheetPDFModals({
  * Componente de botones de PDF reutilizable
  */
 export function MatchSheetPDFButtons({
-  matchSheet,
-  onLineupPress,
-  onCallUpPress,
-  onMatchSheetPress,
-  generatingPDF = false,
-  generatingPDFType = null,
-  showMatchSheetButton = true,
-  compact = false, // modo compacto para header de modales
-  layout = 'horizontal', // 'horizontal' | 'vertical'
+  matchSheet, onLineupPress, onCallUpPress, onMatchSheetPress,
+  generatingPDF = false, generatingPDFType = null, showMatchSheetButton = true,
+  compact = false,
 }) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const styles = useMemo(() => makeStyles(theme), [theme]);
-
   if (!matchSheet) return null;
-
-  // En modo compacto, solo mostrar iconos
-  if (compact) {
-    return (
-      <>
-        {/* PDF de Convocatoria */}
-        {matchSheet.convocados && matchSheet.convocados.length > 0 && (
-          <TouchableOpacity
-            style={[styles.compactButton, { backgroundColor: theme.colors.successSoft }]}
-            title={t('matchSheet.pdf.callupButton', 'PDF convocatoria')}
-            onPress={() => {
-              if (generatingPDF) return;
-              onCallUpPress();
-            }}
-            activeOpacity={generatingPDF ? 1 : 0.8}
-          >
-            {generatingPDFType === 'callup' ? (
-              <ActivityIndicator size={16} color="#4CAF50" />
-            ) : (
-              <Ionicons name="people" size={20} color="#4CAF50" />
-            )}
-          </TouchableOpacity>
-        )}
-        {/* PDF de Alineación */}
-        {matchSheet.alineacion && matchSheet.alineacionTitulares && matchSheet.alineacionTitulares.length > 0 && (
-          <TouchableOpacity
-            style={[styles.compactButton, { backgroundColor: theme.colors.primarySoft }]}
-            title={t('matchSheet.pdf.lineupButton', 'PDF alineación')}
-            onPress={() => {
-              if (generatingPDF) return;
-              onLineupPress();
-            }}
-            activeOpacity={generatingPDF ? 1 : 0.8}
-          >
-            {generatingPDFType === 'lineup' ? (
-              <ActivityIndicator size={16} color="#2196F3" />
-            ) : (
-              <Ionicons name="grid" size={20} color="#2196F3" />
-            )}
-          </TouchableOpacity>
-        )}
-        {/* PDF Ficha Completa */}
-        {showMatchSheetButton && (
-          <TouchableOpacity
-            style={[styles.compactButton, { backgroundColor: theme.colors.warningSoft }]}
-            title={t('matchSheet.pdf.matchSheetButton', 'PDF ficha completa')}
-            onPress={() => {
-              if (generatingPDF) return;
-              onMatchSheetPress();
-            }}
-            activeOpacity={generatingPDF ? 1 : 0.8}
-          >
-            {generatingPDFType === 'matchsheet' ? (
-              <ActivityIndicator size={16} color="#FF5722" />
-            ) : (
-              <Ionicons name="document-text" size={20} color="#FF5722" />
-            )}
-          </TouchableOpacity>
-        )}
-      </>
-    );
-  }
-
-  const buttonStyle = layout === 'vertical' ? styles.pdfButtonVertical : styles.pdfButton;
-  const containerStyle = layout === 'vertical' ? styles.pdfButtonsVertical : styles.pdfButtonsContainer;
-
-  return (
-    <View style={{ ...containerStyle, marginBottom: 40 }}>
-      <TouchableOpacity
-        style={[buttonStyle, styles.pdfButtonPrimary, generatingPDF && styles.buttonDisabled]}
-        onPress={() => {
-          if (generatingPDF) return;
-          onLineupPress();
-        }}
-        activeOpacity={generatingPDF ? 1 : 0.8}
-      >
-        {generatingPDFType === 'lineup' ? (
-          <ActivityIndicator color="#fff" size="small" />
-        ) : (
-          <>
-            <Ionicons name="document-text" size={20} color="#fff" />
-            <Text style={styles.pdfButtonTextPrimary}>{t('matchSheet.pdf.lineupButton')}</Text>
-          </>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[buttonStyle, styles.pdfButtonSecondary, generatingPDF && styles.buttonDisabled]}
-        onPress={() => {
-          if (generatingPDF) return;
-          onCallUpPress();
-        }}
-        activeOpacity={generatingPDF ? 1 : 0.8}
-      >
-        <Ionicons name="people" size={20} color={theme.colors.primary} />
-        <Text style={styles.pdfButtonTextSecondary}>{t('matchSheet.pdf.callupButton')}</Text>
-      </TouchableOpacity>
-
-      {showMatchSheetButton && (
-        <TouchableOpacity
-          style={[buttonStyle, styles.pdfButtonFullSheet, generatingPDF && styles.buttonDisabled]}
-          onPress={() => {
-            if (generatingPDF) return;
-            onMatchSheetPress();
-          }}
-          activeOpacity={generatingPDF ? 1 : 0.8}
-        >
-          {generatingPDFType === 'matchsheet' ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <>
-              <Ionicons name="document" size={20} color="#fff" />
-              <Text style={styles.pdfButtonTextPrimary}>{t('matchSheet.pdf.matchSheetButton')}</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  const actions = [
+    { key: 'lineup', icon: 'grid-outline', label: t('matchSheet.pdf.lineupButton'), description: t('matchPresentation.lineupPdfHint'), onPress: onLineupPress },
+    { key: 'callup', icon: 'people-outline', label: t('matchSheet.pdf.callupButton'), description: t('matchPresentation.callupPdfHint'), onPress: onCallUpPress },
+    ...(showMatchSheetButton ? [{ key: 'matchsheet', icon: 'document-text-outline', label: t('matchSheet.pdf.matchSheetButton'), description: t('matchPresentation.fullPdfHint'), onPress: onMatchSheetPress }] : []),
+  ].filter(action => !compact || action.key === 'matchsheet' || (action.key === 'lineup' ? matchSheet.alineacionTitulares?.length : matchSheet.convocados?.length));
+  const colors = {
+    '--match-surface': theme.colors.surface,
+    '--match-text': theme.colors.text,
+    '--match-muted': theme.colors.textSecondary,
+    '--match-border': theme.colors.border,
+    '--match-hover': theme.colors.primarySoft,
+  };
+  const buttons = actions.map(action => (
+    <button key={action.key} type="button" className={compact ? 'match-header-action' : 'match-pdf-button'}
+      style={compact ? colors : undefined} title={action.label} aria-label={action.label}
+      disabled={generatingPDF} aria-busy={generatingPDFType === action.key}
+      onClick={action.onPress}>
+      <span className={compact ? undefined : 'match-pdf-icon'} aria-hidden="true">
+        {generatingPDFType === action.key ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <Ionicons name={action.icon} size={20} color={compact ? theme.colors.text : '#2454ae'} />}
+      </span>
+      {!compact && <span><strong>{action.label}</strong><small>{action.description}</small></span>}
+    </button>
+  ));
+  return compact ? <>{buttons}</> : <div className="match-pdf-actions" style={colors}>{buttons}</div>;
 }
 
 const makeStyles = (theme) => StyleSheet.create({
@@ -677,67 +575,4 @@ const makeStyles = (theme) => StyleSheet.create({
     opacity: 0.6,
   },
 
-  // PDF Buttons
-  pdfButtonsContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  pdfButtonsVertical: {
-    flexDirection: 'column',
-    gap: 10,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  pdfButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    gap: 8,
-    minHeight: 44,
-  },
-  pdfButtonVertical: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 8,
-    minHeight: 48,
-  },
-  pdfButtonPrimary: {
-    backgroundColor: theme.colors.primary,
-  },
-  pdfButtonSecondary: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.primary,
-  },
-  pdfButtonFullSheet: {
-    backgroundColor: '#FF5722',
-  },
-  pdfButtonTextPrimary: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  pdfButtonTextSecondary: {
-    color: theme.colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  // Compact button style for modal headers
-  compactButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 });

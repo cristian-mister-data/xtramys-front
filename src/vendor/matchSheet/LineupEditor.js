@@ -23,7 +23,7 @@ import { buildLineupAssignments, buildVisualPositions } from '@/utils/lineupPosi
 import { getDefaultFormation } from '@/vendor/matchSheet/useMatchSheetForm';
 
 // Posiciones tácticas predefinidas para diferentes formaciones
-const FORMATION_POSITIONS = {
+export const FORMATION_POSITIONS = {
   // === Formaciones de 11 jugadores ===
   '1-4-4-2': [
     { pos: 'POR', x: 50, y: 90, label: 'Portero' },

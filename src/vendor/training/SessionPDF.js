@@ -1,17 +1,27 @@
 import React from 'react';
 import {
-  Document, Page, Text, View, Image,
-  baseStyles, COLORS, SPACING, FONT_SIZE,
-  renderPdf, PdfHeader, PdfFooter, PdfSection
+  Document,
+  Page,
+  Text,
+  View,
+  Image,
+  baseStyles,
+  COLORS,
+  SPACING,
+  FONT_SIZE,
+  renderPdf,
+  PdfHeader,
+  PdfFooter,
+  PdfSection,
 } from '@/utils/pdfDesign';
-import { savePdfToDownloads } from '@/utils/pdfDownload';
 import { getPlayerFullName } from '@/utils/playerHelpers';
-import { mergeOrderedSessionTasks } from '@/utils/sessionCustomTasks';
+import { mergeOrderedSessionTasks, customTaskAsExercise } from '@/utils/sessionCustomTasks';
 import { getEntityId } from '@/utils/sessionExercises';
 import { getSectionForExercise, getStrengthExerciseImage } from '@/data/strengthExercises';
 import { getContentImage } from '@/utils/contentVisual';
 import api from '@/api/client';
 import { didPlayerAttendTraining } from '@/utils/trainingAttendance';
+import SessionPrintDocument from './SessionPrintDocument';
 
 // ── Shared Styles ──────────────────────────────────────────────────
 const s = {
@@ -283,7 +293,7 @@ const getTeamTheme = (teamNumber) => {
     { bg: '#ede9fe', border: '#ddd6fe', text: '#5b21b6' }, // Eq. 5: Violet/Purple
     { bg: '#fce7f3', border: '#fbcfe8', text: '#9d174d' }, // Eq. 6: Pink/Rose
     { bg: '#e0f2fe', border: '#bae6fd', text: '#0369a1' }, // Eq. 7: Cyan/Sky
-    { bg: '#f5f5f4', border: '#e7e5e4', text: '#374151' }  // Eq. 8: Stone/Gray
+    { bg: '#f5f5f4', border: '#e7e5e4', text: '#374151' }, // Eq. 8: Stone/Gray
   ];
   return themes[(teamNumber - 1) % themes.length];
 };
@@ -306,7 +316,15 @@ const parseClock = (value) => {
 };
 
 // ── Parsing Logic ──────────────────────────────────────────────────
-const parseSessionData = ({ session, exercises, strengthExercises, team, players, i18n, imageDataUris }) => {
+const parseSessionData = ({
+  session,
+  exercises,
+  strengthExercises,
+  team,
+  players,
+  i18n,
+  imageDataUris,
+}) => {
   const t = (key, fallback, options = {}) => {
     if (i18n) return i18n.t(key, { defaultValue: fallback, ...options });
     return fallback;
@@ -314,13 +332,19 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 
   const locale = i18n?.language?.startsWith('es') ? 'es-ES' : 'en-US';
   const fecha = new Date(session.fecha);
-  const fechaFormateada = fecha.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const fechaFormateada = fecha.toLocaleDateString(locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   const resolvePlayerName = (playerLike) => {
     const id = getEntityId(playerLike);
     const playerFromStore = players.find((p) => getEntityId(p) === id);
     if (playerFromStore) return getPlayerFullName(playerFromStore);
-    if (playerLike && typeof playerLike === 'object') return getPlayerFullName(playerLike) || playerLike.nombre || playerLike.name || id;
+    if (playerLike && typeof playerLike === 'object')
+      return getPlayerFullName(playerLike) || playerLike.nombre || playerLike.name || id;
     return id;
   };
 
@@ -341,7 +365,10 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
   const addGeneralObservation = (value) => {
     if (typeof value !== 'string') return;
     const trimmed = value.trim();
-    if (trimmed) generalObservationsText = generalObservationsText ? `${generalObservationsText}\n${trimmed}` : trimmed;
+    if (trimmed)
+      generalObservationsText = generalObservationsText
+        ? `${generalObservationsText}\n${trimmed}`
+        : trimmed;
   };
 
   const setExerciseObservation = (exerciseId, value) => {
@@ -353,7 +380,8 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
     if (!item) return;
     if (typeof item === 'string') return addGeneralObservation(item);
     if (typeof item !== 'object') return;
-    const observationValue = item.observacion || item.observaciones || item.text || item.note || item.value || '';
+    const observationValue =
+      item.observacion || item.observaciones || item.text || item.note || item.value || '';
     const exerciseId = item.ejercicioId || item.ejercicio || item.exerciseId || item.exercise;
     if (exerciseId) setExerciseObservation(exerciseId, observationValue);
     else addGeneralObservation(observationValue);
@@ -367,8 +395,19 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
   if (typeof rawObservations === 'string') addGeneralObservation(rawObservations);
   else if (Array.isArray(rawObservations)) rawObservations.forEach(ingestObservationItem);
   else if (rawObservations && typeof rawObservations === 'object') {
-    addGeneralObservation(rawObservations.general || rawObservations.generales || rawObservations.observacionesGenerales || rawObservations.notes || rawObservations.notas || rawObservations.text);
-    const grouped = rawObservations.porEjercicio || rawObservations.ejercicios || rawObservations.byExercise || rawObservations.items;
+    addGeneralObservation(
+      rawObservations.general ||
+        rawObservations.generales ||
+        rawObservations.observacionesGenerales ||
+        rawObservations.notes ||
+        rawObservations.notas ||
+        rawObservations.text,
+    );
+    const grouped =
+      rawObservations.porEjercicio ||
+      rawObservations.ejercicios ||
+      rawObservations.byExercise ||
+      rawObservations.items;
     if (Array.isArray(grouped)) grouped.forEach(ingestObservationItem);
     else ingestObservationItem(rawObservations);
   }
@@ -377,7 +416,8 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
   const detalleMap = {};
   if (session.ejerciciosDetalle && session.ejerciciosDetalle.length > 0) {
     session.ejerciciosDetalle.forEach((det) => {
-      const ejercicioId = typeof det.ejercicio === 'string' ? det.ejercicio : det.ejercicio?._id || det.ejercicio;
+      const ejercicioId =
+        typeof det.ejercicio === 'string' ? det.ejercicio : det.ejercicio?._id || det.ejercicio;
       if (ejercicioId) {
         detalleMap[ejercicioId] = {
           orden: det.orden || 0,
@@ -395,31 +435,45 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
     session.tareasPersonalizadas,
   );
 
-  const exerciseObservationItems = ejerciciosOrdenados.map((ejercicio) => {
-    const detalle = detalleMap[ejercicio._id] || {};
-    const text = typeof detalle.observacion === 'string'
-      ? detalle.observacion.trim()
-      : (ejercicio.observacionesPersonalizadas || []).join('\n');
-    return text ? { title: ejercicio?.nombre || 'Ejercicio sin nombre', text } : null;
-  }).filter(Boolean);
+  const exerciseObservationItems = ejerciciosOrdenados
+    .map((ejercicio) => {
+      const detalle = detalleMap[ejercicio._id] || {};
+      const text =
+        typeof detalle.observacion === 'string'
+          ? detalle.observacion.trim()
+          : (ejercicio.observacionesPersonalizadas || []).join('\n');
+      return text ? { title: ejercicio?.nombre || 'Ejercicio sin nombre', text } : null;
+    })
+    .filter(Boolean);
 
   const horaInicio = formatTimeStr(session.horaInicio);
   const horaFin = formatTimeStr(session.horaFin);
   const startMinutes = parseClock(horaInicio);
   const endMinutes = parseClock(horaFin);
-  const computedDurationMinutes = (startMinutes !== null && endMinutes !== null && endMinutes > startMinutes) ? endMinutes - startMinutes : null;
+  const computedDurationMinutes =
+    startMinutes !== null && endMinutes !== null && endMinutes > startMinutes
+      ? endMinutes - startMinutes
+      : null;
   const rawDuration = Number(session.duracion);
-  const durationMinutes = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : computedDurationMinutes;
+  const durationMinutes =
+    Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : computedDurationMinutes;
   const duracionLabel = durationMinutes ? `${durationMinutes} min` : '';
 
   return {
-    t, locale, fechaFormateada,
+    t,
+    locale,
+    fechaFormateada,
     totalJugadores: attendanceRoster.length,
-    jugadoresPresentesNombres, jugadoresAusentesNombres,
+    jugadoresPresentesNombres,
+    jugadoresAusentesNombres,
     asistenciaRegistrada: session.asistenciaRegistrada === true,
-    generalObservationsText, exerciseObservationItems,
-    ejerciciosOrdenados, detalleMap,
-    horaInicio, horaFin, duracionLabel,
+    generalObservationsText,
+    exerciseObservationItems,
+    ejerciciosOrdenados,
+    detalleMap,
+    horaInicio,
+    horaFin,
+    duracionLabel,
     teamName: team?.nombre || 'Equipo',
     teamLogo: team?.escudo || null,
     lang: i18n?.language,
@@ -428,74 +482,166 @@ const parseSessionData = ({ session, exercises, strengthExercises, team, players
 
 // ── Components ─────────────────────────────────────────────────────
 
-
 const SessionCoverPage = ({ data, title }) => {
-  const { t, fechaFormateada, totalJugadores, jugadoresPresentesNombres, jugadoresAusentesNombres, asistenciaRegistrada, generalObservationsText, exerciseObservationItems, ejerciciosOrdenados, horaInicio, horaFin, duracionLabel, teamName } = data;
+  const {
+    t,
+    fechaFormateada,
+    totalJugadores,
+    jugadoresPresentesNombres,
+    jugadoresAusentesNombres,
+    asistenciaRegistrada,
+    generalObservationsText,
+    exerciseObservationItems,
+    ejerciciosOrdenados,
+    horaInicio,
+    horaFin,
+    duracionLabel,
+    teamName,
+  } = data;
 
-  const generalObservationsPreview = generalObservationsText ? truncateText(generalObservationsText, 520) : '';
-  const exerciseObservationsPreview = exerciseObservationItems.slice(0, 5).map(item => ({ title: item.title, text: truncateText(item.text, 140) }));
+  const generalObservationsPreview = generalObservationsText
+    ? truncateText(generalObservationsText, 520)
+    : '';
+  const exerciseObservationsPreview = exerciseObservationItems
+    .slice(0, 5)
+    .map((item) => ({ title: item.title, text: truncateText(item.text, 140) }));
 
   return (
     <Page size="A4" style={s.page}>
-      <PdfHeader title={title} subtitle={t('session.pdfTitle', 'Sesión de Entrenamiento')} date={fechaFormateada} right={teamName} />
+      <PdfHeader
+        title={title}
+        subtitle={t('session.pdfTitle', 'Sesión de Entrenamiento')}
+        date={fechaFormateada}
+        right={teamName}
+      />
       <PdfFooter />
 
       <PdfSection title={t('session.summaryTitle', 'Resumen de la Sesión')}>
         <View style={[s.grid4, { marginBottom: SPACING.md }]}>
           <View style={[s.metricBox, s.col4]}>
-            <Text style={s.metricVal}>{horaInicio} - {horaFin}</Text>
-            <Text style={s.metricLbl}>{t('session.scheduleLabelPdf', 'Horario')} ({duracionLabel})</Text>
+            <Text style={s.metricVal}>
+              {horaInicio} - {horaFin}
+            </Text>
+            <Text style={s.metricLbl}>
+              {t('session.scheduleLabelPdf', 'Horario')} ({duracionLabel})
+            </Text>
           </View>
           <View style={[s.metricBox, s.col4]}>
             <Text style={s.metricVal}>{ejerciciosOrdenados.length}</Text>
             <Text style={s.metricLbl}>{t('session.fieldExercises', 'Ejercicios de Campo')}</Text>
           </View>
           <View style={[s.metricBox, s.col4]}>
-            <Text style={[s.metricVal, { color: '#166534' }]}>{jugadoresPresentesNombres.length}</Text>
+            <Text style={[s.metricVal, { color: '#166534' }]}>
+              {jugadoresPresentesNombres.length}
+            </Text>
             <Text style={s.metricLbl}>{t('session.presentPlayers', 'Presentes')}</Text>
           </View>
           <View style={[s.metricBox, s.col4]}>
-            <Text style={[s.metricVal, { color: '#991b1b' }]}>{jugadoresAusentesNombres.length}</Text>
+            <Text style={[s.metricVal, { color: '#991b1b' }]}>
+              {jugadoresAusentesNombres.length}
+            </Text>
             <Text style={s.metricLbl}>{t('session.absentPlayers', 'Ausentes')}</Text>
           </View>
         </View>
 
         <View style={s.grid2}>
           <View style={[s.halfColumn, s.card]}>
-            <Text style={s.cardTitle}>{t('session.pdfAttendanceTitle', 'Asistencia')} ({totalJugadores})</Text>
+            <Text style={s.cardTitle}>
+              {t('session.pdfAttendanceTitle', 'Asistencia')} ({totalJugadores})
+            </Text>
             {!asistenciaRegistrada && (
-              <Text style={s.attendanceNote}>{t('session.attendanceDefaultPdf', 'Lista no registrada: todos los jugadores añadidos cuentan como presentes.')}</Text>
+              <Text style={s.attendanceNote}>
+                {t(
+                  'session.attendanceDefaultPdf',
+                  'Lista no registrada: todos los jugadores añadidos cuentan como presentes.',
+                )}
+              </Text>
             )}
             <Text style={[s.attendanceLabel, { color: '#166534' }]}>
               {t('session.presentPlayers', 'Presentes')} ({jugadoresPresentesNombres.length})
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {jugadoresPresentesNombres.length > 0 ? (
-                jugadoresPresentesNombres.map((name, index) => <Text key={index} style={s.rosterNamePresent}>{name}</Text>)
-              ) : <Text style={{ fontSize: 8, color: COLORS.textMuted, fontStyle: 'italic' }}>{t('session.noPresentPlayers', 'Ningún jugador presente')}</Text>}
+                jugadoresPresentesNombres.map((name, index) => (
+                  <Text key={index} style={s.rosterNamePresent}>
+                    {name}
+                  </Text>
+                ))
+              ) : (
+                <Text style={{ fontSize: 8, color: COLORS.textMuted, fontStyle: 'italic' }}>
+                  {t('session.noPresentPlayers', 'Ningún jugador presente')}
+                </Text>
+              )}
             </View>
             <Text style={[s.attendanceLabel, { color: '#991b1b', marginTop: SPACING.sm }]}>
               {t('session.absentPlayers', 'Ausentes')} ({jugadoresAusentesNombres.length})
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
               {jugadoresAusentesNombres.length > 0 ? (
-                jugadoresAusentesNombres.map((name, index) => <Text key={index} style={s.rosterNameAbsent}>{name}</Text>)
-              ) : <Text style={{ fontSize: 8, color: COLORS.textMuted, fontStyle: 'italic' }}>{t('session.noAbsentPlayers', 'Ningún jugador ausente')}</Text>}
+                jugadoresAusentesNombres.map((name, index) => (
+                  <Text key={index} style={s.rosterNameAbsent}>
+                    {name}
+                  </Text>
+                ))
+              ) : (
+                <Text style={{ fontSize: 8, color: COLORS.textMuted, fontStyle: 'italic' }}>
+                  {t('session.noAbsentPlayers', 'Ningún jugador ausente')}
+                </Text>
+              )}
             </View>
           </View>
 
           <View style={[s.halfColumn, s.card]}>
             <Text style={s.cardTitle}>{t('session.observations', 'Observaciones')}</Text>
             {generalObservationsPreview ? (
-              <Text style={{ fontSize: 9, color: COLORS.text, lineHeight: 1.5, marginBottom: SPACING.sm }}>{generalObservationsPreview}</Text>
-            ) : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontStyle: 'italic', marginBottom: SPACING.sm }}>{t('session.noGeneralObservations', 'Sin observaciones generales')}</Text>}
-            
+              <Text
+                style={{
+                  fontSize: 9,
+                  color: COLORS.text,
+                  lineHeight: 1.5,
+                  marginBottom: SPACING.sm,
+                }}
+              >
+                {generalObservationsPreview}
+              </Text>
+            ) : (
+              <Text
+                style={{
+                  fontSize: 9,
+                  color: COLORS.textMuted,
+                  fontStyle: 'italic',
+                  marginBottom: SPACING.sm,
+                }}
+              >
+                {t('session.noGeneralObservations', 'Sin observaciones generales')}
+              </Text>
+            )}
+
             {exerciseObservationsPreview.length > 0 && (
-              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: COLORS.borderLight }}>
+              <View
+                style={{
+                  marginTop: 6,
+                  paddingTop: 6,
+                  borderTopWidth: 1,
+                  borderTopColor: COLORS.borderLight,
+                }}
+              >
                 {exerciseObservationsPreview.map((item, i) => (
                   <View key={i} style={{ marginBottom: 8 }}>
-                    <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: COLORS.primary, textTransform: 'uppercase', marginBottom: 2 }}>{item.title}</Text>
-                    <Text style={{ fontSize: 8, color: COLORS.text, lineHeight: 1.4 }}>{item.text}</Text>
+                    <Text
+                      style={{
+                        fontSize: 8,
+                        fontFamily: 'Helvetica-Bold',
+                        color: COLORS.primary,
+                        textTransform: 'uppercase',
+                        marginBottom: 2,
+                      }}
+                    >
+                      {item.title}
+                    </Text>
+                    <Text style={{ fontSize: 8, color: COLORS.text, lineHeight: 1.4 }}>
+                      {item.text}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -517,7 +663,10 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
   let imagenSrc = imageDataUris[`ex_${ejercicio._id}`];
   const selectedImage = getContentImage(ejercicio);
   if (!imagenSrc && selectedImage) {
-    if (typeof selectedImage === 'string' && (selectedImage.startsWith('http') || selectedImage.startsWith('data:'))) {
+    if (
+      typeof selectedImage === 'string' &&
+      (selectedImage.startsWith('http') || selectedImage.startsWith('data:'))
+    ) {
       imagenSrc = selectedImage;
     } else if (typeof selectedImage === 'string') {
       imagenSrc = `data:image/png;base64,${selectedImage}`;
@@ -526,29 +675,53 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
 
   const pills = [];
   if (ejercicio.isCustomTask) pills.push(t('session.customTask', 'Tarea personalizada'));
-  if (ejercicio.numeroJugadores) pills.push(`${ejercicio.numeroJugadores} ${t('session.players', 'Jugadores')}`);
+  if (ejercicio.numeroJugadores)
+    pills.push(`${ejercicio.numeroJugadores} ${t('session.players', 'Jugadores')}`);
   if (ejercicio.equipos) pills.push(`${ejercicio.equipos} ${t('session.teams', 'Equipos')}`);
   if (ejercicio.dimensiones) pills.push(ejercicio.dimensiones);
-  if (ejercicio.tiempo) pills.push(/(?:min|['’])$/i.test(String(ejercicio.tiempo).trim()) ? ejercicio.tiempo : `${ejercicio.tiempo} min`);
-  if (!isLastExercise && tiempoDescanso > 0) pills.push(`${t('session.rest', 'Descanso')}: ${tiempoDescanso} min`);
+  if (ejercicio.tiempo)
+    pills.push(
+      /(?:min|['’])$/i.test(String(ejercicio.tiempo).trim())
+        ? ejercicio.tiempo
+        : `${ejercicio.tiempo} min`,
+    );
+  if (!isLastExercise && tiempoDescanso > 0)
+    pills.push(`${t('session.rest', 'Descanso')}: ${tiempoDescanso} min`);
 
   const teamAssignmentsData = (detalle.teamAssignments || [])
-    .filter(ta => (ta.players && ta.players.length > 0) || (ta.extraPlayers && ta.extraPlayers.length > 0) || (ta.comodines || 0) > 0)
+    .filter(
+      (ta) =>
+        (ta.players && ta.players.length > 0) ||
+        (ta.extraPlayers && ta.extraPlayers.length > 0) ||
+        (ta.comodines || 0) > 0,
+    )
     .sort((a, b) => (a.teamNumber || 0) - (b.teamNumber || 0));
 
   return (
     <View style={s.exCard} wrap={false}>
       <View style={s.exImgCol}>
-        {imagenSrc ? <Image src={imagenSrc} style={s.exImg} /> : <Text style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: 'Helvetica-Bold' }}>{t('session.noImage', 'Sin Imagen')}</Text>}
+        {imagenSrc ? (
+          <Image src={imagenSrc} style={s.exImg} />
+        ) : (
+          <Text style={{ fontSize: 9, color: COLORS.textMuted, fontFamily: 'Helvetica-Bold' }}>
+            {t('session.noImage', 'Sin Imagen')}
+          </Text>
+        )}
       </View>
       <View style={s.exInfoCol}>
         <View style={s.exHeader}>
           <Text style={s.exNum}>#{ordenNumero}</Text>
           <View style={{ flex: 1, paddingLeft: 12 }}>
-            <Text style={s.exName}>{ejercicio.nombre || t('session.unnamedExercise', 'Ejercicio sin nombre')}</Text>
+            <Text style={s.exName}>
+              {ejercicio.nombre || t('session.unnamedExercise', 'Ejercicio sin nombre')}
+            </Text>
             {pills.length > 0 && (
               <View style={s.exPills}>
-                {pills.map((p, i) => <Text key={i} style={s.exPill}>{p}</Text>)}
+                {pills.map((p, i) => (
+                  <Text key={i} style={s.exPill}>
+                    {p}
+                  </Text>
+                ))}
               </View>
             )}
           </View>
@@ -582,7 +755,9 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
         )}
         {Boolean(ejercicio.materialNecesario) && (
           <View style={s.exSection}>
-            <Text style={s.exSectionLabel}>{t('exercise.materialNeeded', 'Material necesario')}</Text>
+            <Text style={s.exSectionLabel}>
+              {t('exercise.materialNeeded', 'Material necesario')}
+            </Text>
             <Text style={s.exSectionText}>
               {data.lang?.startsWith('en') && ejercicio.translations?.en?.materialNecesario
                 ? ejercicio.translations.en.materialNecesario
@@ -592,8 +767,17 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
         )}
 
         {teamAssignmentsData.length > 0 && (
-          <View style={{ marginTop: 4, paddingTop: 6, borderTopWidth: 1, borderTopColor: COLORS.borderLight }}>
-            <Text style={[s.exSectionLabel, { marginBottom: 4 }]}>{t('session.teamAssignments', 'Asignación de equipos')}</Text>
+          <View
+            style={{
+              marginTop: 4,
+              paddingTop: 6,
+              borderTopWidth: 1,
+              borderTopColor: COLORS.borderLight,
+            }}
+          >
+            <Text style={[s.exSectionLabel, { marginBottom: 4 }]}>
+              {t('session.teamAssignments', 'Asignación de equipos')}
+            </Text>
             {teamAssignmentsData.map((ta, i) => {
               const names = [];
               (ta.players || []).forEach((pid) => {
@@ -605,7 +789,11 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
               (ta.extraPlayers || []).forEach((epId) => {
                 const id = getEntityId(epId);
                 const p = players.find((j) => getEntityId(j) === id);
-                const nombre = p ? getPlayerFullName(p) : typeof epId === 'object' ? getPlayerFullName(epId) : id;
+                const nombre = p
+                  ? getPlayerFullName(p)
+                  : typeof epId === 'object'
+                    ? getPlayerFullName(epId)
+                    : id;
                 if (nombre) names.push(`* ${nombre}`);
               });
               if ((ta.teamNumber || 0) === 0) {
@@ -613,11 +801,36 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
                 const theme = getTeamTheme(0);
                 return (
                   <View key={i} style={s.teamRow}>
-                    <Text style={[s.teamTag, { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, color: theme.text }]}>
+                    <Text
+                      style={[
+                        s.teamTag,
+                        {
+                          backgroundColor: theme.bg,
+                          borderWidth: 1,
+                          borderColor: theme.border,
+                          color: theme.text,
+                        },
+                      ]}
+                    >
                       {t('session.comodines', 'Comodines')}
                     </Text>
-                    <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3, marginTop: 1 }}>
-                      {[...names, ta.comodines > 0 ? `${t('session.comodines', 'Comodines')}: ${ta.comodines}` : null].filter(Boolean).join(', ')}
+                    <Text
+                      style={{
+                        fontSize: 8,
+                        color: COLORS.text,
+                        flex: 1,
+                        lineHeight: 1.3,
+                        marginTop: 1,
+                      }}
+                    >
+                      {[
+                        ...names,
+                        ta.comodines > 0
+                          ? `${t('session.comodines', 'Comodines')}: ${ta.comodines}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(', ')}
                     </Text>
                   </View>
                 );
@@ -625,8 +838,30 @@ const ExerciseCard = ({ ejercicio, index, data, players, imageDataUris }) => {
               const theme = getTeamTheme(ta.teamNumber);
               return (
                 <View key={i} style={s.teamRow}>
-                  <Text style={[s.teamTag, { backgroundColor: theme.bg, borderWidth: 1, borderColor: theme.border, color: theme.text }]}>{t('session.teamAbbr', 'Eq.')} {ta.teamNumber}</Text>
-                  <Text style={{ fontSize: 8, color: COLORS.text, flex: 1, lineHeight: 1.3, marginTop: 1 }}>{names.join(', ')}</Text>
+                  <Text
+                    style={[
+                      s.teamTag,
+                      {
+                        backgroundColor: theme.bg,
+                        borderWidth: 1,
+                        borderColor: theme.border,
+                        color: theme.text,
+                      },
+                    ]}
+                  >
+                    {t('session.teamAbbr', 'Eq.')} {ta.teamNumber}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 8,
+                      color: COLORS.text,
+                      flex: 1,
+                      lineHeight: 1.3,
+                      marginTop: 1,
+                    }}
+                  >
+                    {names.join(', ')}
+                  </Text>
                 </View>
               );
             })}
@@ -643,11 +878,22 @@ const ExercisesPage = ({ data, players, imageDataUris, title }) => {
 
   return (
     <Page size="A4" style={s.page}>
-      <PdfHeader title={title} subtitle={t('session.exercisesTitle', 'Ejercicios de la Sesión')} date={fechaFormateada} />
+      <PdfHeader
+        title={title}
+        subtitle={t('session.exercisesTitle', 'Ejercicios de la Sesión')}
+        date={fechaFormateada}
+      />
       <PdfFooter />
       <PdfSection title={t('session.tacticalTechnicalDev', 'Desarrollo Táctico / Técnico')}>
         {ejerciciosOrdenados.map((ej, idx) => (
-          <ExerciseCard key={idx} ejercicio={ej} index={idx} data={data} players={players} imageDataUris={imageDataUris} />
+          <ExerciseCard
+            key={idx}
+            ejercicio={ej}
+            index={idx}
+            data={data}
+            players={players}
+            imageDataUris={imageDataUris}
+          />
         ))}
       </PdfSection>
     </Page>
@@ -662,7 +908,11 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
 
   return chunks.map((chunk, pageIdx) => (
     <Page size="A4" style={s.page} key={pageIdx}>
-      <PdfHeader title={title} subtitle={`${t('session.strengthExercisesTitle', 'Ejercicios de Fuerza')} (${t('session.page', 'Pág')} ${pageIdx + 1}/${chunks.length})`} date={fechaFormateada} />
+      <PdfHeader
+        title={title}
+        subtitle={`${t('session.strengthExercisesTitle', 'Ejercicios de Fuerza')} (${t('session.page', 'Pág')} ${pageIdx + 1}/${chunks.length})`}
+        date={fechaFormateada}
+      />
       <PdfFooter />
       <PdfSection title={t('session.gymRoutinePrevention', 'Rutina de Gimnasio / Prevención')}>
         <View style={s.stGrid}>
@@ -671,7 +921,11 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
             const imagenSrc = imageDataUris[exercise.image];
             const exerciseName = i18n ? i18n.t(exercise.i18nKey) : exercise.id;
             const sectionResult = getSectionForExercise(exercise.id || exercise);
-            const sectionName = sectionResult ? (i18n ? i18n.t(sectionResult.section.i18nKey) : sectionResult.section.id) : '';
+            const sectionName = sectionResult
+              ? i18n
+                ? i18n.t(sectionResult.section.i18nKey)
+                : sectionResult.section.id
+              : '';
 
             return (
               <View key={idx} style={s.stCard} wrap={false}>
@@ -683,13 +937,19 @@ const StrengthExercisesPage = ({ strengthExercises, i18n, title, data, imageData
                   </View>
                 )}
                 <View style={s.stBody}>
-                  <Text style={s.stName}>{globalIdx + 1}. {exerciseName}</Text>
+                  <Text style={s.stName}>
+                    {globalIdx + 1}. {exerciseName}
+                  </Text>
                   <View style={s.stFooter}>
                     <Text style={s.stSection}>{sectionName}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={s.stLevel}>{t('session.levelAbbr', 'NV')} {exercise.level}</Text>
+                      <Text style={s.stLevel}>
+                        {t('session.levelAbbr', 'NV')} {exercise.level}
+                      </Text>
                       {exercise.tiempoDescanso > 0 && (
-                        <Text style={[s.stLevel, { marginLeft: 4, color: COLORS.primary }]}>• {t('session.restAbbr', 'DESC:')} {exercise.tiempoDescanso}'</Text>
+                        <Text style={[s.stLevel, { marginLeft: 4, color: COLORS.primary }]}>
+                          • {t('session.restAbbr', 'DESC:')} {exercise.tiempoDescanso}'
+                        </Text>
                       )}
                     </View>
                   </View>
@@ -707,7 +967,13 @@ const SessionDocument = ({ data, players, strengthExercises, i18n, title, imageD
   <Document>
     <SessionCoverPage data={data} title={title} />
     <ExercisesPage data={data} players={players} imageDataUris={imageDataUris} title={title} />
-    <StrengthExercisesPage strengthExercises={strengthExercises} i18n={i18n} title={title} data={data} imageDataUris={imageDataUris} />
+    <StrengthExercisesPage
+      strengthExercises={strengthExercises}
+      i18n={i18n}
+      title={title}
+      data={data}
+      imageDataUris={imageDataUris}
+    />
   </Document>
 );
 
@@ -720,6 +986,8 @@ export const generateSessionPDF = async ({
   team,
   players = [],
   i18n = null,
+  format = 'complete',
+  blackAndWhite = false,
 }) => {
   try {
     const t = (key, fallback) => i18n?.t(key) || fallback;
@@ -727,11 +995,15 @@ export const generateSessionPDF = async ({
 
     // Pre-resolver imágenes
     const imageDataUris = {};
-    const toDataUrl = async (url) => {
+    const toDataUrl = async (url, { grayscale = false } = {}) => {
       let blob;
       try {
         if (/^https?:\/\//i.test(url)) {
-          const res = await api.get('/media/image-download', { params: { url }, responseType: 'blob', timeout: 15000 });
+          const res = await api.get('/media/image-download', {
+            params: { url },
+            responseType: 'blob',
+            timeout: 15000,
+          });
           blob = res.data;
         } else {
           const res = await fetch(url);
@@ -744,7 +1016,7 @@ export const generateSessionPDF = async ({
         blob = await res.blob();
       }
 
-      if (blob.type === 'image/webp' || url.endsWith('.webp')) {
+      if (blob.type === 'image/webp' || url.endsWith('.webp') || grayscale) {
         return await new Promise((resolve, reject) => {
           const img = new window.Image();
           const objectUrl = URL.createObjectURL(blob);
@@ -754,6 +1026,18 @@ export const generateSessionPDF = async ({
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0);
+            if (grayscale) {
+              const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              for (let i = 0; i < pixels.data.length; i += 4) {
+                const value = Math.round(
+                  pixels.data[i] * 0.299 + pixels.data[i + 1] * 0.587 + pixels.data[i + 2] * 0.114,
+                );
+                pixels.data[i] = value;
+                pixels.data[i + 1] = value;
+                pixels.data[i + 2] = value;
+              }
+              ctx.putImageData(pixels, 0, 0);
+            }
             resolve(canvas.toDataURL('image/png'));
             URL.revokeObjectURL(objectUrl);
           };
@@ -771,32 +1055,62 @@ export const generateSessionPDF = async ({
     };
 
     if (strengthExercises && strengthExercises.length > 0) {
-      await Promise.all(strengthExercises.map(async (exercise) => {
-        try {
-          const imageSource = getStrengthExerciseImage(exercise.image);
-          if (!imageSource) return;
-          const url = typeof imageSource === 'string' ? imageSource : imageSource?.uri;
-          if (url) imageDataUris[exercise.image] = await toDataUrl(url);
-        } catch (e) {
-          console.warn('Failed to resolve image for PDF:', exercise.id, e);
-        }
-      }));
-    }
-
-    if (exercises && exercises.length > 0) {
-      await Promise.all(exercises.map(async (exercise) => {
-        try {
-          const selectedImage = getContentImage(exercise);
-          if (selectedImage && typeof selectedImage === 'string' && selectedImage.startsWith('http')) {
-            imageDataUris[`ex_${exercise._id}`] = await toDataUrl(selectedImage);
+      await Promise.all(
+        strengthExercises.map(async (exercise) => {
+          try {
+            const imageSource = getStrengthExerciseImage(exercise.image);
+            if (!imageSource) return;
+            const url = typeof imageSource === 'string' ? imageSource : imageSource?.uri;
+            if (url) imageDataUris[exercise.image] = await toDataUrl(url);
+          } catch (e) {
+            console.warn('Failed to resolve image for PDF:', exercise.id, e);
           }
-        } catch (e) {
-          console.warn('Failed to resolve image for exercise PDF:', exercise._id, e);
-        }
-      }));
+        }),
+      );
     }
 
-    const data = parseSessionData({ session, exercises, strengthExercises, team, players, i18n, imageDataUris });
+    const imageExercises = [
+      ...(exercises || []),
+      ...(format === 'print' ? (session.tareasPersonalizadas || []).map(customTaskAsExercise) : []),
+    ];
+    if (imageExercises.length > 0) {
+      await Promise.all(
+        imageExercises.map(async (exercise) => {
+          try {
+            const selectedImage = getContentImage(exercise);
+            const imageSource =
+              blackAndWhite &&
+              typeof selectedImage === 'string' &&
+              !/^(https?:|data:|blob:)/.test(selectedImage)
+                ? `data:image/png;base64,${selectedImage}`
+                : selectedImage;
+            if (
+              imageSource &&
+              typeof imageSource === 'string' &&
+              (imageSource.startsWith('http') ||
+                (blackAndWhite &&
+                  (imageSource.startsWith('data:') || imageSource.startsWith('blob:'))))
+            ) {
+              imageDataUris[`ex_${exercise._id}`] = await toDataUrl(imageSource, {
+                grayscale: format === 'print' && blackAndWhite,
+              });
+            }
+          } catch (e) {
+            console.warn('Failed to resolve image for exercise PDF:', exercise._id, e);
+          }
+        }),
+      );
+    }
+
+    const data = parseSessionData({
+      session,
+      exercises,
+      strengthExercises,
+      team,
+      players,
+      i18n,
+      imageDataUris,
+    });
     const title = `${t('session.pdfTitle', 'Sesión de Entrenamiento')} - ${data.teamName}`;
 
     const fecha = new Date(session.fecha);
@@ -804,11 +1118,29 @@ export const generateSessionPDF = async ({
     const diaSemana = t(`weekdays.${diasKeys[fecha.getDay()]}`, diasKeys[fecha.getDay()]);
     const fechaStr = fecha.toLocaleDateString(locale).replace(/\//g, '-');
     const pdfPrefix = t('session.pdfFilePrefix', 'Sesion_Entrenamiento');
-    const fileName = `${pdfPrefix}_${diaSemana}_${fechaStr}.pdf`;
+    const fileName = `${pdfPrefix}_${diaSemana}_${fechaStr}${format === 'print' ? '_campo' : ''}.pdf`;
 
     await renderPdf(
-      <SessionDocument data={data} players={players} strengthExercises={strengthExercises} i18n={i18n} title={title} imageDataUris={imageDataUris} />,
-      fileName.replace('.pdf', '')
+      format === 'print' ? (
+        <SessionPrintDocument
+          data={data}
+          players={players}
+          strengthExercises={strengthExercises}
+          i18n={i18n}
+          title={title}
+          imageDataUris={imageDataUris}
+        />
+      ) : (
+        <SessionDocument
+          data={data}
+          players={players}
+          strengthExercises={strengthExercises}
+          i18n={i18n}
+          title={title}
+          imageDataUris={imageDataUris}
+        />
+      ),
+      fileName.replace('.pdf', ''),
     );
 
     return fileName;

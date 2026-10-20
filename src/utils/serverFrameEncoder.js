@@ -20,6 +20,10 @@ export function createServerFrameEncoder({ speed = 1, frameCount, onProgress } =
   let ended = false;
   let submitted = 0;
   let batch = [];
+  let batchBytes = 0;
+  let uploading = Promise.resolve();
+  let uploadError = null;
+  let lastYieldAt = 0;
 
   const assertActive = () => {
     if (ended || controller.signal.aborted) throw new Error('Generación de vídeo cancelada');
@@ -69,9 +73,16 @@ export function createServerFrameEncoder({ speed = 1, frameCount, onProgress } =
   };
   const flush = async () => {
     if (!batch.length) return;
-    const response = await request('put', `${path}/frames`, { frames: batch });
+    // Sólo un envío en vuelo y un bloque preparándose: memoria acotada.
+    await uploading;
+    if (uploadError) throw uploadError;
+    assertActive();
+    const frames = batch;
     batch = [];
-    onProgress?.(Math.min(0.98, response.data.nextFrame / frameCount));
+    batchBytes = 0;
+    uploading = request('put', `${path}/frames`, { frames }).catch((error) => {
+      uploadError = error;
+    });
   };
   const release = () => api.delete(path, { timeout: 10000 }).catch(() => {});
 
@@ -94,7 +105,11 @@ export function createServerFrameEncoder({ speed = 1, frameCount, onProgress } =
       await starting;
       started = true;
     }
-    await yieldToUi();
+    if (uploadError) throw uploadError;
+    if (Date.now() - lastYieldAt >= 50) {
+      await yieldToUi();
+      lastYieldAt = Date.now();
+    }
     // WebKit puede aplazar la exportación asíncrona del canvas hasta recibir
     // un toque. La exportación síncrona evita depender de ese callback.
     const dataUrl = canvas.toDataURL('image/png');
@@ -104,21 +119,22 @@ export function createServerFrameEncoder({ speed = 1, frameCount, onProgress } =
     const frameBytes = Math.ceil((data.length * 3) / 4);
     assertActive();
     if (frameBytes > MAX_FRAME_BYTES) throw new Error('El fotograma supera el tamaño permitido');
+    if (batchBytes + data.length > MAX_FRAME_BYTES * 1.4) await flush();
     batch.push({ index, durationFrames, data });
+    batchBytes += data.length;
     submitted += durationFrames;
     // El progreso no espera al flush del lote: así la UI avanza aunque haya
     // una subida de red pendiente y no requiere interacción táctil.
     onProgress?.(Math.min(0.98, submitted / frameCount));
-    // Una petición por frame evita serializaciones grandes y mantiene una
-    // confirmación de progreso constante incluso en dispositivos lentos.
-    await flush();
-    await yieldToUi();
+    if (batch.length >= 8 || batchBytes >= MAX_FRAME_BYTES) await flush();
   };
 
   const finish = async () => {
     assertActive();
     if (!started || submitted !== frameCount) throw new Error('Faltan fotogramas del vídeo');
     await flush();
+    await uploading;
+    if (uploadError) throw uploadError;
     let response = await request('post', `${path}/finish`);
     const deadline = Date.now() + 180000;
     while (response.data.status !== 'completed') {

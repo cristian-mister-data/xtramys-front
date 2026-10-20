@@ -18,7 +18,7 @@ import { getContentImage, usesImportedImage } from '@/utils/contentVisual';
 const getId = (value) => (typeof value === 'object' ? value?._id : value);
 const isPlayerObject = (value) => value !== null && typeof value === 'object';
 
-export default function SetPiecePreview({ setPiece, players = [], height = 240, kitContext, onSlotPress, selectedSlotId, showAssignments = false }) {
+export default function SetPiecePreview({ setPiece, players = [], height = 240, kitContext, onSlotPress, selectedSlotId, showAssignments = false, minAssignmentFontSize = 0 }) {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme, height), [theme, height]);
   const [boardWidth, setBoardWidth] = useState(0);
@@ -184,7 +184,11 @@ export default function SetPiecePreview({ setPiece, players = [], height = 240, 
                     element.showPhotos === true,
                     element.photoUrl || cdnUrl(element.playerData?.foto || ''),
                   )}
-                  {element.matchSheetAssigned && renderPlayerNameLabel(element, true)}
+                  {element.matchSheetAssigned && renderPlayerNameLabel(minAssignmentFontSize > 0 ? {
+                    ...element,
+                    compactNameLabel: false,
+                    nameLabelScale: Math.max(scale, minAssignmentFontSize * 2.2 / 12),
+                  } : element, true)}
                 </View>
               );
             })}
