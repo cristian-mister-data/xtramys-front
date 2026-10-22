@@ -52,6 +52,7 @@ import CanMutate from '@/components/shared/CanMutate';
 import { showMissingFieldsToast } from '@/utils/validationToast';
 import KitDesigner, { KitPreview } from '@/components/shared/KitDesigner';
 import { DEFAULT_RIVAL_KITS, normalizeRivalKits } from '@/utils/kits';
+import FederationImport from '@/features/federationImport/FederationImport';
 
 const defaultRivalKits = () => normalizeRivalKits(DEFAULT_RIVAL_KITS);
 
@@ -512,6 +513,7 @@ export default function Rivals() {
         actions={(
           <CanMutate>
             <Row $gap={8}>
+            <FederationImport key={selectedTeam._id} team={selectedTeam} />
             <Button data-tutorial="rival-open" $variant="primary" onClick={openCreate}>
               <Row $gap={6}>
                 <MdAdd size={18} />

@@ -1,4 +1,6 @@
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
+import FederationImport from '@/features/federationImport/FederationImport';
 import { MdDescription, MdAdd, MdSportsSoccer, MdVisibility } from 'react-icons/md';
 import { useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
@@ -78,6 +80,7 @@ const OpponentMatchSheets = styled.div`
 `;
 
 export default function MatchSheets() {
+  const [importVersion, setImportVersion] = useState(0);
   const { t } = useTranslation();
   const teams = useSelector((s) => s.team?.teams ?? []);
   const selectedTeam = teams.find((e) => e.seleccionado) || null;
@@ -102,6 +105,7 @@ export default function MatchSheets() {
       icon={MdDescription}
       actions={selectedTeam ? (
         <CanMutate>
+          {activeTab === 'own' && <FederationImport key={selectedTeam._id} team={selectedTeam} onImported={() => setImportVersion(v => v + 1)} />}
           <Button data-tutorial={activeTab === 'own' ? 'match-open' : undefined} $variant="primary" onClick={create}>
             <Row $gap={6}>
               <MdAdd size={18} />
@@ -122,7 +126,7 @@ export default function MatchSheets() {
             </Tab>
           </Tabs>
           {activeTab === 'own' ? (
-            <OwnMatchSheets role="tabpanel"><MatchSheetList canMutate={canMutate} /></OwnMatchSheets>
+            <OwnMatchSheets role="tabpanel"><MatchSheetList key={importVersion} canMutate={canMutate} /></OwnMatchSheets>
           ) : (
             <OpponentMatchSheets role="tabpanel"><OpponentMatchReports selectedTeam={selectedTeam} canMutate={canMutate} /></OpponentMatchSheets>
           )}

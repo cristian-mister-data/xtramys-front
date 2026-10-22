@@ -4,9 +4,9 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $androidRoot = Join-Path $projectRoot 'android'
 $aabSource = Join-Path $androidRoot 'app\build\outputs\bundle\release\app-release.aab'
 $releaseDir = Join-Path $projectRoot 'release'
-$aabTarget = Join-Path $releaseDir 'xtramys-v1.0.37-build44.aab'
+$aabTarget = Join-Path $releaseDir 'xtramys-v1.0.38-build45.aab'
 $apkSource = Join-Path $androidRoot 'app\build\outputs\apk\release\app-release.apk'
-$apkTarget = Join-Path $releaseDir 'xtramys-v1.0.37-build44.apk'
+$apkTarget = Join-Path $releaseDir 'xtramys-v1.0.38-build45.apk'
 
 Push-Location $projectRoot
 try {

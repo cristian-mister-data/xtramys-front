@@ -1,10 +1,12 @@
 {
   "name": "xtramys-front-web",
   "private": true,
-  "version": "1.0.37",
+  "version": "1.0.38",
   "type": "module",
   "description": "Xtramys web application",
   "scripts": {
+    "check:federation-import-save": "node scripts/check-federation-import-save.mjs",
+    "check:federation-pdf": "node scripts/check-federation-pdf.mjs",
     "dev": "vite .",
     "build": "vite build",
     "check:lineup-positions": "node scripts/check-lineup-positions.mjs",
@@ -67,6 +69,7 @@
     "jwt-decode": "^4.0.0",
     "konva": "^9.3.16",
     "mp4-muxer": "^5.2.2",
+    "pdfjs-dist": "4.10.38",
     "react": "^18.3.1",
     "react-color": "^2.19.3",
     "react-datepicker": "^7.5.0",
